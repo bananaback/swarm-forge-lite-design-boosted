@@ -1,0 +1,6 @@
+# No `cache-dir` here: a relative path resolves against the caller's cwd and
+# leaks a stray dump/. The ruff4py wrapper pins the cache absolutely under
+# swarm-forge-lite/dump/ruff-cache.
+
+[lint]
+select = ["E4", "E7", "E9", "F", "I", "UP"]

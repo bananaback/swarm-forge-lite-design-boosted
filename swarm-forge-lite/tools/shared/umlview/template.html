@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<script>
+/* pick the theme before the first paint: saved choice, else the OS preference */
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("swarm-theme"); } catch (e) { t = null; }
+  if (t !== "dark" && t !== "light") {
+    t = (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+  }
+  document.documentElement.setAttribute("data-theme", t);
+})();
+</script>
+<style>
+  :root {
+    color-scheme: light;
+    --edge:#5b6470; --bad:#d1242f; --line:#d0d7de; --ink:#1f2328; --muted:#656d76;
+    --bg:#fff; --panel:rgba(255,255,255,.96); --overlay:rgba(255,255,255,.92); --overlay2:rgba(255,255,255,.85);
+    --soft:#f6f8fa; --soft-hover:#eef1f4; --accent:#0969da;
+    --warn:#d29922; --muted2:#8b949e; --ok:#1a7f37;
+    --row-hover:#f6f8fa; --error-bg:#fff5f5; --warn-bg:#fffaef; --op-bg:#fbfcfd;
+    --cluster-fill:#fafbfc; --cluster-line:#d8dee4; --cluster-label:#57606a;
+    --node-stroke:#9aa4af; --member:#333a42; --tag:#8a929b;
+    --fill-core:#e6f4ea; --fill-shell:#fdf3e3; --fill-interface:#e8edff;
+    --fill-enum:#f3e8ff; --fill-abstract:#eef1f4; --fill-plain:#f6f8fa;
+    --m-cmd:#9a3412; --m-qry:#1e40af; --m-flag:#b45309;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --edge:#8b949e; --bad:#f85149; --line:#30363d; --ink:#e6edf3; --muted:#9198a1;
+    --bg:#0d1117; --panel:rgba(13,17,23,.96); --overlay:rgba(22,27,34,.92); --overlay2:rgba(22,27,34,.85);
+    --soft:#161b22; --soft-hover:#1f242c; --accent:#4493f8;
+    --warn:#d29922; --muted2:#6e7681; --ok:#3fb950;
+    --row-hover:#161b22; --error-bg:#2d1416; --warn-bg:#2b2413; --op-bg:#161b22;
+    --cluster-fill:#12161c; --cluster-line:#30363d; --cluster-label:#8b949e;
+    --node-stroke:#484f58; --member:#c9d1d9; --tag:#6e7681;
+    --fill-core:#12281b; --fill-shell:#2b2113; --fill-interface:#131d33;
+    --fill-enum:#231a33; --fill-abstract:#1c2128; --fill-plain:#161b22;
+    --m-cmd:#ffa657; --m-qry:#79c0ff; --m-flag:#e3b341;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.45 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; color:var(--ink); background:var(--bg); }
+  header { position:sticky; top:0; z-index:5; display:flex; gap:14px; align-items:baseline;
+           padding:10px 16px; border-bottom:1px solid var(--line); background:var(--panel); }
+  header h1 { font-size:16px; margin:0; }
+  header .meta { color:var(--muted); font-size:12px; }
+  header .spacer { flex:1; }
+  button { font:inherit; padding:3px 10px; border:1px solid var(--line); border-radius:6px; background:var(--soft); color:var(--ink); cursor:pointer; }
+  button:hover { background:var(--soft-hover); }
+  button.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+  main { display:flex; align-items:flex-start; }
+  #canvas-wrap { position:relative; flex:1; height:calc(100vh - 52px); overflow:hidden; background:var(--bg); }
+  #canvas { width:100%; height:100%; display:block; cursor:grab; user-select:none; touch-action:none; }
+  #canvas.grabbing { cursor:grabbing; }
+  #zoomctl { position:absolute; top:10px; right:12px; display:flex; gap:4px; z-index:3;
+             background:var(--overlay); border:1px solid var(--line); border-radius:8px; padding:4px; }
+  #zoomctl button { min-width:32px; text-align:center; }
+  #hint { position:absolute; left:12px; bottom:10px; z-index:3; color:var(--muted); font-size:11.5px;
+          background:var(--overlay2); padding:2px 8px; border-radius:6px; }
+  #zoomval { position:absolute; right:12px; bottom:10px; z-index:3; color:var(--muted); font-size:11.5px;
+             background:var(--overlay2); padding:2px 8px; border-radius:6px; }
+  aside { width:360px; height:calc(100vh - 52px); overflow:auto; border-left:1px solid var(--line); padding:12px 14px; position:sticky; top:52px; }
+  aside h2 { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:14px 0 6px; }
+  aside h2:first-child { margin-top:0; }
+  aside h2.sec { display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none; }
+  aside h2.sec:hover { color:var(--ink); }
+  aside h2.sec .chev { display:inline-block; width:10px; font-size:10px; transition:transform .12s; }
+  aside h2.sec.closed .chev { transform:rotate(-90deg); }
+  body.panel-hidden aside { display:none; }
+  .cluster { fill:var(--cluster-fill); stroke:var(--cluster-line); stroke-dasharray:4 3; rx:10; }
+  .cluster-label { fill:var(--cluster-label); font:600 12px -apple-system,Segoe UI,sans-serif; }
+  .cname { fill:var(--ink); font:600 12.5px ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .note { fill:var(--muted); font:italic 10.5px ui-monospace,monospace; }
+  .tag { fill:var(--tag); font:9.5px -apple-system,sans-serif; text-transform:uppercase; letter-spacing:.04em; }
+  .m { fill:var(--member); font:11.5px ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .m.cmd { fill:var(--m-cmd); } .m.qry { fill:var(--m-qry); } .m.flag { fill:var(--m-flag); }
+  #canvas.hide-labels .m { display:none; }
+  #canvas.dim .cls, #canvas.dim .edge { opacity:.14; }
+  #canvas.dim .cls.hi, #canvas.dim .edge.hi { opacity:1; }
+  #canvas .edge.hi { stroke-width:3; }
+  #canvas .cls { cursor:pointer; }
+  ul { list-style:none; margin:0; padding:0; }
+  li.d { padding:5px 7px; border-radius:6px; border-left:3px solid transparent; margin-bottom:3px; cursor:pointer; font-size:12.5px; }
+  li.d:hover { background:var(--row-hover); }
+  li.d .code { font:11px ui-monospace,monospace; color:var(--muted); margin-right:5px; }
+  li.d.error { border-color:var(--bad); background:var(--error-bg); }
+  li.d.warn { border-color:var(--warn); background:var(--warn-bg); }
+  li.d.info { border-color:var(--muted2); }
+  .ok { color:var(--ok); }
+  .legend { display:grid; grid-template-columns:auto 1fr; gap:4px 8px; font-size:12px; align-items:center; }
+  .sw { width:14px; height:12px; border:1px solid var(--line); border-radius:3px; }
+  .sw.core { background:var(--fill-core); } .sw.shell { background:var(--fill-shell); }
+  .sw.iface { background:var(--fill-interface); }
+  .sw-viol { color:var(--bad); font-weight:700; } .sw-dep { color:var(--edge); }
+  .kv { font-size:12.5px; }
+  .op { margin:6px 0; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:var(--op-bg); }
+  .op .sig { font:12px ui-monospace,monospace; }
+  .op .c, .c { color:var(--muted); font-size:11.5px; }
+  #err { color:var(--bad); padding:12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>__TITLE__</h1>
+  <span class="meta" id="meta"></span>
+  <span class="spacer"></span>
+  <button id="btn-theme" onclick="toggleTheme()" title="Toggle dark mode">Dark</button>
+  <button onclick="location.reload()">Reload</button>
+  <button id="btn-labels" onclick="toggleLabels()">Labels</button>
+  <button id="btn-panel" class="on" onclick="togglePanel()" title="Show or hide the right panel">Panel</button>
+</header>
+<main>
+  <div id="canvas-wrap">
+    <svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div id="zoomctl">
+      <button title="Zoom in" onclick="zoomBy(1.2)">+</button>
+      <button title="Zoom out" onclick="zoomBy(1/1.2)">&minus;</button>
+      <button title="Fit (0)" onclick="fit()">Fit</button>
+    </div>
+    <div id="hint">drag to pan · wheel to zoom · click a class for its contract</div>
+    <div id="zoomval"></div>
+  </div>
+  <aside>
+    <h2 class="sec" onclick="toggleSection('findings', this)"><span class="chev">&#9662;</span>Findings</h2>
+    <div id="sec-findings"><div id="diag"></div></div>
+    <h2 class="sec" onclick="toggleSection('secrets', this)"><span class="chev">&#9662;</span>Secrets</h2>
+    <div id="sec-secrets"><div id="secrets"></div></div>
+    <h2 class="sec" onclick="toggleSection('detail', this)"><span class="chev">&#9662;</span>Detail</h2>
+    <div id="sec-detail"><div id="detail" class="kv">Click a class. Hover to trace its edges.</div></div>
+    <h2 class="sec" onclick="toggleSection('legend', this)"><span class="chev">&#9662;</span>Legend</h2>
+    <div id="sec-legend">
+      <div class="legend">
+        <span class="sw core"></span><span>functional core</span>
+        <span class="sw shell"></span><span>imperative shell</span>
+        <span class="sw iface"></span><span>interface</span>
+        <span class="sw-viol">&mdash;&mdash;</span><span>violation (Dependency Rule)</span>
+        <span class="sw-dep">&ndash; &ndash;</span><span>dependency</span>
+        <span>[C] [Q]</span><span>command / query</span>
+      </div>
+    </div>
+  </aside>
+</main>
+<script>__DAGRE__</script>
+<script>
+const MODEL = __MODEL_JSON__;
+const DIAGS = __FINDINGS_JSON__;
+const SVGNS = "http://www.w3.org/2000/svg";
+const cssv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+let FILL = {}, EDGE = "#5b6470", BAD = "#d1242f", PAPER = "#fff";
+function refreshPalette(){
+  FILL = { core:cssv("--fill-core"), shell:cssv("--fill-shell"), interface:cssv("--fill-interface"),
+           enum:cssv("--fill-enum"), abstract:cssv("--fill-abstract"), plain:cssv("--fill-plain") };
+  EDGE = cssv("--edge") || EDGE; BAD = cssv("--bad") || BAD; PAPER = cssv("--bg") || PAPER;
+}
+const CLASSES = {};
+(MODEL.components||[]).forEach(c => (c.classes||[]).forEach(k => CLASSES[k.id] = Object.assign({}, k, {_comp:c.id, _compLabel:c.label})));
+
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+const el = (n, attrs) => { const e = document.createElementNS(SVGNS, n); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const ann = x => (x && x.annotations) || {};
+
+function classLines(cls){
+  const note = cls.stereotype==="interface" ? "\u00abinterface\u00bb"
+             : cls.stereotype==="abstract" ? "{abstract}"
+             : cls.stereotype==="enum" ? "\u00abenumeration\u00bb" : "";
+  const lines = [];
+  const vis = x => (ann(x).visibility==="private"?"-":ann(x).visibility==="protected"?"#":"+");
+  (cls.fields||[]).forEach(f => lines.push(`${vis(f)} ${f.name}${f.type?": "+f.type:""}`));
+  (cls.ops||[]).forEach(o => {
+    const args = (o.args||[]).map(a => typeof a==="string"?a:(a.name+(a.type?": "+a.type:""))).join(", ");
+    const cqs = ann(o).cqs;
+    const tag = cqs==="command"?" [C]":cqs==="query"?" [Q]":" [ ]";
+    lines.push(`${vis(o)} ${o.name}(${args})${o.returns?": "+o.returns:""}${tag}`); });
+  return {note, lines: cls.hide_members ? [] : lines};
+}
+const clip = (s,n) => s.length>n ? s.slice(0,n-1)+"\u2026" : s;
+function fill(cls){
+  if (cls.stereotype==="interface") return FILL.interface;
+  if (cls.stereotype==="enum") return FILL.enum;
+  if (cls.stereotype==="abstract") return FILL.abstract;
+  if (ann(cls).core===true) return FILL.core;
+  if (ann(cls).core===false) return FILL.shell;
+  return FILL.plain;
+}
+function edgeStyle(kind){
+  if (kind==="inheritance"||kind==="implements") return {mark:"tri", dash:null};
+  if (kind==="aggregation") return {mark:"dia", dash:null};
+  if (kind==="composition") return {mark:"dif", dash:null};
+  if (kind==="dependency") return {mark:"arw", dash:"6 4"};
+  return {mark:"arw", dash:null};
+}
+
+const violators = new Set();
+DIAGS.forEach(d => { if (d.code === "dep-rule" && d.ids && d.ids.length === 2) violators.add(d.ids[0] + "|" + d.ids[1]); });
+const counts = {error:0,warn:0,info:0};
+DIAGS.forEach(d => counts[d.sev] = (counts[d.sev]||0)+1);
+let coreN = 0, shellN = 0, secretN = 0;
+Object.values(CLASSES).forEach(k => { const a = ann(k);
+  if (a.core===true) coreN++; else if (a.core===false) shellN++;
+  if (a.secret) secretN++; });
+document.getElementById("meta").textContent =
+  `${Object.keys(CLASSES).length} classes · ${(MODEL.edges||[]).length} edges · ` +
+  `${coreN} core · ${shellN} shell · ${secretN} secrets · ${counts.error} violations · ${counts.warn} warnings`;
+(function renderDiag(){
+  const box = document.getElementById("diag");
+  if (!DIAGS.length){ box.innerHTML = '<p class="ok">No findings.</p>'; return; }
+  box.innerHTML = "<ul>" + DIAGS.map(d =>
+    `<li class="d ${d.sev}" data-ids="${esc((d.ids||[]).join(","))}"><span class="code">${esc(d.code)}</span>${esc(d.msg)}</li>`).join("") + "</ul>";
+})();
+(function renderSecrets(){
+  const rows = [];
+  (MODEL.components||[]).forEach(c => (c.classes||[]).forEach(k => {
+    const s = ann(k).secret; if (s) rows.push([k.id, k.name || k.id, s]); }));
+  const box = document.getElementById("secrets");
+  if (!rows.length){ box.innerHTML = '<p class="c">No secrets declared.</p>'; return; }
+  box.innerHTML = "<ul>" + rows.map(([id, name, s]) =>
+    `<li class="d" data-ids="${esc(id)}"><span class="code">${esc(name)}</span>${esc(s)}</li>`).join("") + "</ul>";
+})();
+
+let zoomG = null, bounds = {w:800, h:600};
+const view = {k:1, x:0, y:0};
+let userMoved = false;
+
+function draw(){
+  const canvas = document.getElementById("canvas");
+  if (typeof dagre === "undefined"){ document.getElementById("canvas-wrap").innerHTML = '<div id="err">dagre did not load; the vendor bundle is missing.</div>'; return; }
+  const g = new dagre.graphlib.Graph({compound:true, multigraph:true});
+  g.setGraph({rankdir:"TB", nodesep:30, ranksep:64, marginx:24, marginy:24, edgesep:14});
+  g.setDefaultEdgeLabel(()=>({}));
+  const size = {};
+  (MODEL.components||[]).forEach(c => {
+    g.setNode("C:"+c.id, {});
+    (c.classes||[]).forEach(cls => {
+      const {note, lines} = classLines(cls);
+      const widest = Math.max(cls.name.length, note.length, ...(lines.length?lines.map(l=>l.length):[0]), 8);
+      const w = clamp(widest*7.35 + 18, 190, 620);
+      const h = 30 + lines.length*16 + 8;
+      size[cls.id] = {w, h, note, lines};
+      g.setNode(cls.id, {width:w, height:h});
+      g.setParent(cls.id, "C:"+c.id);
+    });
+  });
+  (MODEL.edges||[]).forEach(e => {
+    if (CLASSES[e.from] && CLASSES[e.to] && g.hasNode(e.from) && g.hasNode(e.to) && e.from !== e.to)
+      g.setEdge(e.from, e.to, {}, e.from+"->"+e.to+"#"+e.kind);
+  });
+  dagre.layout(g);
+  bounds = {w: g.graph().width + 24, h: g.graph().height + 24};
+
+  canvas.innerHTML = "";
+  zoomG = el("g", {id:"zoom"});
+  canvas.appendChild(zoomG);
+
+  const defs = el("defs", {});
+  [["g",EDGE],["r",BAD]].forEach(([suf,color]) => {
+    const shapes = {tri:`<path d="M0,0 L9,4 L0,8 z" fill="${PAPER}" stroke="${color}" stroke-width="1.3"/>`,
+                    arw:`<path d="M0,0 L9,4 L0,8" fill="none" stroke="${color}" stroke-width="1.7"/>`,
+                    dia:`<path d="M0,4 L5,0 L10,4 L5,8 z" fill="${PAPER}" stroke="${color}" stroke-width="1.2"/>`,
+                    dif:`<path d="M0,4 L5,0 L10,4 L5,8 z" fill="${color}"/>`};
+    Object.entries(shapes).forEach(([name, body]) => {
+      const m = el("marker", {id:`${name}-${suf}`, viewBox:"0 0 10 8", refX:"9", refY:"4", markerWidth:"11", markerHeight:"9", orient:"auto-start-reverse"});
+      m.innerHTML = body; defs.appendChild(m);
+    });
+  });
+  canvas.appendChild(defs);
+
+  const gCluster = el("g", {}); zoomG.appendChild(gCluster);
+  (MODEL.components||[]).forEach(c => {
+    const n = g.node("C:"+c.id); if (!n) return;
+    gCluster.appendChild(el("rect", {class:"cluster", x:n.x-n.width/2, y:n.y-n.height/2, width:n.width, height:n.height, rx:10}));
+    const t = el("text", {class:"cluster-label", x:n.x-n.width/2+10, y:n.y-n.height/2+16});
+    t.textContent = c.label || c.id; gCluster.appendChild(t);
+  });
+
+  const gEdges = el("g", {}); zoomG.appendChild(gEdges);
+  (MODEL.edges||[]).forEach(e => {
+    const ge = g.edge(e.from, e.to, e.from+"->"+e.to+"#"+e.kind); if (!ge) return;
+    const bad = e.violating === true || violators.has(e.from + "|" + e.to);
+    const {mark, dash} = edgeStyle(e.kind);
+    const p = el("path", {class:"edge", "data-from":e.from, "data-to":e.to,
+      d: ge.points.map((pt,i)=> (i?"L":"M")+pt.x.toFixed(1)+","+pt.y.toFixed(1)).join(" "),
+      fill:"none", stroke: bad?BAD:EDGE, "stroke-width": bad?2.6:1.6});
+    if (dash) p.setAttribute("stroke-dasharray", dash);
+    p.setAttribute("marker-end", `url(#${mark}-${bad?"r":"g"})`);
+    const title = el("title", {}); title.textContent = `${e.from} -${e.kind}-> ${e.to}${e.label?"  "+e.label:""}`;
+    p.appendChild(title); gEdges.appendChild(p);
+  });
+
+  const gNodes = el("g", {}); zoomG.appendChild(gNodes);
+  Object.keys(CLASSES).forEach(id => {
+    const n = g.node(id); if (!n) return;
+    const cls = CLASSES[id], box = size[id];
+    const gnode = el("g", {class:"cls", "data-id":id});
+    const stroke = cssv("--node-stroke") || "#9aa4af";
+    const rect = el("rect", {x:n.x-box.w/2, y:n.y-box.h/2, width:box.w, height:box.h, rx:6, fill: fill(cls), stroke, "stroke-width":1.4});
+    gnode.appendChild(rect);
+    if (box.note){ const t=el("text",{class:"note",x:n.x,y:n.y-box.h/2+12,"text-anchor":"middle"}); t.textContent=box.note; gnode.appendChild(t); }
+    const nm = el("text",{class:"cname",x:n.x,y:n.y-box.h/2+23,"text-anchor":"middle"}); nm.textContent=cls.name||id; gnode.appendChild(nm);
+    if ("core" in ann(cls)){ const t=el("text",{class:"tag",x:n.x+box.w/2-8,y:n.y-box.h/2+23,"text-anchor":"end"}); t.textContent=ann(cls).core?"core":"shell"; gnode.appendChild(t); }
+    if (box.lines.length){
+      gnode.appendChild(el("line",{x1:n.x-box.w/2,y1:n.y-box.h/2+30,x2:n.x+box.w/2,y2:n.y-box.h/2+30,stroke:cssv("--line")||"#d0d7de"}));
+      box.lines.forEach((line,i) => {
+        const kind = line.endsWith("[C]")?"cmd":line.endsWith("[Q]")?"qry":line.endsWith("[ ]")?"flag":"";
+        const t = el("text",{class:"m "+kind,x:n.x-box.w/2+8,y:n.y-box.h/2+30+16*(i+1)+3});
+        t.textContent = clip(line, 78); gnode.appendChild(t);
+      });
+    }
+    gNodes.appendChild(gnode);
+  });
+}
+
+/* ---- pan / zoom ---- */
+function applyView(){
+  if (!zoomG) return;
+  zoomG.setAttribute("transform", `translate(${view.x.toFixed(2)},${view.y.toFixed(2)}) scale(${view.k.toFixed(4)})`);
+  document.getElementById("zoomval").textContent = Math.round(view.k*100) + "%";
+}
+function fit(){
+  const r = document.getElementById("canvas").getBoundingClientRect();
+  const k = Math.min((r.width-24)/bounds.w, (r.height-24)/bounds.h);
+  view.k = clamp(k, 0.1, 4);
+  view.x = (r.width - bounds.w*view.k)/2;
+  view.y = (r.height - bounds.h*view.k)/2;
+  applyView();
+}
+function zoomAt(clientX, clientY, factor){
+  userMoved = true;
+  const r = document.getElementById("canvas").getBoundingClientRect();
+  const px = clientX - r.left, py = clientY - r.top;
+  const k2 = clamp(view.k*factor, 0.1, 4);
+  view.x = px - (px - view.x) * (k2/view.k);
+  view.y = py - (py - view.y) * (k2/view.k);
+  view.k = k2; applyView();
+}
+function zoomBy(factor){
+  const r = document.getElementById("canvas").getBoundingClientRect();
+  zoomAt(r.left + r.width/2, r.top + r.height/2, factor);
+}
+let suppressClick = false;
+function wirePanZoom(){
+  const canvas = document.getElementById("canvas");
+  canvas.addEventListener("wheel", e => { e.preventDefault(); zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.12 : 1/1.12); }, {passive:false});
+  let drag = null;
+  canvas.addEventListener("pointerdown", e => {
+    drag = {x:e.clientX, y:e.clientY, vx:view.x, vy:view.y, moved:false};
+    canvas.classList.add("grabbing");
+    try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  canvas.addEventListener("pointermove", e => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (Math.abs(dx) + Math.abs(dy) > 3){ drag.moved = true; userMoved = true; }
+    view.x = drag.vx + dx; view.y = drag.vy + dy; applyView();
+  });
+  const end = () => { if (drag){ suppressClick = drag.moved; drag = null; canvas.classList.remove("grabbing"); setTimeout(()=>suppressClick=false, 0); } };
+  canvas.addEventListener("pointerup", end);
+  canvas.addEventListener("pointercancel", end);
+  window.addEventListener("keydown", e => {
+    if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    if (e.key==="+"||e.key==="=") zoomBy(1.2);
+    else if (e.key==="-"||e.key==="_") zoomBy(1/1.2);
+    else if (e.key==="0"){ view.k=1; applyView(); }
+    else if (e.key==="f"||e.key==="F") fit();
+  });
+}
+
+/* ---- interaction ---- */
+function highlight(ids){
+  const canvas = document.getElementById("canvas");
+  canvas.classList.add("dim");
+  canvas.querySelectorAll(".hi").forEach(e=>e.classList.remove("hi"));
+  if (!ids.length) return;
+  canvas.querySelectorAll(".cls, .edge").forEach(e => {
+    if (ids.includes(e.dataset.id) || ids.includes(e.dataset.from) || ids.includes(e.dataset.to)) e.classList.add("hi");
+  });
+}
+function clearHighlight(){ const c=document.getElementById("canvas"); c.classList.remove("dim"); c.querySelectorAll(".hi").forEach(e=>e.classList.remove("hi")); }
+function wire(){
+  document.querySelectorAll("#canvas .cls").forEach(gn => {
+    gn.addEventListener("mouseenter", ()=>highlight([gn.dataset.id]));
+    gn.addEventListener("mouseleave", clearHighlight);
+    gn.addEventListener("click", ()=>{ if (!suppressClick) detail(gn.dataset.id); });
+  });
+  document.querySelectorAll("#diag li.d, #secrets li.d").forEach(li => {
+    const ids = (li.dataset.ids||"").split(",").filter(Boolean);
+    li.addEventListener("mouseenter", ()=>highlight(ids));
+    li.addEventListener("mouseleave", clearHighlight);
+  });
+}
+function arg(a){ return typeof a==="string"?a:(a.name+(a.type?": "+a.type:"")); }
+function detail(id){
+  const k = CLASSES[id]; if (!k) return;
+  const a = ann(k);
+  const core = a.core===undefined?"":(a.core?"core":"shell");
+  let h = `<div><b>${esc(k.name||id)}</b>`;
+  if (k.stereotype) h += ` <span class="c">«${esc(k.stereotype)}»</span>`;
+  if (core) h += ` <span class="c">· ${core}</span>`;
+  h += `</div>`;
+  if (a.responsibility) h += `<div>${esc(a.responsibility)}</div>`;
+  if (a.secret) h += `<div><b>secret:</b> ${esc(a.secret)}</div>`;
+  const inc = (MODEL.edges||[]).filter(e => e.from===id || e.to===id);
+  if (inc.length){ h += `<h2 class="c">Edges</h2>`;
+    inc.forEach(e => h += `<div class="c">${esc(e.from)} ${e.from===id?"&rarr;":"&larr;"} ${esc(e.to)} <span>${esc(e.kind)}</span></div>`); }
+  (k.ops||[]).forEach(o => {
+    const oa = ann(o);
+    h += `<div class="op"><div class="sig">${esc(o.name)}(${(o.args||[]).map(arg).join(", ")})${o.returns?": "+esc(o.returns):""} <span class="c">[${esc(oa.cqs||"?")}]</span></div>`;
+    if (oa.pre) h += `<div class="c">pre: <span>${esc(oa.pre)}</span></div>`;
+    if (oa.post) h += `<div class="c">post: <span>${esc(oa.post)}</span></div>`;
+    if (oa.invariant) h += `<div class="c">inv: <span>${esc(oa.invariant)}</span></div>`;
+    h += `</div>`; });
+  document.getElementById("detail").innerHTML = h;
+  highlight([id]);
+}
+function toggleLabels(){ document.getElementById("canvas").classList.toggle("hide-labels"); document.getElementById("btn-labels").classList.toggle("on"); }
+function toggleSection(name, h){
+  const body = document.getElementById("sec-"+name); if (!body) return;
+  const hide = body.style.display !== "none";
+  body.style.display = hide ? "none" : "";
+  h.classList.toggle("closed", hide);
+}
+function togglePanel(){
+  const hidden = document.body.classList.toggle("panel-hidden");
+  document.getElementById("btn-panel").classList.toggle("on", !hidden);
+  setTimeout(() => { userMoved ? applyView() : fit(); }, 0);
+}
+window.addEventListener("resize", () => { userMoved ? applyView() : fit(); });
+
+/* ---- theme ---- */
+function currentTheme(){ return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light"; }
+function applyThemeLabel(){
+  const b = document.getElementById("btn-theme");
+  const next = currentTheme() === "dark" ? "light" : "dark";
+  b.textContent = next.charAt(0).toUpperCase() + next.slice(1);
+  b.title = "Switch to " + next + " mode";
+}
+function setTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  try { localStorage.setItem("swarm-theme", t); } catch (e) {}
+  applyThemeLabel(); refreshPalette(); draw(); fit();
+}
+function toggleTheme(){ setTheme(currentTheme() === "dark" ? "light" : "dark"); }
+/* embedded in a parent page: the parent owns the toggle and posts the theme here */
+if (window.parent !== window) document.getElementById("btn-theme").style.display = "none";
+window.addEventListener("message", e => {
+  const d = e.data;
+  if (d && d.type === "swarm-theme" && (d.theme === "dark" || d.theme === "light")) setTheme(d.theme);
+});
+
+refreshPalette(); applyThemeLabel();
+draw(); fit(); wirePanZoom(); wire();
+</script>
+</body>
+</html>

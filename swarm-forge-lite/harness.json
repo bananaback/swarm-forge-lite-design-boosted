@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "workspace_root": "..",
+  "state_root": ".swarmforge",
+  "artifacts_root": "dump",
+  "hot_tests": "hot_tests",
+  "persistent_tests": [
+    { "root": "harness_tests/persistent", "kind": "harness" },
+    { "root": "project_tests/persistent", "kind": "project" }
+  ],
+  "source_roots": ["tools"],
+  "features": "harness_tests/persistent/features",
+  "roles": [
+    "orchestrator",
+    "specifier",
+    "interrogator",
+    "modeler",
+    "contractor",
+    "critic",
+    "coder",
+    "test-reviewer",
+    "refactorer",
+    "hotfixer"
+  ]
+}

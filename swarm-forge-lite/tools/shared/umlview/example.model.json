@@ -1,0 +1,420 @@
+{
+  "title": "Evidence Recorder \u2014 design skeleton",
+  "task": "evidence",
+  "levels": [
+    [
+      "domain"
+    ],
+    [
+      "application"
+    ],
+    [
+      "adapters"
+    ]
+  ],
+  "components": [
+    {
+      "id": "domain",
+      "label": "Domain (core)",
+      "classes": [
+        {
+          "id": "domain.frame",
+          "name": "Frame",
+          "stereotype": "class",
+          "fields": [
+            {
+              "name": "ts_ns",
+              "type": "int"
+            },
+            {
+              "name": "blob_ref",
+              "type": "str"
+            }
+          ],
+          "ops": [
+            {
+              "name": "is_after",
+              "args": [
+                {
+                  "name": "other",
+                  "type": "Frame"
+                }
+              ],
+              "returns": "bool",
+              "annotations": {
+                "cqs": "query",
+                "pre": "other is not None",
+                "post": "returns ts_ns > other.ts_ns",
+                "invariant": "ts_ns is fixed"
+              }
+            }
+          ],
+          "annotations": {
+            "core": true,
+            "secret": "the timestamp unit (monotonic ns)",
+            "responsibility": "Hold one frame's timestamp and payload reference."
+          }
+        },
+        {
+          "id": "domain.clip",
+          "name": "Clip",
+          "stereotype": "class",
+          "fields": [
+            {
+              "name": "frames",
+              "type": "list[Frame]"
+            }
+          ],
+          "ops": [
+            {
+              "name": "add_frame",
+              "args": [
+                {
+                  "name": "f",
+                  "type": "Frame"
+                }
+              ],
+              "returns": "None",
+              "annotations": {
+                "cqs": "command",
+                "pre": "f.ts_ns is monotonic",
+                "post": "frames contains f",
+                "invariant": "frames is ordered"
+              }
+            },
+            {
+              "name": "duration",
+              "args": [],
+              "returns": "int",
+              "annotations": {
+                "cqs": "query",
+                "pre": "none",
+                "post": "returns the ts span",
+                "invariant": "duration >= 0"
+              }
+            }
+          ],
+          "annotations": {
+            "core": true,
+            "secret": "the in-memory segment layout",
+            "responsibility": "Hold the ordered frames of one clip."
+          }
+        },
+        {
+          "id": "domain.clip_store",
+          "name": "ClipStore",
+          "stereotype": "interface",
+          "ops": [
+            {
+              "name": "append",
+              "args": [
+                {
+                  "name": "c",
+                  "type": "Clip"
+                }
+              ],
+              "returns": "None",
+              "annotations": {
+                "cqs": "command",
+                "pre": "c is sealed",
+                "post": "c is durable"
+              }
+            },
+            {
+              "name": "get",
+              "args": [
+                {
+                  "name": "clip_id",
+                  "type": "str"
+                }
+              ],
+              "returns": "Clip",
+              "annotations": {
+                "cqs": "query",
+                "pre": "clip_id exists",
+                "post": "returns the stored clip"
+              }
+            }
+          ],
+          "annotations": {
+            "core": true,
+            "responsibility": "Persist and fetch clips."
+          }
+        },
+        {
+          "id": "domain.metadata_sink",
+          "name": "MetadataSink",
+          "stereotype": "interface",
+          "ops": [
+            {
+              "name": "publish",
+              "args": [
+                {
+                  "name": "event",
+                  "type": "ClipEvent"
+                }
+              ],
+              "returns": "None",
+              "annotations": {
+                "cqs": "command",
+                "pre": "event is complete",
+                "post": "event is emitted"
+              }
+            }
+          ],
+          "annotations": {
+            "core": true,
+            "responsibility": "Publish clip metadata."
+          }
+        },
+        {
+          "id": "domain.blur_policy",
+          "name": "BlurPolicy",
+          "stereotype": "interface",
+          "ops": [
+            {
+              "name": "region_for",
+              "args": [
+                {
+                  "name": "f",
+                  "type": "Frame"
+                }
+              ],
+              "returns": "Region",
+              "annotations": {
+                "cqs": "query",
+                "pre": "f has a payload",
+                "post": "returns the region to blur"
+              }
+            }
+          ],
+          "annotations": {
+            "core": true,
+            "responsibility": "Decide the blur region for a frame."
+          }
+        }
+      ]
+    },
+    {
+      "id": "application",
+      "label": "Application",
+      "classes": [
+        {
+          "id": "application.recorder",
+          "name": "Recorder",
+          "stereotype": "class",
+          "fields": [
+            {
+              "name": "clip",
+              "type": "Clip"
+            },
+            {
+              "name": "state",
+              "type": "RecorderState"
+            }
+          ],
+          "ops": [
+            {
+              "name": "start",
+              "args": [],
+              "returns": "None",
+              "annotations": {
+                "cqs": "command",
+                "pre": "state is idle",
+                "post": "state is recording",
+                "invariant": "one clip at a time"
+              }
+            },
+            {
+              "name": "stop",
+              "args": [],
+              "returns": "None",
+              "annotations": {
+                "cqs": "command",
+                "pre": "state is recording",
+                "post": "the clip is sealed and stored",
+                "invariant": "one clip at a time"
+              }
+            },
+            {
+              "name": "state_of",
+              "args": [],
+              "returns": "RecorderState",
+              "annotations": {
+                "cqs": "query",
+                "pre": "none",
+                "post": "returns the current state",
+                "invariant": "one clip at a time"
+              }
+            }
+          ],
+          "annotations": {
+            "core": true,
+            "secret": "when a clip is sealed",
+            "responsibility": "Drive ingest, blur, storage, and publication for one stream."
+          }
+        }
+      ]
+    },
+    {
+      "id": "adapters",
+      "label": "Adapters (shell)",
+      "classes": [
+        {
+          "id": "adapters.disk_clip_store",
+          "name": "DiskClipStore",
+          "stereotype": "class",
+          "ops": [
+            {
+              "name": "append",
+              "args": [
+                {
+                  "name": "c",
+                  "type": "Clip"
+                }
+              ],
+              "returns": "None",
+              "annotations": {
+                "cqs": "command",
+                "pre": "c is sealed",
+                "post": "bytes are flushed"
+              }
+            },
+            {
+              "name": "get",
+              "args": [
+                {
+                  "name": "clip_id",
+                  "type": "str"
+                }
+              ],
+              "returns": "Clip",
+              "annotations": {
+                "cqs": "query",
+                "pre": "clip_id exists",
+                "post": "returns the decoded clip"
+              }
+            }
+          ],
+          "annotations": {
+            "core": false,
+            "secret": "the filesystem layout and SDK calls",
+            "responsibility": "Implement ClipStore on disk."
+          }
+        },
+        {
+          "id": "adapters.kafka_sink",
+          "name": "KafkaSink",
+          "stereotype": "class",
+          "ops": [
+            {
+              "name": "publish",
+              "args": [
+                {
+                  "name": "event",
+                  "type": "ClipEvent"
+                }
+              ],
+              "returns": "None",
+              "annotations": {
+                "cqs": "command",
+                "pre": "event is complete",
+                "post": "the broker acks"
+              }
+            }
+          ],
+          "annotations": {
+            "core": false,
+            "secret": "the Kafka client and wire format",
+            "responsibility": "Implement MetadataSink over Kafka."
+          }
+        },
+        {
+          "id": "adapters.gaussian_blur",
+          "name": "GaussianBlur",
+          "stereotype": "class",
+          "ops": [
+            {
+              "name": "region_for",
+              "args": [
+                {
+                  "name": "f",
+                  "type": "Frame"
+                }
+              ],
+              "returns": "Region",
+              "annotations": {
+                "cqs": "query",
+                "pre": "f has a payload",
+                "post": "returns a region sized to the kernel"
+              }
+            }
+          ],
+          "annotations": {
+            "core": false,
+            "secret": "the CV library and kernel choice",
+            "responsibility": "Implement BlurPolicy with a Gaussian kernel."
+          }
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "domain.clip",
+      "to": "domain.frame",
+      "kind": "composition"
+    },
+    {
+      "from": "application.recorder",
+      "to": "domain.clip",
+      "kind": "dependency"
+    },
+    {
+      "from": "application.recorder",
+      "to": "domain.clip_store",
+      "kind": "dependency"
+    },
+    {
+      "from": "application.recorder",
+      "to": "domain.metadata_sink",
+      "kind": "dependency"
+    },
+    {
+      "from": "application.recorder",
+      "to": "domain.blur_policy",
+      "kind": "dependency"
+    },
+    {
+      "from": "adapters.disk_clip_store",
+      "to": "domain.clip_store",
+      "kind": "implements"
+    },
+    {
+      "from": "adapters.kafka_sink",
+      "to": "domain.metadata_sink",
+      "kind": "implements"
+    },
+    {
+      "from": "adapters.gaussian_blur",
+      "to": "domain.blur_policy",
+      "kind": "implements"
+    }
+  ],
+  "states": [
+    {
+      "owner": "Recorder",
+      "from": "idle",
+      "event": "start",
+      "to": "recording",
+      "legal": true
+    },
+    {
+      "owner": "Recorder",
+      "from": "recording",
+      "event": "stop",
+      "to": "idle",
+      "legal": true
+    }
+  ]
+}

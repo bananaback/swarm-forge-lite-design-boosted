@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Run one command inside a lane: every disposable output is scoped to the lane,
+# so concurrent lanes share only the source tree and the authored tests.
+#
+#   <pack>/tools/shared/lane <lane> <command...>
+set -euo pipefail
+
+lane="${1:-}"
+if [[ -z "$lane" || "$lane" == -* ]]; then
+  echo "usage: lane <id> <command...>" >&2
+  exit 2
+fi
+shift
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export SWARM_LANE="$lane"
+artifacts="$(python3 "$here/harness.py" config | python3 -c 'import json, sys; print(json.load(sys.stdin)["artifacts_root"])')"
+
+mkdir -p "$artifacts/pycache" "$artifacts/tmp" "$artifacts/hypothesis" "$artifacts/pytest-cache"
+export PYTHONPYCACHEPREFIX="$artifacts/pycache"
+export TMPDIR="$artifacts/tmp"
+export HYPOTHESIS_STORAGE_DIRECTORY="$artifacts/hypothesis"
+export PYTEST_ADDOPTS="-o cache_dir=$artifacts/pytest-cache ${PYTEST_ADDOPTS:-}"
+
+exec "$@"
