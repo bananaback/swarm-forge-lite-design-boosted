@@ -1,0 +1,22 @@
+# Root ignore rules for the shipped pack.
+#
+# swarm-forge-lite/.gitignore already covers that subtree's disposable areas
+# (.swarmforge/, dump/, hot_tests/, __pycache__/, .pytest_cache/, .hypothesis/,
+# .ruff_cache/, .coverage, tmp/). These rules cover the ship root.
+
+# The opencode plugin layer is generated on demand; never commit it.
+.opencode/node_modules/
+.opencode/package.json
+.opencode/package-lock.json
+.opencode/bun.lock
+
+# Python bytecode and tool caches at the ship root.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.hypothesis/
+.ruff_cache/
+.coverage
+
+# OS noise
+.DS_Store
