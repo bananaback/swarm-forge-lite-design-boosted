@@ -105,10 +105,15 @@ Treat a match as project-owned. If the pack changed the same file, report both a
 branch: v2-python
 commit: 3d79d7da0f35cca3953e7e385ee49fd1509ef57b
 date: 2026-10-14
+skipped: 71fdb75  this project runs its own pytest wrapper
 ```
 
 Both directions read it first. Without it, fall back to a whole-tree diff and say so in
 your report. After a successful publish or pull, write the new commit.
+
+A `skipped:` line records a change the operator decided this project does not take
+(section 7). Keep the line, so the next pull does not offer that commit again, and name
+the reason - a bare sha tells the next agent nothing.
 
 ## 5. The staging clone
 
@@ -155,25 +160,38 @@ not a git repository, and it must not become one.
 
 ## 7. Pull (repo -> project)
 
-1. Read `.harness-version`; let `<synced>` be its commit.
-2. List what you are missing, and the files it touches:
+A pull is not a copy of the newest tree. It is the diff between `<synced>` and the commit
+you move to, applied file by file, and every decision in it is the operator's. Reconcile;
+never overwrite blind.
+
+1. Read `.harness-version`; let `<synced>` be its commit. Fetch the clone (section 5).
+2. Read the change set - the commits, then the files:
 
    ```bash
    git -C <clone> log --oneline <synced>..origin/v2-python
-   git -C <clone> diff --stat <synced>..origin/v2-python
-   ```
-3. Apply only the repo-owned files in that diff, and skip anything matched by
-   `.harness-local`:
-
-   ```bash
    git -C <clone> checkout origin/v2-python
    git -C <clone> diff --name-status <synced>..origin/v2-python
    ```
-4. Copy each file, one by one, from the clone into the project. Never `rsync --delete`:
-   a deletion in the pack is a decision, not an instruction. List every deletion in the
-   diff separately and get the operator's confirmation.
-5. For a merge-by-hand file, print the upstream diff and stop. Do not apply it.
-6. For a project-owned file that drifted, report it and change nothing.
+3. Split the change set. Report, and never apply: every project-owned path (section 2),
+   every path matched by `.harness-local` (section 3), and every merge-by-hand path -
+   for those, print the upstream diff and stop.
+4. **Check each remaining file for local drift before you copy it.** A repo-owned file
+   whose project copy differs from `<synced>` was edited here:
+
+   ```bash
+   git -C <clone> show <synced>:<file> > /tmp/base
+   diff /tmp/base <ship-root>/<file>
+   ```
+   - It differs, and the edit is a project adaptation: add the path to `.harness-local`,
+     report it, and leave the file alone.
+   - It differs, and the edit is an accident: reconcile the three sides - the `<synced>`
+     base, the local edit, and the upstream change - with the operator, then write the
+     merged file. Do not pick one side silently.
+   - It is identical: copy the upstream file as-is.
+5. Deletions are decisions, not instructions. List every deletion in the diff and get the
+   operator's confirmation before removing anything. Never `rsync --delete`.
+6. If the operator decides this project does not need a change, do not apply it, and
+   record the decision so the next pull does not offer it again (section 4).
 7. Verify in the project:
 
    ```bash
@@ -193,8 +211,9 @@ not a git repository, and it must not become one.
 - Keep the clone neutral. Before you push, confirm it holds no project path, name, or
   secret: `grep -rn "<the project root>" <clone>` must find nothing.
 - Never commit a project-owned file, and never edit one to make a diff disappear.
-- A pull is a copy of named files, not a sync of trees. Name every file you touch, and
-  report the ones you did not.
+- A pull reconciles file by file: the diff since the marker, a drift check before every
+  copy, and the operator's decision on every deletion and every skip. Name each file you
+  wrote, each file you reported, and each commit you skipped.
 - If a repo-owned change collides with `.harness-local`, stop and report the file.
 - Always write `.harness-version` last. A stale marker makes the next sync expensive.
 - Report back: the direction, the commits, every file written, every file reported, and
