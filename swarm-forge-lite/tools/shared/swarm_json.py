@@ -1047,8 +1047,6 @@ def _crap_coverage_command(paths, root: Path) -> str:
         f"--data-file={data}",
         "-m",
         "pytest",
-        "-p",
-        "no:cacheprovider",
         *tests,
     ]
     lcov = [
@@ -1161,8 +1159,6 @@ def cmd_pytest(args: dict) -> dict:
         "-q",
         "-rf",
         "--tb=line",
-        "-p",
-        "no:cacheprovider",
     ]
     if args.get("k"):
         argv += ["-k", str(args["k"])]
