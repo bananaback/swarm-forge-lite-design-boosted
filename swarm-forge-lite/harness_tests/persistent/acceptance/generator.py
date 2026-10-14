@@ -17,6 +17,10 @@ def metadata_name(feature_path: str) -> str:
     return f"{slug}.json"
 
 
+def test_file_name(ir: dict) -> str:
+    return f"test_{safe_name(ir.get('name', 'unknown'))}_acceptance.py"
+
+
 def feature_reference(ir: dict) -> str:
     slug = safe_name(ir.get("name", "unknown"))
     fallback = f"{slug}.feature"
@@ -133,7 +137,7 @@ def generate_entrypoint(ir_path: str, output_dir: str) -> None:
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
     acceptance_root = Path(__file__).resolve().parent
-    test_file = output / f"test_{safe_name(ir.get('name', 'unknown'))}_acceptance.py"
+    test_file = output / test_file_name(ir)
     test_file.write_text("\n".join(entrypoint_lines(ir, acceptance_root)))
     print(f"Generated {test_file}")
     write_metadata(ir, ir_path, output, test_file)
