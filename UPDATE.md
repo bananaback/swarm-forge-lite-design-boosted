@@ -12,10 +12,21 @@ everywhere; a project's facts, paths, and extra tests are its own.
 
 | Direction | When | Result |
 | --- | --- | --- |
-| **Publish** (project -> repo) | You changed something in the project harness that is generic. | The change lands in the repo, on the canonical branch, for every other project. |
+| **Publish** (project -> repo) | You changed something in a project's harness that is generic. | The change lands in the repo, on the canonical branch, for every other project. |
 | **Pull** (repo -> project) | The repo has newer generic changes. | This project gets the minimum edit that makes it current. |
 
-Never do both in one run. Finish one direction, verify, then stop.
+Where the fix was made decides which one you run:
+
+| You changed | Flow |
+| --- | --- |
+| a generic file in a project's harness | **Publish**, then bump that project's marker (section 6). |
+| the pack itself, in the clone - a defect you found while working on the pack | **Repo-first**: verify in the clone, commit, push, then **pull** (section 7) into every project that needs it, and bump each marker. |
+| a project-owned file | Nothing. It never travels. |
+
+**One rule:** a defect fixed anywhere in the pack is published in the same run. Never
+leave a fix only in one project's copy - a new project pulls the pack, not your copy.
+
+Never run both directions for one change. Finish, verify, then stop.
 
 ## 2. The boundary
 
@@ -59,6 +70,18 @@ AGENTS.md
 .opencode/agents/*.md          # project search notes and models inside generic text
 switch_agent_model.py          # generic tool, project-owned AGENT_MODELS map
 ```
+
+**Outside the boundary: a project's own test root.** A project that copied
+`project_tests/persistent` into its own repository owns that copy. It sits outside the
+ship root, so the boundary does not reach it and neither direction touches it.
+
+- A new project copies the current template, so a fix made in `project_tests/` reaches
+  new projects with no extra step.
+- An existing project keeps the copy it made. Bring it forward by re-creating the root
+  from the template, or by applying the same fix by hand in that project's own repo.
+- When one defect exists in both places, publish the template fix first, then apply the
+  same edit to each older copy. That second edit is a normal commit in the project's own
+  repository, not a sync, and it does not move the marker.
 
 ## 3. Local exceptions
 
@@ -163,6 +186,10 @@ not a git repository, and it must not become one.
 ## 8. Rules
 
 - One direction per run. Publish and pull never share a run.
+- A defect fixed anywhere in the pack is published in the same run. A fix that stays in
+  one project's copy is invisible to every other project.
+- A file outside the ship root is not synced, even when the pack ships its template.
+  Fix the template, then fix each older copy in its own repository.
 - Keep the clone neutral. Before you push, confirm it holds no project path, name, or
   secret: `grep -rn "<the project root>" <clone>` must find nothing.
 - Never commit a project-owned file, and never edit one to make a diff disappear.
