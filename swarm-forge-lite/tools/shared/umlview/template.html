@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<script>
+/* Set the theme before the first paint, so the page never flashes the wrong palette. */
+(function () {
+  try {
+    var saved = localStorage.getItem("swarm-theme");
+    if (saved !== "dark" && saved !== "light") {
+      saved = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.className = saved;
+  } catch (e) {
+    /* Private mode blocks localStorage; the light default is fine. */
+  }
+})();
+</script>
+<!-- The page needs the network: Tailwind and jQuery are loaded from these two pinned URLs. -->
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+tailwind.config = { darkMode: "class" };
+</script>
+<style type="text/tailwindcss">
+  .btn { @apply rounded-md border border-slate-300 bg-slate-50 px-2 py-0.5 text-xs hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700; }
+  .btn.on { @apply border-blue-600 bg-blue-600 text-white; }
+  .sec > summary { @apply cursor-pointer text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400; }
+  .cls { cursor: pointer; }
+</style>
+</head>
+<body class="bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+<header class="sticky top-0 z-10 flex h-12 items-center gap-3 border-b border-slate-200 bg-white/95 px-4 dark:border-slate-700 dark:bg-slate-900/95">
+  <h1 class="m-0 truncate text-base font-semibold">__TITLE__</h1>
+  <span id="meta" class="shrink-0 text-xs text-slate-500 dark:text-slate-400"></span>
+  <span id="live" class="shrink-0 text-xs font-semibold text-blue-600 dark:text-blue-400"></span>
+  <span class="flex-1"></span>
+  <button id="btn-theme" class="btn">Dark</button>
+  <button id="btn-reload" class="btn">Reload</button>
+  <button id="btn-labels" class="btn">Labels</button>
+  <button id="btn-panel" class="btn on">Panel</button>
+</header>
+<main class="flex items-start">
+  <div id="wrap" class="relative h-[calc(100vh-3rem)] flex-1 overflow-hidden">
+    <svg id="canvas" class="block h-full w-full cursor-grab touch-none select-none active:cursor-grabbing"></svg>
+    <div id="tip" class="pointer-events-none absolute z-10 hidden max-w-sm rounded-lg border border-slate-300 bg-white/95 p-2 text-xs shadow-lg dark:border-slate-600 dark:bg-slate-800/95"></div>
+    <div class="absolute right-3 top-2.5 z-10 flex gap-1 rounded-lg border border-slate-200 bg-white/90 p-1 dark:border-slate-700 dark:bg-slate-900/90">
+      <button id="zin" class="btn" title="Zoom in">+</button>
+      <button id="zout" class="btn" title="Zoom out">&minus;</button>
+      <button id="zfit" class="btn" title="Fit (0)">Fit</button>
+    </div>
+    <div class="absolute bottom-2.5 left-3 z-10 rounded-md bg-white/85 px-2 py-0.5 text-[11.5px] text-slate-500 dark:bg-slate-900/80 dark:text-slate-400">drag to pan · wheel to zoom · click a class to focus it · click empty space for the entity list · hover for its secret</div>
+    <div id="zoomval" class="absolute bottom-2.5 right-3 z-10 rounded-md bg-white/85 px-2 py-0.5 text-[11.5px] text-slate-500 dark:bg-slate-900/80 dark:text-slate-400"></div>
+  </div>
+  <aside class="sticky top-12 h-[calc(100vh-3rem)] w-[46%] max-w-[60vw] shrink-0 overflow-auto border-l border-slate-200 px-4 py-3 dark:border-slate-700">
+    <details open class="sec mb-3"><summary>Findings</summary><div id="diag" class="mt-2"></div></details>
+    <details open class="sec mb-3"><summary>Secrets</summary><ul id="secrets" class="mt-2"></ul></details>
+    <details open class="sec mb-3"><summary>Signatures &amp; metrics</summary><div id="detail" class="mt-2 text-[12.5px]">All entities — click one to focus its box.</div></details>
+    <details class="sec mb-3"><summary>Legend</summary>
+      <div class="mt-2 grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-1 text-xs">
+        <span class="inline-block h-3 w-3.5 rounded-sm border border-slate-300 bg-green-50 dark:bg-green-950"></span><span>functional core</span>
+        <span class="inline-block h-3 w-3.5 rounded-sm border border-slate-300 bg-amber-50 dark:bg-amber-950"></span><span>imperative shell</span>
+        <span class="inline-block h-3 w-3.5 rounded-sm border border-slate-300 bg-blue-50 dark:bg-blue-950"></span><span>interface</span>
+        <span class="text-slate-500">⟶</span><span>association — a plain uses / reference edge (solid)</span>
+        <span class="text-slate-500">⇢</span><span>dependency — the source depends on the target (dashed)</span>
+        <span class="font-bold text-red-600">⇢</span><span>violation — a dependency running inner → outer (red)</span>
+        <span>▷</span><span>implements / inheritance · ◇ ◆ aggregation / composition</span>
+        <span>[C] [Q]</span><span>command / query</span>
+        <span class="font-semibold text-green-700 dark:text-green-400">≤8</span><span>good CRAP risk (μ+σ)</span>
+        <span class="font-semibold text-amber-600 dark:text-amber-400">≤12</span><span>watch</span>
+        <span class="font-semibold text-red-600 dark:text-red-400">&gt;12</span><span>red — the grade falls 10 → 5.5 → 1 over the stops 8 / 12 / 20 (missing counts as 1)</span>
+        <span class="text-slate-500">CRAP</span><span>CC²·(1−cov)³ + CC · the box prints the pooled risk and its grade</span>
+      </div>
+    </details>
+  </aside>
+</main>
+<script>__DAGRE__</script>
+<script>
+"use strict";
+
+const MODEL = __MODEL_JSON__;
+const DIAGS = __FINDINGS_JSON__;
+const $canvas = $("#canvas");
+
+/* The renderer already pooled and graded every module; the template only draws. */
+const CLASSES = {};
+(MODEL.components || []).forEach(component => (component.classes || []).forEach(cls => {
+  CLASSES[cls.id] = Object.assign({}, cls, { component: component.id });
+}));
+
+const BAND_FILL = {
+  green: "fill-green-700 dark:fill-green-400",
+  yellow: "fill-amber-600 dark:fill-amber-400",
+  red: "fill-red-600 font-bold dark:fill-red-400",
+};
+const BAND_TEXT = {
+  green: "text-green-700 dark:text-green-400",
+  yellow: "text-amber-600 dark:text-amber-400",
+  red: "text-red-600 font-bold dark:text-red-400",
+};
+const MEMBER_FILL = {
+  cmd: "fill-orange-700 dark:fill-orange-300",
+  qry: "fill-blue-800 dark:fill-blue-300",
+  flag: "fill-amber-700 dark:fill-amber-300",
+  "": "fill-slate-700 dark:fill-slate-300",
+};
+const STEREOTYPE_FILL = {
+  interface: "fill-blue-50 dark:fill-blue-950",
+  enum: "fill-purple-50 dark:fill-purple-950",
+  abstract: "fill-slate-100 dark:fill-slate-800",
+};
+/* kind -> [marker, extra stroke attributes] */
+const EDGE_STYLE = {
+  inheritance: ["tri", ""],
+  implements: ["tri", ""],
+  aggregation: ["dia", ""],
+  composition: ["dif", ""],
+  dependency: ["arw", ' stroke-dasharray="6 4"'],
+};
+const MARKER_SHAPE = {
+  tri: "M0,0 L9,4 L0,8 z",
+  arw: "M0,0 L9,4 L0,8",
+  dia: "M0,4 L5,0 L10,4 L5,8 z",
+  dif: "M0,4 L5,0 L10,4 L5,8 z",
+};
+const bandFill = band => BAND_FILL[band] || "fill-slate-400";
+const bandText = band => BAND_TEXT[band] || "";
+const memberFill = kind => MEMBER_FILL[kind] || MEMBER_FILL[""];
+/* The class grade lives in its own footer band, below the last op row, so the
+   grade never shares the row's baseline or its CRAP label's anchor. */
+const FOOTER_H = 18;
+
+const esc = value => String(value == null ? "" : value).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+const fmt1 = value => (Math.round(value * 10) / 10).toFixed(1);
+const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
+const ann = node => (node && node.annotations) || {};
+const clip = (text, limit) => (text.length > limit ? text.slice(0, limit - 1) + "\u2026" : text);
+const maxCrap = cls => (cls.ops || []).reduce((worst, op) => {
+  const crap = (op.metrics || {}).crap;
+  return typeof crap === "number" ? Math.max(worst, crap) : worst;
+}, null);
+
+function fillFor(cls) {
+  if (STEREOTYPE_FILL[cls.stereotype]) {
+    return STEREOTYPE_FILL[cls.stereotype];
+  }
+  const core = ann(cls).core;
+  if (core === true) {
+    return "fill-green-50 dark:fill-green-950";
+  }
+  if (core === false) {
+    return "fill-amber-50 dark:fill-amber-950";
+  }
+  return "fill-slate-50 dark:fill-slate-900";
+}
+function markerFill(name, bad) {
+  if (name === "arw") {
+    return "fill-none";
+  }
+  if (name === "dif") {
+    return bad ? "fill-red-600 dark:fill-red-400" : "fill-slate-500 dark:fill-slate-400";
+  }
+  return "fill-white dark:fill-slate-950";
+}
+function markerDefs() {
+  const strokes = { g: "stroke-slate-500 dark:stroke-slate-400", r: "stroke-red-600 dark:stroke-red-400" };
+  return Object.entries(strokes).map(([suffix, stroke]) => Object.entries(MARKER_SHAPE).map(([name, path]) =>
+    `<marker id="${name}-${suffix}" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="11" markerHeight="9" orient="auto-start-reverse">`
+    + `<path d="${path}" class="${markerFill(name, suffix === "r")} ${stroke}"/></marker>`).join("")).join("");
+}
+
+/* The rows of one class box: a field row, or an op row with its CRAP band. */
+
+/* A member is a plain string, a live `text` line (the source as written), or an
+   authored `name` and `type`. A row must never print the missing half. */
+function memberText(member) {
+  if (typeof member === "string") {
+    return member;
+  }
+  if (member.name) {
+    return `${member.name}${member.type ? ": " + member.type : ""}`;
+  }
+  return member.text || "";
+}
+
+function classLines(cls) {
+  const note = cls.stereotype === "interface" ? "\u00abinterface\u00bb"
+    : cls.stereotype === "abstract" ? "{abstract}"
+      : cls.stereotype === "enum" ? "\u00abenumeration\u00bb" : "";
+  const visibility = member => (ann(member).visibility === "private" ? "-" : ann(member).visibility === "protected" ? "#" : "+");
+  const rows = (cls.fields || []).map(field => ({
+    text: `${visibility(field)} ${memberText(field)}`,
+    kind: "",
+    crap: null,
+    band: null,
+  }));
+  (cls.ops || []).forEach(op => {
+    const cqs = ann(op).cqs;
+    const args = (op.args || []).map(arg => (typeof arg === "string" ? arg : arg.name + (arg.type ? ": " + arg.type : ""))).join(", ");
+    const tag = cqs === "command" ? " [C]" : cqs === "query" ? " [Q]" : " [ ]";
+    const crap = (op.metrics || {}).crap;
+    rows.push({
+      text: `${visibility(op)} ${op.name}(${args})${op.returns ? ": " + op.returns : ""}${tag}`,
+      kind: cqs === "command" ? "cmd" : cqs === "query" ? "qry" : "flag",
+      crap: typeof crap === "number" ? crap : null,
+      band: op.band || null,
+    });
+  });
+  return { note, rows: cls.hide_members ? [] : rows };
+}
+
+const violators = new Set();
+DIAGS.forEach(diag => {
+  if (diag.code === "dep-rule" && diag.ids && diag.ids.length === 2) {
+    violators.add(`${diag.ids[0]}|${diag.ids[1]}`);
+  }
+});
+
+let zoomG = null;
+let bounds = { w: 800, h: 600 };
+let userMoved = false;
+const view = { k: 1, x: 0, y: 0 };
+/* Where dagre placed each class box, kept so a selection can focus it. */
+const LAYOUT = {};
+
+function nodeSvg(cls, box, pos) {
+  const x = pos.x - box.w / 2;
+  const y = pos.y - box.h / 2;
+  const rows = box.rows.map((row, index) => {
+    const baseline = y + 30 + 16 * (index + 1) + 3;
+    const reserve = row.crap !== null ? 64 : 0;
+    const chars = Math.max(8, Math.floor((box.w - reserve - 16) / 7.35));
+    const crap = row.crap === null ? "" : `<text class="mem ${bandFill(row.band)} text-[9.5px]" x="${x + box.w - 8}" y="${baseline}" text-anchor="end">crap ${fmt1(row.crap)}</text>`;
+    return `<text class="mem ${memberFill(row.kind)} text-[11.5px] font-mono" x="${x + 8}" y="${baseline}">${esc(clip(row.text, chars))}</text>${crap}`;
+  }).join("");
+  const note = box.note ? `<text class="fill-slate-500 dark:fill-slate-400 text-[10.5px] italic" x="${pos.x}" y="${y + 12}" text-anchor="middle">${esc(box.note)}</text>` : "";
+  const name = `<text class="fill-slate-900 dark:fill-slate-100 text-[12.5px] font-semibold font-mono" x="${pos.x}" y="${y + 23}" text-anchor="middle">${esc(cls.name || cls.id)}</text>`;
+  const tag = "core" in ann(cls) ? `<text class="fill-slate-400 text-[9.5px] uppercase tracking-wide" x="${x + box.w - 8}" y="${y + 23}" text-anchor="end">${ann(cls).core ? "core" : "shell"}</text>` : "";
+  const divider = box.rows.length ? `<line class="stroke-slate-300 dark:stroke-slate-600" x1="${x}" y1="${y + 30}" x2="${x + box.w}" y2="${y + 30}"/>` : "";
+  const footerTop = y + 30 + box.rows.length * 16 + 8;
+  const footerLine = cls.crap ? `<line class="stroke-slate-200 dark:stroke-slate-700" x1="${x}" y1="${footerTop}" x2="${x + box.w}" y2="${footerTop}"/>` : "";
+  const grade = cls.crap ? `<text class="${bandFill(cls.band)} text-[10px] font-semibold" x="${x + box.w - 8}" y="${y + box.h - 6}" text-anchor="end">CRAP ${fmt1(cls.risk)} · ${fmt1(cls.grade)}</text>` : "";
+  return `<g class="cls" data-id="${esc(cls.id)}">`
+    + `<rect class="${fillFor(cls)} stroke-slate-400 dark:stroke-slate-500" x="${x}" y="${y}" width="${box.w}" height="${box.h}" rx="6" stroke-width="1.4"/>`
+    + note + name + tag + divider + footerLine + rows + grade
+    + `</g>`;
+}
+
+function clusterSvg(component, node) {
+  const x = node.x - node.width / 2;
+  const y = node.y - node.height / 2;
+  /* The pooled result of the package is drawn beside its label. */
+  const grade = component.crap ? ` · <tspan class="${bandFill(component.band)}">${fmt1(component.risk)} → ${fmt1(component.grade)}</tspan>` : "";
+  return `<rect class="fill-slate-50 stroke-slate-300 dark:fill-slate-900 dark:stroke-slate-700" x="${x}" y="${y}" width="${node.width}" height="${node.height}" rx="10" stroke-dasharray="4 3"/>`
+    + `<text class="fill-slate-500 dark:fill-slate-400 text-[12px] font-semibold" x="${x + 10}" y="${y + 16}">${esc(component.label || component.id)}${grade}</text>`;
+}
+
+function edgeSvg(edge, points) {
+  const bad = edge.violating === true || violators.has(`${edge.from}|${edge.to}`);
+  const [marker, dash] = EDGE_STYLE[edge.kind] || ["arw", ""];
+  const stroke = bad ? "stroke-red-600 dark:stroke-red-400" : "stroke-slate-500 dark:stroke-slate-400";
+  const width = bad ? 2.6 : 1.6;
+  const label = edge.label ? "  " + edge.label : "";
+  const title = `${edge.from} -${edge.kind}-> ${edge.to}${label}`;
+  return `<path class="edge ${stroke}" data-from="${esc(edge.from)}" data-to="${esc(edge.to)}" d="${points}" fill="none" stroke-width="${width}"${dash} marker-end="url(#${marker}-${bad ? "r" : "g"})"><title>${esc(title)}</title></path>`;
+}
+
+function draw() {
+  if (typeof dagre === "undefined") {
+    $("#wrap").html('<p class="p-4 text-red-600">dagre did not load; the vendor bundle is missing.</p>');
+    return;
+  }
+  const graph = new dagre.graphlib.Graph({ compound: true, multigraph: true });
+  graph.setGraph({ rankdir: "TB", nodesep: 30, ranksep: 64, marginx: 24, marginy: 24, edgesep: 14 });
+  graph.setDefaultEdgeLabel(() => ({}));
+
+  /* Size every class box from its widest row, then let dagre place the graph. */
+  const boxes = {};
+  (MODEL.components || []).forEach(component => {
+    graph.setNode("C:" + component.id, {});
+    (component.classes || []).forEach(cls => {
+      const box = classLines(cls);
+      const widest = Math.max(cls.name.length, box.note.length, ...box.rows.map(row => row.text.length + (row.crap !== null ? 10 : 0)), 8);
+      box.w = clamp(widest * 7.35 + 18, 190, 620);
+      box.h = 30 + box.rows.length * 16 + 8 + (cls.crap ? FOOTER_H : 0);
+      boxes[cls.id] = box;
+      graph.setNode(cls.id, { width: box.w, height: box.h });
+      graph.setParent(cls.id, "C:" + component.id);
+    });
+  });
+  (MODEL.edges || []).forEach(edge => {
+    if (CLASSES[edge.from] && CLASSES[edge.to] && graph.hasNode(edge.from) && graph.hasNode(edge.to) && edge.from !== edge.to) {
+      graph.setEdge(edge.from, edge.to, {}, `${edge.from}->${edge.to}#${edge.kind}`);
+    }
+  });
+  dagre.layout(graph);
+  bounds = { w: graph.graph().width + 24, h: graph.graph().height + 24 };
+  Object.keys(CLASSES).forEach(id => {
+    const pos = graph.node(id);
+    if (pos) {
+      LAYOUT[id] = { cx: pos.x, cy: pos.y, w: boxes[id].w, h: boxes[id].h };
+    }
+  });
+
+  const clusters = (MODEL.components || []).map(component => {
+    const node = graph.node("C:" + component.id);
+    return node ? clusterSvg(component, node) : "";
+  }).join("");
+  const edges = (MODEL.edges || []).map(edge => {
+    const route = graph.edge(edge.from, edge.to, `${edge.from}->${edge.to}#${edge.kind}`);
+    if (!route) {
+      return "";
+    }
+    const points = route.points.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
+    return edgeSvg(edge, points);
+  }).join("");
+  const nodes = Object.keys(CLASSES).map(id => {
+    const pos = graph.node(id);
+    return pos ? nodeSvg(CLASSES[id], boxes[id], pos) : "";
+  }).join("");
+
+  /* innerHTML on the <svg> element parses the markup in the SVG namespace. */
+  $canvas[0].innerHTML = markerDefs() + `<g id="zoom">${clusters}${edges}${nodes}</g>`;
+  zoomG = document.getElementById("zoom");
+  applyView();
+}
+
+/* ---- pan and zoom ---- */
+function applyView() {
+  if (!zoomG) {
+    return;
+  }
+  zoomG.setAttribute("transform", `translate(${view.x.toFixed(2)},${view.y.toFixed(2)}) scale(${view.k.toFixed(4)})`);
+  $("#zoomval").text(Math.round(view.k * 100) + "%");
+}
+function fit() {
+  const rect = $canvas[0].getBoundingClientRect();
+  view.k = clamp(Math.min((rect.width - 24) / bounds.w, (rect.height - 24) / bounds.h), 0.1, 4);
+  view.x = (rect.width - bounds.w * view.k) / 2;
+  view.y = (rect.height - bounds.h * view.k) / 2;
+  applyView();
+}
+function zoomAt(clientX, clientY, factor) {
+  userMoved = true;
+  const rect = $canvas[0].getBoundingClientRect();
+  const px = clientX - rect.left;
+  const py = clientY - rect.top;
+  const next = clamp(view.k * factor, 0.1, 4);
+  view.x = px - (px - view.x) * (next / view.k);
+  view.y = py - (py - view.y) * (next / view.k);
+  view.k = next;
+  applyView();
+}
+function zoomBy(factor) {
+  const rect = $canvas[0].getBoundingClientRect();
+  zoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, factor);
+}
+
+let suppressClick = false;
+function wirePanZoom() {
+  $canvas.on("wheel", event => {
+    event.preventDefault();
+    zoomAt(event.clientX, event.clientY, event.originalEvent.deltaY < 0 ? 1.12 : 1 / 1.12);
+  });
+  let drag = null;
+  $canvas.on("pointerdown", event => {
+    suppressClick = false;
+    drag = { x: event.clientX, y: event.clientY, vx: view.x, vy: view.y, moved: false, id: event.originalEvent.pointerId, el: event.currentTarget };
+    try {
+      drag.el.setPointerCapture(drag.id);
+    } catch (e) {
+      /* A lost capture still pans through the pointermove handler. */
+    }
+  });
+  $canvas.on("pointermove", event => {
+    if (!drag) {
+      return;
+    }
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+    if (Math.abs(dx) + Math.abs(dy) > 3) {
+      drag.moved = true;
+      userMoved = true;
+    }
+    view.x = drag.vx + dx;
+    view.y = drag.vy + dy;
+    applyView();
+  });
+  $canvas.on("pointerup pointercancel", () => {
+    if (!drag) {
+      return;
+    }
+    /* A pointer capture can retarget the click to the canvas, so the click is gated here. */
+    suppressClick = drag.moved;
+    try {
+      drag.el.releasePointerCapture(drag.id);
+    } catch (e) {
+      /* The pointer is already gone; nothing to release. */
+    }
+    drag = null;
+  });
+  $canvas.on("click", event => {
+    if (suppressClick) {
+      return;
+    }
+    const cls = $(event.target).closest(".cls")[0];
+    if (cls && cls.dataset.id) {
+      select(cls.dataset.id);
+      return;
+    }
+    if (!$(event.target).closest(".edge")[0]) {
+      deselect();
+    }
+  });
+  $(window).on("keydown", event => {
+    if (/INPUT|TEXTAREA/.test(event.target.tagName || "")) {
+      return;
+    }
+    if (event.key === "+" || event.key === "=") {
+      zoomBy(1.2);
+    } else if (event.key === "-" || event.key === "_") {
+      zoomBy(1 / 1.2);
+    } else if (event.key === "0") {
+      view.k = 1;
+      applyView();
+    } else if (event.key === "f" || event.key === "F") {
+      fit();
+    }
+  });
+}
+
+/* ---- highlight, tooltip, panel ---- */
+function highlight(ids) {
+  $canvas.find(".cls, .edge").addClass("opacity-10").removeClass("opacity-100 stroke-[3px]");
+  if (!ids.length) {
+    return;
+  }
+  $canvas.find(".cls, .edge").each(function () {
+    const data = this.dataset;
+    if (ids.includes(data.id) || ids.includes(data.from) || ids.includes(data.to)) {
+      $(this).removeClass("opacity-10").addClass("opacity-100");
+      if (this.classList.contains("edge")) {
+        $(this).addClass("stroke-[3px]");
+      }
+    }
+  });
+}
+const clearHighlight = () => $canvas.find(".opacity-10, .opacity-100").removeClass("opacity-10 opacity-100 stroke-[3px]");
+
+function hoverHtml(cls) {
+  const a = ann(cls);
+  const bits = [];
+  if (a.core === true) {
+    bits.push("core");
+  } else if (a.core === false) {
+    bits.push("shell");
+  }
+  if (cls.stereotype) {
+    bits.push(cls.stereotype);
+  }
+  if (cls.live && cls.live.source) {
+    bits.push(cls.live.source);
+  }
+  const worst = maxCrap(cls);
+  if (worst !== null) {
+    bits.push("max CRAP " + fmt1(worst));
+  }
+  if (cls.crap) {
+    bits.push(`risk ${fmt1(cls.risk)} · grade ${fmt1(cls.grade)}`);
+  }
+  return `<h4 class="m-0 mb-1 font-mono text-xs font-semibold">${esc(cls.name || cls.id)}</h4>`
+    + (bits.length ? `<div class="text-slate-500 dark:text-slate-400">${esc(bits.join(" · "))}</div>` : "")
+    + (a.responsibility ? `<div>${esc(a.responsibility)}</div>` : "")
+    + (a.secret ? `<div class="mt-1"><span class="text-slate-500">secret:</span> ${esc(a.secret)}</div>` : "");
+}
+function showTip(clientX, clientY, html) {
+  const rect = document.getElementById("wrap").getBoundingClientRect();
+  const $tip = $("#tip").html(html).removeClass("hidden");
+  let left = clientX - rect.left + 16;
+  let top = clientY - rect.top + 16;
+  if (left + $tip.outerWidth() > rect.width) {
+    left = clientX - rect.left - $tip.outerWidth() - 16;
+  }
+  if (top + $tip.outerHeight() > rect.height) {
+    top = clientY - rect.top - $tip.outerHeight() - 16;
+  }
+  $tip.css({ left: Math.max(4, left) + "px", top: Math.max(4, top) + "px" });
+}
+
+const argText = arg => (typeof arg === "string" ? arg : arg.name + (arg.type ? ": " + arg.type : ""));
+const sigOf = op => `${op.name}(${(op.args || []).map(argText).join(", ")})${op.returns ? ": " + op.returns : ""}`;
+const CELL = "border-b border-slate-100 px-1.5 py-1 dark:border-slate-800";
+const TABLE_HEAD = "sticky top-0 border-b border-slate-200 bg-white px-1.5 py-1 text-left text-[10.5px] font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-400";
+const PANEL_HEAD = "mt-2 text-[10.5px] font-semibold uppercase tracking-wide text-slate-500";
+
+function detail(id) {
+  const cls = CLASSES[id];
+  if (!cls) {
+    return;
+  }
+  const a = ann(cls);
+  const edges = (MODEL.edges || []).filter(edge => edge.from === id || edge.to === id);
+  const ops = cls.ops || [];
+  let out = '<div class="mb-2"><a href="#" class="back text-[11.5px] text-blue-600 dark:text-blue-400">&larr; all entities</a></div>';
+  out += `<div><b>${esc(cls.name || id)}</b>`
+    + (cls.stereotype ? ` <span class="text-slate-500">«${esc(cls.stereotype)}»</span>` : "")
+    + (a.core === true || a.core === false ? ` <span class="text-slate-500">· ${a.core ? "core" : "shell"}</span>` : "")
+    + (cls.crap ? ` <span class="${bandText(cls.band)}">· risk ${fmt1(cls.risk)} · grade ${fmt1(cls.grade)}</span>` : "")
+    + `</div>`;
+  if (a.responsibility) {
+    out += `<div>${esc(a.responsibility)}</div>`;
+  }
+  if (cls.live && cls.live.source) {
+    out += `<div class="text-slate-500">source: ${esc(cls.live.source)}</div>`;
+  } else if (cls.live && cls.live.status === "missing") {
+    out += '<div class="text-red-600">not found in source</div>';
+  }
+  if (edges.length) {
+    out += `<h2 class="${PANEL_HEAD}">Edges</h2>`;
+    out += edges.map(edge => `<div class="text-slate-500">${esc(edge.from)}${edge.from === id ? " → " : " ← "}${esc(edge.to)}  ${esc(edge.kind)}</div>`).join("");
+  }
+  out += `<h2 class="${PANEL_HEAD}">Methods</h2>`;
+  if (!ops.length) {
+    out += '<div class="text-slate-500">No methods declared — nothing to measure.</div>';
+  } else {
+    const columns = ["method", "CQ", "CRAP", "Cov", "CC", "live"];
+    out += `<table class="w-full border-collapse text-xs"><thead><tr>${columns.map(title => `<th class="${TABLE_HEAD}">${title}</th>`).join("")}</tr></thead><tbody>`;
+    ops.forEach(op => {
+      const oa = ann(op);
+      const metrics = op.metrics || {};
+      const live = op.live || {};
+      const cq = oa.cqs === "command" ? "C" : oa.cqs === "query" ? "Q" : "?";
+      const crap = typeof metrics.crap === "number" ? fmt1(metrics.crap) : "—";
+      const coverage = typeof metrics.coverage === "number" ? Math.round(metrics.coverage * 100) + "%" : "—";
+      const cc = typeof metrics.cc === "number" ? metrics.cc : "—";
+      out += `<tr${op.code ? ' class="mth cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" title="Show code"' : ""}>`
+        + `<td class="${CELL} font-mono">${op.code ? "▸ " : ""}${esc(sigOf(op))}</td>`
+        + `<td class="${CELL}">${cq}</td>`
+        + `<td class="${CELL} ${bandText(op.band)}">${crap}</td>`
+        + `<td class="${CELL}">${coverage}</td>`
+        + `<td class="${CELL}">${cc}</td>`
+        + `<td class="${CELL} text-slate-500">${esc(live.status || "")}</td>`
+        + `</tr>`;
+      const notes = [
+        oa.pre && "pre: " + esc(oa.pre),
+        oa.post && "post: " + esc(oa.post),
+        oa.invariant && "inv: " + esc(oa.invariant),
+        live.status === "new" && "+ new in implementation",
+        live.status === "missing" && "- not in implementation",
+      ].filter(Boolean);
+      if (op.code) {
+        out += `<tr class="code hidden"><td colspan="6" class="px-1.5 pb-2"><pre class="overflow-auto rounded-md border border-slate-200 bg-slate-50 p-2 font-mono text-[11.5px] dark:border-slate-700 dark:bg-slate-800">${esc(op.code)}</pre></td></tr>`;
+      }
+      if (notes.length) {
+        out += `<tr class="text-[11.5px] text-slate-500"><td colspan="6" class="${CELL}">${notes.map(note => `<div>${note}</div>`).join("")}</td></tr>`;
+      }
+    });
+    out += "</tbody></table>";
+  }
+  $("#detail").html(out);
+  highlight([id]);
+}
+
+/* ---- the selection: the canvas focus and the panel ---- */
+function entityDescription(cls) {
+  const a = ann(cls);
+  return a.responsibility || a.secret || cls.stereotype || "";
+}
+
+/* The generic panel: every entity, its description, one clickable row each. */
+function entityList() {
+  const rows = [];
+  (MODEL.components || []).forEach(component => {
+    (component.classes || []).forEach(cls => {
+      rows.push(`<li class="entity mb-1 cursor-pointer rounded-md px-2 py-1 text-xs hover:bg-slate-100 dark:hover:bg-slate-800" data-id="${esc(cls.id)}"><b>${esc(cls.name || cls.id)}</b> <span class="text-slate-500">— ${esc(entityDescription(cls))}</span></li>`);
+    });
+  });
+  return `<p class="text-[11.5px] text-slate-500">All entities — click one to focus its box.</p><ul class="mt-2">${rows.join("")}</ul>`;
+}
+
+/* Highlight the entity, center its box, and show its detail in the panel. */
+function select(id) {
+  const box = LAYOUT[id];
+  if (!CLASSES[id] || !box) {
+    return;
+  }
+  const rect = $canvas[0].getBoundingClientRect();
+  const k = clamp(Math.min(rect.width * 0.5 / box.w, rect.height * 0.5 / box.h), 0.6, 2.0);
+  view.k = k;
+  view.x = rect.width / 2 - box.cx * k;
+  view.y = rect.height / 2 - box.cy * k;
+  userMoved = true;
+  applyView();
+  detail(id);
+}
+
+/* Drop the selection: no highlight, no tooltip, the generic panel back. */
+function deselect() {
+  clearHighlight();
+  $("#tip").addClass("hidden");
+  $("#detail").html(entityList());
+}
+
+/* ---- fill the header and the panels ---- */
+const classes = Object.keys(CLASSES).map(id => CLASSES[id]);
+const counts = { error: 0, warn: 0, info: 0 };
+DIAGS.forEach(diag => {
+  counts[diag.sev] = (counts[diag.sev] || 0) + 1;
+});
+const coreN = classes.filter(cls => ann(cls).core === true).length;
+const shellN = classes.filter(cls => ann(cls).core === false).length;
+const secretN = classes.filter(cls => ann(cls).secret).length;
+let measuredN = 0;
+let aboveN = 0;
+classes.forEach(cls => (cls.ops || []).forEach(op => {
+  const crap = (op.metrics || {}).crap;
+  if (typeof crap === "number") {
+    measuredN += 1;
+    if (crap > 8) {
+      aboveN += 1;
+    }
+  }
+}));
+const measured = measuredN ? ` · ${measuredN} measured · ${aboveN} above the green stop 8` : "";
+$("#meta").text(`${classes.length} classes · ${(MODEL.edges || []).length} edges · ${coreN} core · ${shellN} shell · ${secretN} secrets · ${counts.error} violations · ${counts.warn} warnings${measured}`);
+if (MODEL.live) {
+  const source = MODEL.live.source_root || "the source";
+  const report = MODEL.live.crap ? " and " + MODEL.live.crap : "";
+  $("#live").text("LIVE · source-synced").attr("title", `Signatures and metrics overlaid from ${source}${report}`);
+}
+$("#diag").html(DIAGS.length
+  ? "<ul>" + DIAGS.map(diag => `<li class="mb-1 cursor-pointer rounded-md border-l-4 px-2 py-1 text-xs ${diag.sev === "error" ? "border-red-500 bg-red-50 dark:bg-red-950/40" : diag.sev === "warn" ? "border-amber-500 bg-amber-50 dark:bg-amber-950/40" : "border-slate-400"}" data-ids="${esc((diag.ids || []).join(","))}"><span class="mr-1 font-mono text-[11px] text-slate-500">${esc(diag.code)}</span>${esc(diag.msg)}</li>`).join("") + "</ul>"
+  : '<p class="text-green-700 dark:text-green-400">No findings.</p>');
+const secrets = classes.filter(cls => ann(cls).secret);
+$("#secrets").html(secrets.length
+  ? secrets.map(cls => `<li class="mb-1 cursor-pointer rounded-md px-2 py-1 text-xs hover:bg-slate-100 dark:hover:bg-slate-800" data-id="${esc(cls.id)}"><b>${esc(cls.name || cls.id)}</b> — ${esc(ann(cls).secret)}</li>`).join("")
+  : '<li class="text-xs text-slate-500">No secrets declared.</li>');
+
+$("#diag").on("mouseenter", "li", function () {
+  highlight(String($(this).data("ids") || "").split(",").filter(Boolean));
+}).on("mouseleave", "li", clearHighlight);
+$("#secrets").on("mouseenter", "li", function () {
+  if (this.dataset.id) {
+    highlight([this.dataset.id]);
+  }
+}).on("mouseleave", "li", clearHighlight);
+$canvas.on("mouseenter mousemove", ".cls", function (event) {
+  highlight([this.dataset.id]);
+  showTip(event.clientX, event.clientY, hoverHtml(CLASSES[this.dataset.id] || {}));
+}).on("mouseleave", ".cls", function () {
+  clearHighlight();
+  $("#tip").addClass("hidden");
+});
+$("#detail").on("click", "tr.mth", function () {
+  const code = $(this).next("tr.code").toggleClass("hidden");
+  const head = $(this).find("td").first();
+  head.text(`${code.hasClass("hidden") ? "▸" : "▾"} ${head.text().slice(2)}`);
+});
+$("#detail").on("click", ".entity", function () {
+  select(this.dataset.id);
+});
+$("#detail").on("click", ".back", event => {
+  event.preventDefault();
+  deselect();
+});
+$("#zin").on("click", () => zoomBy(1.2));
+$("#zout").on("click", () => zoomBy(1 / 1.2));
+$("#zfit").on("click", fit);
+$("#btn-reload").on("click", () => location.reload());
+$("#btn-labels").on("click", function () {
+  const hidden = $(this).toggleClass("on").hasClass("on");
+  $canvas.find(".mem").toggleClass("hidden", hidden);
+});
+$("#btn-panel").on("click", function () {
+  const hidden = $("aside").toggleClass("hidden").hasClass("hidden");
+  $(this).toggleClass("on", !hidden);
+  setTimeout(() => (userMoved ? applyView() : fit()), 0);
+});
+$("#btn-theme").on("click", function () {
+  const dark = !document.documentElement.classList.contains("dark");
+  document.documentElement.classList.toggle("dark", dark);
+  try {
+    localStorage.setItem("swarm-theme", dark ? "dark" : "light");
+  } catch (e) {
+    /* Private mode blocks localStorage; the toggle still works for this page. */
+  }
+  $(this).text(dark ? "Light" : "Dark");
+});
+if (window.parent !== window) {
+  /* Embedded in a parent page: the parent owns the toggle and posts the theme. */
+  $("#btn-theme").addClass("hidden");
+}
+window.addEventListener("message", event => {
+  if (event.data && event.data.type === "swarm-theme") {
+    document.documentElement.classList.toggle("dark", event.data.theme === "dark");
+  }
+});
+$(window).on("resize", () => (userMoved ? applyView() : fit()));
+
+$("#btn-theme").text(document.documentElement.classList.contains("dark") ? "Light" : "Dark");
+draw();
+fit();
+wirePanZoom();
+window.umlview = { select, deselect, view };
+deselect();
+</script>
+</body>
+</html>

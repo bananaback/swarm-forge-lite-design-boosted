@@ -1,0 +1,8 @@
+# The pack lints its own tools with this file. The rule set stays at ruff's
+# default. The ruff4py wrapper pins the cache under swarm-forge-lite/dump/.
+#
+# The vendored crapper and dryer trees are third-party code. They are copied
+# byte-identical from unclebob/crapper and unclebob/dryer, so the pack does not
+# restyle them here.
+extend-exclude = ["tools/refactorer/crapper", "tools/shared/dryer"]
+target-version = "py312"

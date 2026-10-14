@@ -1,0 +1,10 @@
+.swarmforge/
+dump/
+hot_tests/
+__pycache__/
+*.pyc
+.pytest_cache/
+.hypothesis/
+.coverage
+.ruff_cache/
+tmp/

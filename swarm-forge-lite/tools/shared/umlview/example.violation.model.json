@@ -1,0 +1,163 @@
+{
+  "title": "Violation demo \u2014 what the red means",
+  "task": "violation",
+  "levels": [
+    [
+      "domain"
+    ],
+    [
+      "application"
+    ],
+    [
+      "adapters"
+    ]
+  ],
+  "components": [
+    {
+      "id": "domain",
+      "label": "Domain (core)",
+      "classes": [
+        {
+          "id": "domain.price",
+          "name": "Price",
+          "stereotype": "class",
+          "ops": [
+            {
+              "name": "gross",
+              "args": [],
+              "returns": "int",
+              "annotations": {
+                "cqs": "query",
+                "pre": "none",
+                "post": "returns gross"
+              }
+            }
+          ],
+          "annotations": {
+            "core": true,
+            "secret": "the rounding rule",
+            "responsibility": "Compute a price."
+          }
+        },
+        {
+          "id": "domain.order",
+          "name": "Order",
+          "stereotype": "class",
+          "ops": [
+            {
+              "name": "total",
+              "args": [],
+              "returns": "int",
+              "annotations": {
+                "cqs": "query",
+                "pre": "none",
+                "post": "returns the total"
+              }
+            }
+          ],
+          "annotations": {
+            "core": true,
+            "secret": "the line-item order",
+            "responsibility": "Hold line items."
+          }
+        }
+      ]
+    },
+    {
+      "id": "adapters",
+      "label": "Adapters (shell)",
+      "classes": [
+        {
+          "id": "adapters.postgres",
+          "name": "PostgresRepo",
+          "stereotype": "class",
+          "ops": [
+            {
+              "name": "save",
+              "args": [
+                {
+                  "name": "o",
+                  "type": "Order"
+                }
+              ],
+              "returns": "None",
+              "annotations": {
+                "cqs": "command",
+                "pre": "o is valid",
+                "post": "o is stored"
+              }
+            }
+          ],
+          "annotations": {
+            "core": false,
+            "secret": "the SQL dialect",
+            "responsibility": "Persist orders."
+          }
+        },
+        {
+          "id": "adapters.smtp",
+          "name": "SmtpMailer",
+          "stereotype": "class",
+          "ops": [
+            {
+              "name": "send",
+              "args": [
+                {
+                  "name": "m",
+                  "type": "str"
+                }
+              ],
+              "returns": "None",
+              "annotations": {
+                "cqs": "command",
+                "pre": "m is text",
+                "post": "mail is queued"
+              }
+            }
+          ],
+          "annotations": {
+            "core": false,
+            "secret": "the SMTP library",
+            "responsibility": "Send mail."
+          }
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "domain.order",
+      "to": "domain.price",
+      "kind": "dependency"
+    },
+    {
+      "from": "domain.price",
+      "to": "adapters.postgres",
+      "kind": "dependency"
+    },
+    {
+      "from": "adapters.postgres",
+      "to": "domain.price",
+      "kind": "dependency"
+    },
+    {
+      "from": "domain.price",
+      "to": "adapters.smtp",
+      "kind": "association"
+    },
+    {
+      "from": "orphan",
+      "to": "domain.order",
+      "kind": "dependency"
+    }
+  ],
+  "states": [
+    {
+      "owner": "Order",
+      "from": "empty",
+      "event": "ship",
+      "to": "shipped",
+      "legal": false
+    }
+  ]
+}

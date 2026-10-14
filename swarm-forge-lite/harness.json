@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "workspace_root": "<PROJECT_ROOT>",
+  "state_root": ".swarmforge",
+  "artifacts_root": "dump",
+  "hot_tests": "hot_tests",
+  "persistent_tests": [
+    { "root": "project_tests/persistent", "kind": "project" }
+  ],
+  "source_roots": ["<PROJECT_ROOT>/src"],
+  "features": "project_tests/persistent/features",
+  "specs": "<PROJECT_ROOT>/docs/specs",
+  "roles": [
+    "orchestrator",
+    "specifier",
+    "interrogator",
+    "architect",
+    "designer",
+    "critic",
+    "coder",
+    "test-reviewer",
+    "refactorer",
+    "hotfixer"
+  ]
+}
