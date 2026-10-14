@@ -20,3 +20,7 @@ __pycache__/
 
 # OS noise
 .DS_Store
+
+# The sync marker and the local exception list: a synced project owns these.
+.harness-version
+.harness-local
