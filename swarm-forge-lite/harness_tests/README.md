@@ -7,8 +7,9 @@ area.
 
 ## Wiring
 
-Paths come from `swarm-forge-lite/harness.json` (nearest upward, or
-`SWARM_CONFIG` / `SWARM_PACK`). `swarm-forge-lite/tools/shared/harness.py status` prints the
+Paths come from the pack's `swarm-forge-lite/harness.json`, or from the config
+named by `SWARM_CONFIG`; a pack root other than the installed one is named by
+`SWARM_PACK`. There is no upward search. `swarm-forge-lite/tools/shared/harness.py status` prints the
 resolved paths; `swarm-forge-lite/tools/shared/harness.py config` prints them as JSON.
 
 ## Areas

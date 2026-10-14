@@ -6,9 +6,10 @@ import sys
 from pathlib import Path
 
 _ACCEPTANCE = Path(__file__).resolve().parent
-_PERSIST = _ACCEPTANCE.parent
-_PACK = _PERSIST.parents[1]
-sys.path.insert(0, str(_PACK / "tools" / "shared"))
+sys.path.insert(0, str(_ACCEPTANCE))
+
+_packroot = importlib.import_module("packroot")
+sys.path.insert(0, str(_packroot.tools_shared()))
 
 wiring = importlib.import_module("wiring")
 

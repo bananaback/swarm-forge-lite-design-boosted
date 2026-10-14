@@ -114,7 +114,7 @@ read / glob / grep / edit / write - read the record and write the feature.
 
 `question` - operator gate. The shell is available, but the `swarm.*` tools replace it for the tests and the lint. Send a shell command through the lane wrapper.
 
-Where this file names `gherkin-parser`, `ir-dry-checker`, or `harness.py <command>`, call the matching `swarm.*` tool in `execute`. Call form: `return JSON.parse(await tools.swarm.<tool>({subsystem: "<subsystem>", ...}));` - the tools return compact JSON. Run any command under the lane wrapper, `<pack>/tools/shared/lane <subsystem> <command>`: the wrapper sets `SWARM_TEST_DATA`, `PYTHONPATH` and the caches, so never set them by hand. Prefer the tool: it keeps the stdout out of your context.
+Where this file names `gherkin-parser`, `ir-dry-checker`, or `harness.py <command>`, call the matching `swarm.*` tool in `execute`. Call form: `return JSON.parse(await tools.swarm.<tool>({subsystem: "<subsystem>", ...}));` - the tools return compact JSON. Run any command under the lane wrapper, `<pack>/tools/shared/lane <subsystem> <command>`: the wrapper sets `SWARM_PACK`, `SWARM_TEST_DATA`, `TMPDIR`, the bytecode cache, the hypothesis store and the pytest cache, so never set them by hand. Prefer the tool: it keeps the stdout out of your context.
 </tools>
 
 <rules>

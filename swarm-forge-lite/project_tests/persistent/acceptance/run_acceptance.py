@@ -6,9 +6,10 @@ import sys
 from pathlib import Path
 
 _ACCEPTANCE = Path(__file__).resolve().parent
-_PERSIST = _ACCEPTANCE.parent
 sys.path.insert(0, str(_ACCEPTANCE))
-sys.path.insert(0, str(_PERSIST.parents[1] / "tools" / "shared"))
+
+_packroot = importlib.import_module("packroot")
+sys.path.insert(0, str(_packroot.tools_shared()))
 
 generator = importlib.import_module("generator")
 wiring = importlib.import_module("wiring")
@@ -27,6 +28,9 @@ def main(argv: list[str]) -> int:
     if missing:
         print("run_acceptance: missing " + ", ".join(missing), file=sys.stderr)
         return 2
+    if not features:
+        print(f"run_acceptance: no features under {resolved.features}")
+        return 0
     parser = resolved.pack_root / "tools" / "shared" / "gherkin-parser"
     dry_checker = resolved.pack_root / "tools" / "specifier" / "ir-dry-checker"
     output = resolved.hot_tests / "acceptance"
@@ -49,7 +53,7 @@ def main(argv: list[str]) -> int:
     env["PYTHONPATH"] = os.pathsep.join([*paths, env.get("PYTHONPATH", "")])
     print("=== run generated acceptance tests ===")
     return subprocess.call(
-        [sys.executable, "-m", "pytest", *tests, "-q", "-p", "no:cacheprovider"],
+        [sys.executable, "-m", "pytest", *tests, "-q"],
         cwd=resolved.hot_tests,
         env=env,
     )

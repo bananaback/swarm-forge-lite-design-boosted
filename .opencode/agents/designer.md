@@ -122,7 +122,7 @@ read / glob / grep / edit / write - read the accepted record and the source, and
 
 `question` - the operator gate for public-shape changes.
 
-Where this file names `harness.py <command>`, `pytest`, `crapper`, `dryer`, or `ruff4py`, call the matching `swarm.*` tool in `execute`. Call form: `return JSON.parse(await tools.swarm.<tool>({subsystem: "<subsystem>", ...}));` - the tools return compact JSON. Run any command under the lane wrapper, `<pack>/tools/shared/lane <subsystem> <command>`: the wrapper sets `SWARM_TEST_DATA`, `PYTHONPATH` and the caches, so never set them by hand. Prefer the tool: it keeps the stdout out of your context.
+Where this file names `harness.py <command>`, `pytest`, `crapper`, `dryer`, or `ruff4py`, call the matching `swarm.*` tool in `execute`. Call form: `return JSON.parse(await tools.swarm.<tool>({subsystem: "<subsystem>", ...}));` - the tools return compact JSON. Run any command under the lane wrapper, `<pack>/tools/shared/lane <subsystem> <command>`: the wrapper sets `SWARM_PACK`, `SWARM_TEST_DATA`, `TMPDIR`, the bytecode cache, the hypothesis store and the pytest cache, so never set them by hand. Prefer the tool: it keeps the stdout out of your context.
 </tools>
 
 <workflow>

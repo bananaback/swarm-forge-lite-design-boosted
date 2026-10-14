@@ -3,8 +3,11 @@ import sys
 from pathlib import Path
 
 _PERSIST = Path(__file__).resolve().parent
-_ENTRIES = (_PERSIST.parents[1] / "tools" / "shared", _PERSIST / "acceptance")
-for _entry in _ENTRIES:
+sys.path.insert(0, str(_PERSIST / "acceptance"))
+
+_packroot = importlib.import_module("packroot")
+
+for _entry in (_packroot.tools_shared(), _PERSIST / "acceptance"):
     if str(_entry) not in sys.path:
         sys.path.insert(0, str(_entry))
 

@@ -81,7 +81,7 @@ Code Mode tools (call inside `execute`; each returns compact JSON - parse with `
 - `swarm.docs()` -> the catalog of every tool.
 - `swarm.help({tool})` -> one tool's full help: params, return shape, and an example.
 
-Where the loop names `harness.py <command>`, call the matching `swarm.*` tool in `execute`: status -> `swarm.status({subsystem})`, envelope -> `swarm.envelope({role,subsystem})`, decisions -> `swarm.decisions({role,subsystem})`. Call form: `return JSON.parse(await tools.swarm.<tool>({subsystem: "<subsystem>", ...}));` - the tools return compact JSON. Run any command under the lane wrapper, `<pack>/tools/shared/lane <subsystem> <command>`: the wrapper sets `SWARM_TEST_DATA`, `PYTHONPATH` and the caches, so never set them by hand. Prefer the tool: it keeps the stdout out of your context.
+Where the loop names `harness.py <command>`, call the matching `swarm.*` tool in `execute`: status -> `swarm.status({subsystem})`, envelope -> `swarm.envelope({role,subsystem})`, decisions -> `swarm.decisions({role,subsystem})`. Call form: `return JSON.parse(await tools.swarm.<tool>({subsystem: "<subsystem>", ...}));` - the tools return compact JSON. Run any command under the lane wrapper, `<pack>/tools/shared/lane <subsystem> <command>`: the wrapper sets `SWARM_PACK`, `SWARM_TEST_DATA`, `TMPDIR`, the bytecode cache, the hypothesis store and the pytest cache, so never set them by hand. Prefer the tool: it keeps the stdout out of your context.
 </tools>
 
 <loop>

@@ -46,7 +46,7 @@ def main() -> int:
         )
     print("=== run generated acceptance tests ===")
     return subprocess.call(
-        [sys.executable, "-m", "pytest", str(output), "-q", "-p", "no:cacheprovider"],
+        [sys.executable, "-m", "pytest", str(output), "-q"],
         cwd=resolved.hot_tests,
     )
 

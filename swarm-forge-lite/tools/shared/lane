@@ -13,6 +13,8 @@ fi
 shift
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+pack_root="$(cd "$here/../.." && pwd)"
+export SWARM_PACK="${SWARM_PACK:-$pack_root}"
 export SWARM_LANE="$lane"
 config="$(python3 "$here/harness.py" config)" || exit 2
 artifacts="$(printf '%s' "$config" | python3 -c 'import json, sys; print(json.load(sys.stdin)["artifacts_root"])')"

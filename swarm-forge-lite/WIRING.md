@@ -11,6 +11,9 @@ CLIs and the project's tests.
 **One rule above all:** `harness.json` is the single source of truth. Every path
 a tool or role uses comes from it. Never hardcode a path anywhere else.
 
+What may be calibrated, and what must not change, is classified in `INSTALL.md`
+sections 2 and 3. This file is the field-by-field runbook for the calibratable part.
+
 ---
 
 ## The placeholder contract (read first)
@@ -46,7 +49,7 @@ An unknown token is an error too. Only the placeholders in the table are defined
 ## 0. TL;DR Agent Checklist
 
 1. Read the placeholder contract above. The shipped `harness.json` is unwired.
-2. Ask the operator the five questions in section 1, plus the project's `ENV`/`CONVENTIONS`, and write the latter into `<pack>/PROJECT.md`. Do not guess.
+2. Probe, then ask the five questions in section 1, plus the project's `ENV`/`CONVENTIONS`, and write the latter into `<pack>/PROJECT.md`. Do not guess.
 3. Resolve the pack and project to absolute paths; decide the relative paths you
    write (section 2, section 4).
 4. Edit `swarm-forge-lite/harness.json` (section 3, section 4): replace every
@@ -62,11 +65,24 @@ An unknown token is an error too. Only the placeholders in the table are defined
 
 ---
 
-## 1. Ask The Operator First
+## 1. Probe First, Then Ask
 
-Do not invent any of these. Use the `question` tool. Ask only when the choice is
-irreversible (path placement, overwriting an existing project root). Otherwise take
-the documented default, record it under `ASSUMPTIONS`, and continue.
+Probe the project before you ask anything. The probe answers most rows, and a
+probed answer beats a guessed one. Ask the operator only when the choice is
+irreversible (where the persistent root lives, overwriting an existing project
+root). Otherwise take the documented default, record it under `ASSUMPTIONS`, and
+continue.
+
+| Probe | Finds |
+|---|---|
+| `ls` the pack's parent, and ask which directory is the project | `workspace_root` |
+| `cat pyproject.toml setup.py setup.cfg` - look for `package-dir`, `packages`, `requires-python` | `source_roots`, the Python version |
+| `git ls-files '*.py' \| cut -d/ -f1-2 \| sort -u` | the source trees, and where the tests already sit |
+| `git ls-files 'pytest.ini' 'conftest.py' 'pyproject.toml'` | an existing persistent root to reuse |
+| `git ls-files '*.feature'` | `features` |
+| `git ls-files 'docs/**'` and any `NN-<subsystem>.md` | `specs` |
+
+Then ask only these:
 
 | Question | Why it matters | Default if the operator says "you decide" |
 |---|---|---|
@@ -74,7 +90,7 @@ the documented default, record it under `ASSUMPTIONS`, and continue.
 | Should the **persistent tests live in the pack or in the project**? | Sets `persistent_tests[].root` and `features`. | In the pack (keeps the project tree test-free). |
 | What is the **source root** (where the project's code lives)? | Becomes `source_roots`; quality tools scan it. | `<project>/src`. |
 | Where are the project's **existing tests/features**, if any? | Reuse them instead of scaffolding new ones. | None - scaffold under the chosen root. |
-| What **language/test runner** is the project? | section 5 templates assume Python/pytest. | The pack default (Python). |
+| Where are the **requirements written** (the specs root)? | Becomes `specs`; the interrogator owns the document there. | `<project>/docs/specs`. |
 
 If the project already has a pytest persistent root, point
 `persistent_tests[].root` at it instead of scaffolding.
@@ -124,7 +140,7 @@ a port breaks.
 | `source_roots` | yes | `["src"]` | Trees the quality tools scan. |
 | `features` | recommended | none | The authored `.feature` root. |
 | `specs` | recommended | none | The requirements workplace: where the requirements document for each feature is authored and updated. |
-| `roles` | no | see below | The pipeline roles; keep as-is. |
+| `roles` | no | see below | The pipeline roles. A label list: no tool reads it. Keep it equal to the agents in `.opencode/agents/`. |
 
 `persistent_tests[]` entry:
 
@@ -276,17 +292,23 @@ Layout:
 ```ini
 [pytest]
 testpaths = .
-cache_dir = ../../dump/pytest_cache
 ```
 
 - `testpaths = .` makes the persistent root its own pytest root, so
   `cd <persistent root> && python3 -m pytest` works in place.
-- `cache_dir` keeps the pytest cache in the pack's `dump/`, not the project.
+- The pytest cache is redirected by the `lane` wrapper, which adds
+  `-o cache_dir=<pack>/dump/pytest-cache` through `PYTEST_ADDOPTS`. Do not put a
+  `cache_dir` in `pytest.ini`: a bare `pytest` outside the lane writes
+  `.pytest_cache` into the root, so keep that entry in the project's `.gitignore`.
 - Do not add inline `;` comments; `pytest.ini` does not parse them.
 
 The persistent root's `conftest.py` loads `wiring` and puts the project source
 on `sys.path`, so tests can import it without a `pythonpath` entry. It carries no
 project-specific fixtures; those belong to the wired project.
+
+The root finds the pack through its own `acceptance/packroot.py`: `SWARM_PACK` first
+(the lane wrapper exports it), then a walk up the tree. A root copied anywhere in the
+workspace resolves with no edit. Details: `INSTALL.md` section 5.
 Caches (`.pytest_cache`, `.hypothesis`, `.coverage`) and bytecode may appear in
 either tree; pack and project `.gitignore` cover them, so nothing is redirected.
 
@@ -390,7 +412,7 @@ generated entry points collide with the next.
 | `the pack is not wired: <PROJECT_ROOT> is unresolved` | The shipped config is still unwired | Replace `<PROJECT_ROOT>` in `harness.json`, or export `SWARM_PROJECT`. |
 | `unknown placeholder <...>` | A token that is not in the contract | Use `<PROJECT_ROOT>`, or write a literal path. |
 | A path resolves to the wrong place | A stray `SWARM_*` env var overrides the file | Unset `SWARM_CONFIG` / `SWARM_PACK`; check for an explicit `--config`. |
-| Tests cannot import the project | `pytest.ini` `pythonpath` is wrong | Point it at the project source, from the persistent root. |
+| Tests cannot import the project | The persistent root's `conftest.py` puts the wrong directory on `sys.path` | It adds each `source_roots` entry's parent. Point `source_roots` at the package directory, and confirm with `harness config`. |
 | Generated tests collide across projects | Shared `hot_tests/` holds the previous project's entry points | `harness clean hot` (or `all`) before switching. |
 | `clean state` refuses | State items are locked | Only use force with operator confirmation. |
 | `.pytest_cache`/`__pycache__` in the project | Allowed | Confirm the `.gitignore` entries exist; nothing to clean. |
