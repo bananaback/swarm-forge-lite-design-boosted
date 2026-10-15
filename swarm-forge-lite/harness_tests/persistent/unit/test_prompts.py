@@ -254,15 +254,17 @@ def test_protocol_role_templates_are_unfilled_and_guarded():
         )
 
 
-def test_docstring_convention_is_taught():
-    """The docstring rule: what and why, short, no design id, never a restatement."""
+def test_no_comment_and_no_docstring_are_taught():
+    """The rule: write no comment and no docstring. Keep only a load-bearing line."""
     craft = (REFERENCE / "code-craft.md").read_text(encoding="utf-8")
+    assert "## Comments" in craft
     assert "## Docstrings" in craft
+    assert "Write no comment" in craft
+    assert "Write no docstring" in craft
     assert "No design id in code" in craft
-    assert "redundant docstring is worse than none" in craft
     for role in ("coder", "refactorer", "hotfixer"):
-        assert "docstring" in _agent(role).lower(), (
-            f"{role} does not name the docstring rule"
+        assert "no comment and no docstring" in _agent(role).lower(), (
+            f"{role} does not name the no-comment rule"
         )
 
 

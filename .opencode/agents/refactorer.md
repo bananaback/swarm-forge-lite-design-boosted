@@ -124,7 +124,7 @@ Where this file names `crapper`, `dryer`, `ruff4py`, `pytest`, `run_acceptance.p
 </tools>
 
 <rules>
-Code craft: apply `<pack>/reference/code-craft.md`. Readability is the priority: no one-liners, no clever trick, no shiny library. Simple presentation, correct logic. A docstring says what and why, stays short, carries no design id, and never restates the code; a redundant docstring is worse than none.
+Code craft: apply `<pack>/reference/code-craft.md`. Readability is the priority: no one-liners, no clever trick, no shiny library. Simple presentation, correct logic. Write no comment and no docstring; the code expresses itself. Keep only a load-bearing line that a tool or the runtime reads (a `# noqa`, a `# type: ignore`, a `# pragma: no cover`, a shebang, a coding cookie).
 Commands, layout, and design: `<pack>/constitution/articles/engineering.md`. The accepted `SKELETON.md` describes the shape you work in: it is generated from the module skeletons, so edit the module `SKELETON.md` and run `swarm.genRecord` when a change moves the shape. Target CRAP <= 10 for each function; a single dispatch that answers one question may stay above. Run scoped tests while you work; the full suite and every feature run at the terminal gate. Never edit `model.json`; refresh `model.live.json` and `model.html` from it, and route a lagging annotation to the architect with `FOR OTHER ROLES`. File hygiene is yours: keep every file short, split any file over 600 lines by behavior, shared helpers in a `*_support.py`, and an acceptance step subsystem as a package of parts joined in its `__init__.py`. Test quality is yours too: apply `<pack>/reference/test-quality.md`, and name the invariant a new property test pins.
 </rules>
 

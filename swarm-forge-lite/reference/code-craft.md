@@ -42,23 +42,22 @@ the test rules are in `test-quality.md`.
 
 ## Comments
 
-- A comment is often a failure to express yourself in the code.
-- Keep: a legal note, an intent note, a warning, a `TODO`, a public API doc.
-- Delete: a redundant comment, a misleading comment, noise, commented-out code.
+- Write no comment. The code expresses itself: a clear name, a small function, a
+  plain condition. If a line needs a comment to be understood, rewrite the line.
+- One exception: a load-bearing line that a tool or the runtime reads. Keep a
+  `# noqa`, a `# type: ignore`, a `# pragma: no cover`, a shebang, and a coding
+  cookie exactly as they are.
+- Delete: commented-out code (version control remembers it), a redundant comment, a
+  misleading comment, and a line that only restates the next line.
 
 ## Docstrings
 
-- A docstring says what the function does and why, in plain language. It never
-  restates the signature, the types, or the obvious.
-- Keep it short: one line for a simple function, one short paragraph for a real
-  contract. A wall of text helps nobody.
-- **No design id in code.** Never cite a record id (`C68`, `R80`, `AC5`, `D11`) in a
-  docstring or a comment. The code stands alone; the id belongs in the record.
-- Document the contract only when it is not obvious: a precondition, a postcondition,
-  an invariant, an error it raises, or a surprising behavior. Nothing else.
-- A private helper whose name already says what it does needs no docstring. A
-  redundant docstring is worse than none.
-- Do not narrate the body line by line. The code says how; the docstring says why.
+- Write no docstring. A module, a class, and a function carry no string literal at
+  the top. The signature, the name, and the body are the contract.
+- **No design id in code.** Never cite a record id (`C68`, `R80`, `AC5`, `D11`) in
+  the code. The code stands alone; the id belongs in the record.
+- A hidden contract - a precondition, a postcondition, an invariant, an error the
+  caller must handle - belongs in a test or in the record, never in a docstring.
 
 ## Formatting
 

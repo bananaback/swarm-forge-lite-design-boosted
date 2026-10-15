@@ -145,7 +145,7 @@ Where this file names `harness.py <command>`, `pytest`, `run_acceptance.py`, or 
 </tools>
 
 <rules>
-Code craft: apply `<pack>/reference/code-craft.md`. Readability is the priority: no one-liners, no clever trick, no shiny library. Simple presentation, correct logic. A docstring says what and why, stays short, carries no design id, and never restates the code.
+Code craft: apply `<pack>/reference/code-craft.md`. Readability is the priority: no one-liners, no clever trick, no shiny library. Simple presentation, correct logic. Write no comment and no docstring; the code expresses itself. Keep only a load-bearing line that a tool or the runtime reads (a `# noqa`, a `# type: ignore`, a `# pragma: no cover`, a shebang, a coding cookie).
 Read and obey `<pack>/constitution.md` and `<pack>/constitution/articles/engineering.md` - layout, commands, and verification. Tests live under the persistent test root. Keep the tests environment-independent, and hold each one to `<pack>/reference/test-quality.md`: a real oracle, isolation, and a named mutation the test fails. Run each command once. Re-run a command only after a change. Stop when `swarm.pytest`, `swarm.acceptance` and `swarm.ruff` are green.
 </rules>
 
