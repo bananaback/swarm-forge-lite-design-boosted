@@ -12,7 +12,11 @@ tools/
 │   ├── harness_cmds.py   # all cmd_* handlers
 │   ├── lane              # the lane wrapper (bash script — no python3 prefix)
 │   ├── swarm_json.py     # the Code Mode backend: `swarm_json.py <command> '<json-args>'`
-│   ├── record.py         # parse + lint the requirement record (module)
+│   ├── record.py         # facade: re-exports all record names
+│   ├── record_parse.py   # Finding, Report, Table, Document, parsing, helpers
+│   ├── record_lint_req.py # requirement-family linters
+│   ├── record_lint_design.py # design-family linters
+│   ├── record_task.py    # lint_task, render_document, resolve_record, ...
 │   ├── questions.py      # facade: aggregates interrogator forms, SPECS, STOP_TESTS
 │   ├── questions_engine.py # Column, Text, Field, Table, Matrix, Computed, Section, RoleSpec
 │   ├── questions_interrogator_a.py # interrogator form data, sections 0-6
