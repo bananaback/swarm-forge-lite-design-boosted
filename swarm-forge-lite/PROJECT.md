@@ -70,11 +70,8 @@ Code shape (operator-owned) - the shape the code holds today, and the one to kee
   one subject, for example a tiny value object beside its owner.
 - Comments: rare, and kept only for a why that the code cannot carry. Most files hold none.
 
-Model and effort routing (operator-owned). Set the model per role with
-`switch_agent_model.py`, and set the effort variant there: high effort for the hard
-decisions (architect, critic, coder, orchestrator, hotfixer), medium for the mechanical
-work (interrogator, specifier, designer, test-reviewer, refactorer). A brand-new
-subsystem may use a stronger model for the architect and the critic alone.
+Model routing (operator-owned). `switch_agent_model.py` sets each role's model and its
+effort. Change a role there.
 
 Vocabulary (operator-owned). A **subsystem** is a scope: one requirement
 document, one feature set, one model, one operator task. It is not a division. A
