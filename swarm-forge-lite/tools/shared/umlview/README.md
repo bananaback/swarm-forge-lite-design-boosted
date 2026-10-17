@@ -12,7 +12,10 @@ part that pays off in a text-only agent workflow.
 
 | File | Role |
 |---|---|
-| `render.py` | model.json → standalone `*.html`; computes the findings and the CRAP grades |
+| `render_model.py` | normalization, levels, policy, graph | the model IR + dependency rule |
+| `render_grade.py` | CRAP scoring + grading | the config.clj grades |
+| `render_view.py` | `display_components`, `findings`, `render`, `main` | display projection + HTML + CLI |
+| `render.py` | launcher | runs `render_view.main`; keeps `python3 render.py` working |
 | `template.html` | the page: Tailwind utility classes + jQuery, dagre layout + inline SVG, panels |
 | `vendor/dagre.min.js` | the layout engine, bundled so the HTML works offline (no CDN at view time) |
 | `scan_python.py` | optional: Python source → model.json (a starting point) |
