@@ -454,9 +454,9 @@ export default Plugin.define({
             const o: RenderOpts = {
               reasoning: input.reasoning !== false,
               tools: input.tools !== false,
-              toolOutput: input.toolOutput ?? 1200,
-              toolInput: input.toolInput ?? 800,
-              maxText: input.maxText ?? 1500,
+              toolOutput: input.toolOutput ?? 3000,
+              toolInput: input.toolInput ?? 1500,
+              maxText: input.maxText ?? 3000,
               role: input.role ?? null,
             }
             const root = resolveSession(db, String(input.session))

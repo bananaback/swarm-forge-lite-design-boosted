@@ -144,6 +144,17 @@ interfaces it touches. Cite the path of every section you do not paste.
 **`#DELTA` names the change.** The record is living: `#DELTA` says which sections and
 rows this pass touches. The role reads the record and edits only those.
 
+**Verify every cite in `#DELTA`, `#ACCEPTANCE`, `#FROZEN`, and `#SCOPE` before you
+send it.** A stale `path:line` sends the role to the wrong place; the role then
+re-reads, re-derives, and floods its reasoning with "Hmm". Re-open the file and
+confirm the line still carries the cited text. If the line drifted, update the cite
+or drop it. A cite that no longer matches is worse than no cite.
+
+**Use the record's own words in `#DELTA`.** Paraphrase in a dispatch invites misread.
+Quote the exact term, count, or identifier from the record (for example `12 declared`,
+not "the declared count"). The role trusts the dispatch; a paraphrase that drifts
+from the record produces a no-op discovery or a wrong edit.
+
 **`#STOP TEST` is last.** It cites the pass clauses of the role in
 `reference/design-quality.md`. The role declares pass on the chunk clauses; the full
 list is the module gate, run by `swarm.check`.

@@ -61,6 +61,17 @@ The first line names the subsystem and is the ask: one line, imperative, no pers
 Cite every input as `path:line`. The role reads the file when it needs the text.
 Paste only the operator's ask (`#REQUEST`) and text that exists in no file.
 
+**Verify every cite before you send it.** A stale or wrong `path:line` sends the role
+to the wrong place; the role then re-reads, re-derives, and floods its reasoning with
+"Hmm". Re-open the file and confirm the line still carries the cited text. If the
+line drifted, update the cite or drop it. A cite that no longer matches is worse than
+no cite.
+
+**Use the record's own words.** Paraphrase in a dispatch invites misread. Quote the
+exact term, count, or identifier from the record (for example `12 declared`, not
+"the declared count"). The role trusts the dispatch; a paraphrase that drifts from
+the record produces a no-op discovery or a wrong edit.
+
 Do not paste a record section, a previous answer, an environment block, or a stop
 test. Cite them. A role that needs a whole file reads the file.
 
