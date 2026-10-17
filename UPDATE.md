@@ -146,10 +146,12 @@ not a git repository, and it must not become one.
 
    ```bash
    git -C <clone> checkout v2-python
-   cd <clone>/swarm-forge-lite/harness_tests && python3 -m pytest -q
+   cd <clone>/swarm-forge-lite/harness_tests && SWARM_PROJECT=<clone> python3 -m pytest -q
    ```
-   The clone's suite must be green. It cannot use project data, so a test that needs it
-   belongs in `.harness-local`, not in the clone.
+   The clone keeps the placeholder `<PROJECT_ROOT>` in `harness.json` (it is the
+   unwired template), so its suite needs `SWARM_PROJECT=<clone>`; see WIRING.md,
+   the placeholder contract. The clone's suite must be green. It cannot use project
+   data, so a test that needs it belongs in `.harness-local`, not in the clone.
 6. Commit and push:
 
    ```bash
