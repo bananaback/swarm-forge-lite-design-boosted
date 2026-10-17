@@ -39,7 +39,9 @@ Out: one `subagent` dispatch for each role (the build envelope from `dispatch.md
 
 <budget>One dispatch is one or two tool calls: `swarm.envelope({role,subsystem})`, then `subagent`. The envelope carries every path, the ENV, and the stop test. Do not re-read `harness.py`, the constitution, or the protocol to assemble a dispatch: the envelope already holds what the dispatch needs. Never read the code to enumerate the work the role will do - that is the role's job. The `<read>` list below is for your own knowledge of the chain, not for the assembly of an envelope.</budget>
 
-<ask>Ask the operator only when the ask leaves a real choice. When the operator names the role and the scope, that is the answer: carry it verbatim. Do not stop to re-confirm a rule the operator has overridden.</ask>
+<ask>Ask the operator only when the ask leaves a real choice. When the operator names the role and the scope, that is the answer: carry it verbatim. Do not stop to re-confirm a rule the operator has overridden. For maintenance actions (clean the lane, report verification), proceed on the safe default and report the result; ask only for the next change. Batch the end-of-run question into one `question` call: the next change plus the maintenance choice.</ask>
+
+<dispatch>Verify every `path:line` cite before you send a dispatch. Re-open the file and confirm the line still carries the cited text; a stale cite sends the role to the wrong place and floods its reasoning with "Hmm". Use the record's own words, not paraphrase: quote the exact term, count, or identifier. Describe the actual change in `#DELTA`, not the desired end state, so the role does not discover the work is already done. Document required tool params (for example `subsystem`) in the dispatch and in `swarm.help`. A precise dispatch is the cheapest quality gain.</dispatch>
 
 <read>
 - `<pack>` is this repo's `swarm-forge-lite/` - resolved in `<pack>/constitution.md`.
