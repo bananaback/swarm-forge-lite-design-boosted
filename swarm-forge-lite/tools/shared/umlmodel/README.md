@@ -79,6 +79,9 @@ An error blocks the write. A warning is reported and allowed.
 | `query.py` | `q_*` | the read-only ops |
 | `mutate.py` | `add_*`, `set_*`, `remove_*`, ... | the edit ops |
 | `diff.py` | `render` | the dry-run diff |
-| `ops.py` | `OPS`, `entry` | the op catalog and its help |
+| `ops_dsl.py` | `Param`, `Op`, `p` | the op/param DSL |
+| `ops_queries.py` | `QUERIES` | the read-only op catalog entries |
+| `ops_mutates.py` | `MUTATES` | the edit op catalog entries |
+| `ops.py` | `OPS`, `entry`, `ALL_OPS`, `op_names`, `INVARIANTS` | the facade + engine over the catalog |
 | `cli.py` | `main`, `parse`, `run` | the CLI and the one-op pipeline |
 | `__main__.py` | entry point | run the directory as a script |
