@@ -130,7 +130,7 @@ def main(argv: list[str]) -> int:
         return 2
     try:
         generate_entrypoint(argv[1], argv[2])
-    except Exception as error:
+    except (OSError, ValueError, KeyError) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1
     return 0
