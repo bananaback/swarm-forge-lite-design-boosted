@@ -12,6 +12,7 @@ import re
 from pathlib import Path
 
 import swarm_json
+import swarm_support
 
 PACK = Path(__file__).resolve().parents[3]
 AGENTS = PACK.parent / ".opencode" / "agents"
@@ -112,7 +113,7 @@ def test_a_bare_output_name_goes_to_the_artifacts_root(monkeypatch, tmp_path):
     """A generated model must never land at the workspace root or in a source tree."""
     artifacts = tmp_path / "dump"
     artifacts.mkdir()
-    monkeypatch.setattr(swarm_json, "_WORKSPACE", tmp_path)
+    monkeypatch.setattr(swarm_support, "_WORKSPACE", tmp_path)
     monkeypatch.setattr(swarm_json, "_paths", lambda: _Paths(artifacts))
 
     out = swarm_json._out_path("scan.json")
@@ -125,7 +126,7 @@ def test_an_explicit_record_path_is_left_where_the_caller_means(monkeypatch, tmp
     artifacts.mkdir()
     record = tmp_path / "design" / "subsystems" / "clip"
     record.mkdir(parents=True)
-    monkeypatch.setattr(swarm_json, "_WORKSPACE", tmp_path)
+    monkeypatch.setattr(swarm_support, "_WORKSPACE", tmp_path)
     monkeypatch.setattr(swarm_json, "_paths", lambda: _Paths(artifacts))
 
     out = swarm_json._out_path("design/subsystems/clip/model.html")

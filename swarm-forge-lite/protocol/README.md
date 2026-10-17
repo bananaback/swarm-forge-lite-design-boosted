@@ -47,6 +47,10 @@ groups, and each DECISION on its own line, indented. Do not pack two fields on o
 Each template ends with `ASSUMPTIONS:`. Record each non-blocking default, or write
 `none`. Assumptions never block the chain.
 
+## Code Mode (`execute`)
+
+Inside `execute` (the Code Mode sandbox), only `tools.convo.*`, `tools.swarm.*`, and `tools.opencode.*` exist. The tools `read`, `shell`, `glob`, `grep`, and `codegraph_explore` are top-level tools; they are not available inside `execute`. Code Mode is a JavaScript sandbox: it has no `require`, no `fs`, and no Node.js. Use `shell` (a top-level tool) for filesystem access, and use `tools.*` for conversation, swarm, and opencode access. Do not write Python inside `execute`; it is JavaScript only.
+
 ## The Pipeline
 
 ```

@@ -10,7 +10,7 @@
 - `SWARM_LANE` scopes `artifacts_root`, `hot_tests`, and `state_root` under the lane id. Run the commands through `<pack>/tools/shared/lane <id>`. That scopes bytecode, pytest cache, hypothesis, and temporary files too. The lane id is the SUBSYSTEM name, always. See **Concurrent Sessions**.
 
 ## Concurrent Sessions
-- The **subsystem** is the unit of isolation. The **lane id is the subsystem name**. Every dispatch carries `LANE: <subsystem>`. Every shell command that writes runs through `<pack>/tools/shared/lane <subsystem>`. Then the disposable roots are disjoint between subsystems.
+- The **subsystem** is the unit of isolation. The **lane id is the subsystem name**. Every dispatch carries `LANE: <subsystem>`. Every shell command runs through `<pack>/tools/shared/lane <subsystem>`; never run `pytest`, `ruff`, or any tool directly. Direct runs lack `SWARM_PACK`, `SWARM_TEST_DATA`, and `PYTHONPATH`, so they fail with `ModuleNotFoundError`. Then the disposable roots are disjoint between subsystems.
 - **One subsystem per session at a time.** The operator assigns the subsystem. Two sessions do not write to the same subsystem's record at the same time. There is no claim and no registry: the subsystem name is the lane.
 - **One name everywhere.** The subsystem, the `LANE`, and `design/subsystems/<subsystem>/` are the same string. Never work in, nest, or rename another subsystem's directory.
 - **The requirement document's number is fixed per subsystem.** `docs/specs/NN-<subsystem>.md` lives in a root that every subsystem shares. Take the next unused number when you create the subsystem's document; the subsystem keeps that number.
@@ -27,18 +27,18 @@
 - Publishing `docs/design-archive/` is an operator action and is serial.
 
 ## Startup Tools
-- Python: install `coverage`, `hypothesis`, `tree-sitter`, `tree-sitter-language-pack`, and `ruff==0.16.9` with pip. CRAP: the vendored `<pack>/tools/refactorer/crapper`, run as `python3 -m crapper`. DRY: the vendored `<pack>/tools/shared/dryer`, run as `python3 -m dryer`. Lint: `<pack>/tools/shared/ruff4py`. The upstream ships no Python repo. These wrappers are the language tools.
+- Python: install `coverage`, `hypothesis`, `tree-sitter`, `tree-sitter-language-pack`, and `ruff==0.16.9` with pip. CRAP: the vendored `<pack>/tools/refactorer/crapper`, run as `python3 -m crapper` (a package, not a binary). DRY: the vendored `<pack>/tools/shared/dryer`, run as `python3 -m dryer` with `<pack>/tools/shared` on `PYTHONPATH` (a package, not a binary). Lint: `<pack>/tools/shared/ruff4py`, run as `python3 <pack>/tools/shared/ruff4py` (a package directory, never as a binary and never as `python3 -m ruff4py`). The upstream ships no Python repo. These wrappers are the language tools.
 
 ## Language Defaults
 - Python: `python3 -m pytest`, plain and non-interactive. Put hypothesis in a separate test root.
 
 ## Commands
 Run from the workspace root.
-- Tests: `cd <persistent-root> && python3 -m pytest <paths or -k EXPR>` while you work. Run the full `python3 -m pytest` once at the terminal gate. For property tests only, append `property`.
-- Ruff: `python3 <pack>/tools/shared/ruff4py <source roots> <persistent roots>` (never pass `check`). The wrapper pins the cache and injects no config; ruff finds `ruff.toml` beside each file. A clean tree reports 0 findings.
+- Tests: run through the lane wrapper, never directly: `<pack>/tools/shared/lane <subsystem> bash -c 'cd <persistent-root> && python3 -m pytest <paths or -k EXPR>'`. Run the full suite once at the terminal gate. For property tests only, append `property`. A direct `python3 -m pytest` lacks `SWARM_PACK`/`SWARM_TEST_DATA`/`PYTHONPATH` and fails with `ModuleNotFoundError`.
+- Ruff: `python3 <pack>/tools/shared/ruff4py <source roots> <persistent roots>` (never pass `check`). `ruff4py` is a package directory, not an executable: always put `python3` in front, and never run `lane ... ruff4py` or `python3 -m ruff4py`. The wrapper pins the cache and injects no config; ruff finds `ruff.toml` beside each file. A clean tree reports 0 findings.
 - Ruff format: `ruff format --check --cache-dir <pack>/dump/ruff-cache <source roots> <persistent roots>`. A clean tree reports 0 files to reformat.
 - CRAP: the vendored `crapper` at `<pack>/tools/refactorer/crapper`, run as `python3 -m crapper` with `<pack>/tools/refactorer` on `PYTHONPATH`. Pass `--root <artifacts> --source-root <source> --threshold 10`. It runs coverage.py when no report is fresh, writes `.metrics/crap.edn` under the root, and exits 2 when the worst score is above the threshold. The pack's `swarm.crap` tool wraps it and keeps the CRAP 10 threshold.
-- DRY: the vendored `dryer` at `<pack>/tools/shared/dryer`, run as `python3 -m dryer` with `<pack>/tools/shared` on `PYTHONPATH`. Pass `--root <artifacts> --threshold 0.82 --min-lines 4 --min-nodes 20`. It writes `.metrics/dry.edn` under the root. The pack's `swarm.dry` tool wraps it and keeps the DRY defaults.
+- DRY: the vendored `dryer` at `<pack>/tools/shared/dryer`, run as `python3 -m dryer` with `<pack>/tools/shared` on `PYTHONPATH`. `dryer` is a package directory, not an executable; never run it directly. Pass `--root <artifacts> --threshold 0.82 --min-lines 4 --min-nodes 20`. It writes `.metrics/dry.edn` under the root. The pack's `swarm.dry` tool wraps it and keeps the DRY defaults.
 - Gherkin: `<pack>/tools/shared/gherkin-parser <feature> <artifacts>/<stem>.json`. It is a bash script. Do not put `python3` in front of it.
 - IR dry: `<pack>/tools/specifier/ir-dry-checker <ir> <artifacts>/<stem>.dry.json`. It is a bash script. Do not put `python3` in front of it.
 - Acceptance: `python3 <persistent>/acceptance/run_acceptance.py [feature stem ...]` parses, dry-checks, generates into `hot_tests`, and runs the generated tests. Name a stem to scope the run. Omit the stem to run every feature at the terminal gate.

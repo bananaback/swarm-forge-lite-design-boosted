@@ -15,7 +15,7 @@ The orchestrator dispatches roles with `subagent` and reads the final message. A
 - Every dispatch carries `LANE: <subsystem>`. A role with `LANE [-] (none)` sets the lane before it writes.
 
 ## Calling
-- `agent` is the role. `prompt` is the message from `<pack>/protocol/dispatch.md`. Omit `sessionID` to start a new session. Pass the returned `sessionID` to continue that session. The result is the final message of the callee.
+- `agent` is the role. `prompt` is the message from `<pack>/protocol/dispatch.md`. Omit `sessionID` to start a new session. Pass the returned `sessionID` to continue that session. The `sessionID` must be the FULL returned id, never a truncated prefix; a short prefix such as `ses` makes the call fail with "Subagent session not found". Omit `sessionID` entirely for a fresh session. The result is the final message of the callee.
 - Continue by `sessionID` by default. This costs less and keeps the context. Start a new session when a continued session would mislead: a new task, a drifted or contradictory session, an unread prompt or protocol change, or a request for a clean pass.
 
 ## Tools
