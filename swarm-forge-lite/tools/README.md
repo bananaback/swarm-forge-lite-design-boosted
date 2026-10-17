@@ -7,8 +7,9 @@ in that role's folder.
 tools/
 ├── shared/               # used by more than one role
 │   ├── wiring/           # path resolution from harness.json (module)
-│   ├── harness.py        # config / status / clean / lint-record / check / guide /
-│   │                     #   init-work / decisions / check-envelope / vocab-rename / envelope
+│   ├── harness.py        # facade + CLI entry point (config / status / clean / ...)
+│   ├── harness_values.py # value objects, protocols, adapter, OsTree
+│   ├── harness_cmds.py   # all cmd_* handlers
 │   ├── lane              # the lane wrapper (bash script — no python3 prefix)
 │   ├── swarm_json.py     # the Code Mode backend: `swarm_json.py <command> '<json-args>'`
 │   ├── record.py         # parse + lint the requirement record (module)
