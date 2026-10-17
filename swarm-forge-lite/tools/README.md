@@ -13,7 +13,10 @@ tools/
 │   ├── lane              # the lane wrapper (bash script — no python3 prefix)
 │   ├── swarm_json.py     # the Code Mode backend: `swarm_json.py <command> '<json-args>'`
 │   ├── record.py         # parse + lint the requirement record (module)
-│   ├── questions.py      # the design forms + the method map + the stop-test lines (module)
+│   ├── questions.py      # facade: aggregates interrogator forms, SPECS, STOP_TESTS
+│   ├── questions_engine.py # Column, Text, Field, Table, Matrix, Computed, Section, RoleSpec
+│   ├── questions_interrogator_a.py # interrogator form data, sections 0-6
+│   ├── questions_interrogator_b.py # interrogator form data, sections 7-13
 │   ├── aps/              # vendored APS: parser, dry checker, and the mutator (`bb gherkin-mutator`)
 │   ├── gherkin-parser    # specifier + coder (bash script — no python3 prefix)
 │   ├── gherkin-craft.md  # the phrase and dry-check rules the specifier + coder read
