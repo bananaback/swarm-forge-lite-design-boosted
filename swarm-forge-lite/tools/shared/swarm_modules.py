@@ -16,7 +16,9 @@ _WORKSPACE = PACK.parent
 
 def cmd_modules(args: dict) -> dict:
     """The module map and the module/interface layout of a subsystem."""
-    subsystem = args["subsystem"]
+    subsystem = args.get("subsystem")
+    if not subsystem:
+        raise SwarmError("pass subsystem")
     root = PACK / "design" / "subsystems" / subsystem
     arch = root / "02-architect" / "ARCHITECTURE.md"
     ifc_dir = root / "interfaces"
@@ -49,7 +51,9 @@ def cmd_modules(args: dict) -> dict:
 
 def cmd_interface(args: dict) -> dict:
     """The frozen interface text of one module."""
-    subsystem = args["subsystem"]
+    subsystem = args.get("subsystem")
+    if not subsystem:
+        raise SwarmError("pass subsystem")
     module = args.get("module")
     if not module:
         raise SwarmError("pass module")
@@ -66,7 +70,9 @@ def cmd_interface(args: dict) -> dict:
 
 def cmd_goal(args: dict) -> dict:
     """Read, or write, the orchestrator's scratchpad for a subsystem."""
-    subsystem = args["subsystem"]
+    subsystem = args.get("subsystem")
+    if not subsystem:
+        raise SwarmError("pass subsystem")
     path = PACK / "design" / "subsystems" / subsystem / "GOAL.md"
     text = args.get("text")
     if text is not None:
