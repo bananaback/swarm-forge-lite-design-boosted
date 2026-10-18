@@ -21,6 +21,8 @@ tools/
 │   ├── swarm_uml.py      # uml query/mutate/render/sync/scan commands
 │   ├── swarm_gate.py     # gate/ready/gen_record/report commands
 │   ├── swarm_help.py     # docs/help commands
+│   ├── opencode_db.py    # read-only OpenCode DB reader for swarm.report
+│   ├── sync_pack.py      # one-command pack -> clone sync (dry run by default)
 │   ├── record.py         # facade: re-exports all record names
 │   ├── record_parse.py   # Finding, Report, Table, Document, parsing, helpers
 │   ├── record_lint_req.py # requirement-family linters

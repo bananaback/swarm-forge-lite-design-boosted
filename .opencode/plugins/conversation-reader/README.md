@@ -62,6 +62,10 @@ to pull everything in one shot. Oversized results are spilled by the harness to
 `~/.local/share/opencode/tool-output/tool_<id>`, which the agent can then read
 in chunks with the `read` tool.
 
+`role` filters the message stream **before** paging, so `total`, `next`, and the
+page footer describe the filtered set. `convo.list` counts messages with one
+grouped query per storage table, never one transcript read per session.
+
 ## Usage
 
 ```js

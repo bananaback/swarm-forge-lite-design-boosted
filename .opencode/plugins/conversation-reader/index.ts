@@ -84,16 +84,43 @@ function hasTable(db: Database, name: string): boolean {
 // sessions
 // --------------------------------------------------------------------------- //
 
-const SESSION_COLS =
-  "id,parent_id,slug,title,directory,agent,model,cost,tokens_input,tokens_output," +
-  "tokens_reasoning,tokens_cache_read,tokens_cache_write,time_created,time_updated"
+const SESSION_FIELDS = [
+  "id",
+  "parent_id",
+  "slug",
+  "title",
+  "directory",
+  "agent",
+  "model",
+  "cost",
+  "tokens_input",
+  "tokens_output",
+  "tokens_reasoning",
+  "tokens_cache_read",
+  "tokens_cache_write",
+  "time_created",
+  "time_updated",
+]
+
+function columnsOf(db: Database, table: string): Set<string> {
+  const rows = db.query(`PRAGMA table_info(${table})`).all() as any[]
+  return new Set(rows.map((row) => String(row.name)))
+}
+
+function sessionSelect(db: Database, table: string): string | null {
+  const columns = columnsOf(db, table)
+  if (!columns.has("id")) return null
+  return SESSION_FIELDS.filter((field) => columns.has(field)).join(",")
+}
 
 function allSessions(db: Database): Session[] {
   const out: Session[] = []
   const seen = new Set<string>()
   const pull = (tbl: string, tag: "v1" | "v2") => {
     if (!hasTable(db, tbl)) return
-    for (const r of db.query(`SELECT ${SESSION_COLS} FROM ${tbl}`).all() as any[]) {
+    const select = sessionSelect(db, tbl)
+    if (!select) return
+    for (const r of db.query(`SELECT ${select} FROM ${tbl}`).all() as any[]) {
       if (seen.has(r.id)) continue
       seen.add(r.id)
       out.push({ ...r, _tbl: tag })
@@ -106,7 +133,34 @@ function allSessions(db: Database): Session[] {
   return out
 }
 
+function messageCounts(db: Database): Map<string, number> {
+  // One grouped query per storage table, never one transcript read per session.
+  const v2 = new Map<string, number>()
+  const v1 = new Map<string, number>()
+  if (hasTable(db, "session_message")) {
+    for (const row of db
+      .query("SELECT session_id, COUNT(*) AS n FROM session_message GROUP BY session_id")
+      .all() as any[]) {
+      v2.set(String(row.session_id), Number(row.n))
+    }
+  }
+  if (hasTable(db, "message")) {
+    for (const row of db
+      .query("SELECT session_id, COUNT(*) AS n FROM message GROUP BY session_id")
+      .all() as any[]) {
+      v1.set(String(row.session_id), Number(row.n))
+    }
+  }
+  const counts = new Map<string, number>()
+  for (const id of new Set([...v2.keys(), ...v1.keys()])) {
+    const n = v2.get(id) ?? 0
+    counts.set(id, n > 0 ? n : (v1.get(id) ?? 0))
+  }
+  return counts
+}
+
 function resolveSession(db: Database, ref: string): Session {
+  if (!ref) throw new Error("session is required")
   const sessions = allSessions(db)
   const exact = sessions.find((s) => s.id === ref)
   if (exact) return exact
@@ -123,9 +177,18 @@ function resolveSession(db: Database, ref: string): Session {
 // messages
 // --------------------------------------------------------------------------- //
 
+function parseRow(data: unknown): any {
+  try {
+    const parsed = JSON.parse(String(data ?? ""))
+    return parsed && typeof parsed === "object" ? parsed : {}
+  } catch {
+    return { text: String(data ?? "") }
+  }
+}
+
 function normV2(row: any): Msg {
-  const d = JSON.parse(row.data)
-  const type = row.type as string
+  const d = parseRow(row.data)
+  const type = String(row.type ?? "?")
   const base: Msg = {
     id: row.id,
     role: type,
@@ -172,7 +235,7 @@ function messagesV1(db: Database, sid: string): Msg[] {
     }
   }
   return rows.map((m) => {
-    const d = JSON.parse(m.data)
+    const d = parseRow(m.data)
     return {
       id: m.id,
       role: d.role ?? "?",
@@ -261,10 +324,10 @@ function renderPart(p: Part, o: RenderOpts): string[] {
   const t = p.type
   if (t === "reasoning") {
     if (!o.reasoning) return out
-    const txt = (p.text ?? "").trim()
+    const txt = String(p.text ?? "").trim()
     if (txt) out.push("    ~ reasoning ~", indent(clip(txt, o.maxText)))
   } else if (t === "text") {
-    const txt = (p.text ?? "").trim()
+    const txt = String(p.text ?? "").trim()
     if (txt) out.push(indent(clip(txt, o.maxText)))
   } else if (t === "tool") {
     if (!o.tools) return out
@@ -284,7 +347,7 @@ function renderPart(p: Part, o: RenderOpts): string[] {
     }
     if (st.metadata) out.push("       meta: " + clip(JSON.stringify(st.metadata), o.maxText))
   } else if (t === "files") {
-    for (const f of p.files ?? []) {
+    for (const f of Array.isArray(p.files) ? p.files : []) {
       out.push("    [file] " + (typeof f === "string" ? f : f.name ?? f.path ?? JSON.stringify(f)))
     }
   } else if (t === "agents") {
@@ -338,17 +401,11 @@ function sessionHeader(s: Session, count: number): string[] {
   return lines
 }
 
-function sessionLine(db: Database, s: Session): string {
-  let msgs = 0
-  try {
-    msgs = messagesFor(db, s).length
-  } catch {
-    msgs = -1
-  }
-  const title = (s.title ?? "").replace(/\n/g, " ").slice(0, 60)
+function sessionLine(s: Session, count: number): string {
+  const title = String(s.title ?? "").replace(/\n/g, " ").slice(0, 60)
   return (
     `${s.id}  ${ts(s.time_updated)}  [${s.agent ?? "?"}]  ` +
-    `msgs=${String(msgs).padStart(4)}  cost=$${(s.cost ?? 0).toFixed(4)}  ${title}`
+    `msgs=${String(count).padStart(4)}  cost=$${(s.cost ?? 0).toFixed(4)}  ${title}`
   )
 }
 
@@ -397,7 +454,8 @@ export default Plugin.define({
               )
             }
             const rows = sessions.slice(0, limit)
-            const body = rows.map((s) => sessionLine(db, s)).join("\n")
+            const counts = messageCounts(db)
+            const body = rows.map((s) => sessionLine(s, counts.get(s.id) ?? 0)).join("\n")
             return {
               content: `${rows.length} session(s):\n\n${body}`,
               metadata: { count: rows.length, db: DB_PATH },
@@ -479,10 +537,11 @@ export default Plugin.define({
             const counts = new Map(groups.map((g) => [g.s.id, g.msgs.length]))
             const entries: { s: Session; m: Msg }[] = []
             for (const g of groups) for (const m of g.msgs) entries.push({ s: g.s, m })
-            const total = entries.length
+            const selected = o.role ? entries.filter((e) => e.m.role === o.role) : entries
+            const total = selected.length
             const offset = Math.max(0, input.offset ?? 0)
             const limit = input.limit ?? 20
-            const page = limit > 0 ? entries.slice(offset, offset + limit) : entries.slice(offset)
+            const page = limit > 0 ? selected.slice(offset, offset + limit) : selected.slice(offset)
 
             if (input.format === "json") {
               const payload = {

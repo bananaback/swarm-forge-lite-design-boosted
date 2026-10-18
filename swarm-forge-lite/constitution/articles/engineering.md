@@ -35,6 +35,9 @@ design/subsystems/<subsystem>/
   It does **not** set `PYTHONPATH`.
 - `lane --config <path> <lane> <command...>` selects another `harness.json`.
 - One subsystem per session. Do not run two sessions on one record.
+- The lane writes `<state_root>/owner` with the session id, pid, host, and time.
+  It is awareness, not a lock. Read it when a file changes under you; never block
+  on it.
 
 ## Commands
 

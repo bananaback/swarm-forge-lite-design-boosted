@@ -56,7 +56,6 @@ from swarm_core import (  # noqa: F401
 )
 from swarm_gate import (  # noqa: F401
     _checked,
-    _table_exists,
     _write_union_skeleton,
     cmd_doctor,
     cmd_gate,

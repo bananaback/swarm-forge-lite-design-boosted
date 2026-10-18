@@ -1,6 +1,8 @@
 """Unit tests for wiring path resolution and the harness CLI value objects."""
 
 import json
+import os
+import subprocess
 from pathlib import Path
 
 import harness
@@ -15,6 +17,8 @@ from harness import (
     PersistentRoot,
     status_report,
 )
+
+PACK = Path(__file__).resolve().parents[3]
 
 
 class FakePaths:
@@ -277,6 +281,30 @@ def test_clean_drop_removes_an_empty_lane_directory(tmp_path, capsys):
     assert harness.main(["--config", str(config), "clean", "hot", "--drop"]) == 0
     assert not hot.exists()
     assert "DROPPED hot" in capsys.readouterr().out
+
+
+def test_the_lane_records_who_ran_it(tmp_path):
+    """A lane leaves per-session claim metadata: awareness, not a lock."""
+    config = _write_config(tmp_path)
+    env = dict(os.environ, OPENCODE_SESSION_ID="ses_probe")
+    env.pop("SWARM_LANE", None)
+    subprocess.run(
+        [
+            str(PACK / "tools" / "shared" / "lane"),
+            "--config",
+            str(config),
+            "probe",
+            "true",
+        ],
+        cwd=str(tmp_path),
+        env=env,
+        check=True,
+    )
+    owner = tmp_path / "state" / "probe" / "owner"
+    text = owner.read_text(encoding="utf-8")
+    assert "session: ses_probe" in text
+    assert "lane: probe" in text
+    assert "updated: " in text
 
 
 def test_main_refuses_a_missing_config(tmp_path, capsys):

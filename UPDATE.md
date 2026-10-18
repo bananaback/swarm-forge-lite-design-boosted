@@ -142,10 +142,20 @@ not a git repository, and it must not become one.
    ```bash
    diff -rq <clone> <ship-root> | grep -v '<project-owned path>'
    ```
+
+   The pack also ships a one-command helper for steps 3 and 4:
+
+   ```bash
+   python3 <ship-root>/swarm-forge-lite/tools/shared/sync_pack.py --to <clone>
+   python3 <ship-root>/swarm-forge-lite/tools/shared/sync_pack.py --to <clone> --apply
+   ```
+
+   It is a dry run by default. `--apply` copies only pack-owned files, never
+   deletes, and runs the clone self-tests. A deletion still needs the decision in
+   section 7.
 4. Copy those files from the project into the clone. `git -C <clone> status` must show
    only them. If a project-owned or merge-by-hand file appears, remove it from the commit.
 5. Return to the branch, then verify in the clone:
-
    ```bash
    git -C <clone> checkout v2-python
    cd <clone>/swarm-forge-lite

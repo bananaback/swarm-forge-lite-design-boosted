@@ -466,7 +466,7 @@ export default Plugin.define({
         "report",
         "Report the session cost per role from the OpenCode database: tokens, sessions, minutes. " +
           "Use it to see where the time goes. Example: tools.swarm.report()",
-        {},
+        { db: { type: "string", description: "Override the database path (default OPENCODE_DB or the standard file)." } },
         "report",
       )
 

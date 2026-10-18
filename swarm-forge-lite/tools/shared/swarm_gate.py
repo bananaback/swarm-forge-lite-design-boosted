@@ -3,7 +3,6 @@ import json
 import os
 import re
 import shutil
-import sqlite3
 import sys
 from pathlib import Path
 
@@ -251,44 +250,36 @@ def cmd_gen_record(args: dict) -> dict:
 def cmd_report(args: dict) -> dict:
     """Report the session cost per role, from the OpenCode database.
 
-    Reads `~/.local/share/opencode/opencode.db`. No new store. The rework count
+    Reads `opencode_db.py`, which opens the database read-only. The rework count
     is the number of sessions per role past the first for one subsystem.
     """
-    db = Path(
-        os.environ.get(
-            "OPENCODE_DB", Path.home() / ".local" / "share" / "opencode" / "opencode.db"
-        )
-    )
-    if not db.exists():
-        raise SwarmError(f"no OpenCode database at {db}")
-    con = sqlite3.connect(str(db))
-    table = "session_v2" if _table_exists(con, "session_v2") else "session"
-    rows = con.execute(
-        f"select agent, tokens_output, tokens_reasoning, time_created, time_updated from {table} "
-        "where agent is not null order by time_created desc limit 400"
-    ).fetchall()
-    con.close()
+    import opencode_db
+
+    path = opencode_db.db_path(args.get("db"))
+    try:
+        connection = opencode_db.connect(str(path))
+    except FileNotFoundError as error:
+        raise SwarmError(str(error)) from error
+    rows = opencode_db.session_rows(connection)
+    connection.close()
+    rows.sort(key=lambda row: row.get("time_created") or 0, reverse=True)
     agg: dict = {}
-    for agent, out_tok, reason_tok, tc, tu in rows:
+    for row in rows[:400]:
+        agent = row.get("agent")
+        if agent is None:
+            continue
         entry = agg.setdefault(
             str(agent), {"out": 0, "reason": 0, "sessions": 0, "minutes": 0.0}
         )
-        entry["out"] += out_tok or 0
-        entry["reason"] += reason_tok or 0
+        entry["out"] += row.get("tokens_output") or 0
+        entry["reason"] += row.get("tokens_reasoning") or 0
         entry["sessions"] += 1
-        entry["minutes"] += max(0.0, ((tu or tc) - tc) / 60000.0)
+        created = row.get("time_created") or 0
+        updated = row.get("time_updated") or created
+        entry["minutes"] += max(0.0, (updated - created) / 60000.0)
     for entry in agg.values():
         entry["minutes"] = round(entry["minutes"], 1)
-    return {"db": _short(db), "roles": agg}
-
-
-def _table_exists(con, name: str) -> bool:
-    return (
-        con.execute(
-            "select 1 from sqlite_master where type='table' and name=?", (name,)
-        ).fetchone()
-        is not None
-    )
+    return {"db": _short(path), "roles": agg}
 
 
 _MODEL = re.compile(r"(?P<provider>[^/#]+)/(?P<model>[^#]+)(?:#(?P<variant>[^#]+))?$")
