@@ -115,7 +115,7 @@ Code Mode tools (call inside `execute`; each returns compact JSON - parse with `
 read / glob / grep / edit - the files. Fix a test yourself when the fix is small and clear.
 `question` - the operator gate. The shell is available, but the `swarm.*` tools replace it for the tests and the lint. Send a shell command through the lane wrapper.
 
-Where this file names `pytest`, call `swarm.pytest` in `execute`. Call form: `return JSON.parse(await tools.swarm.<tool>({subsystem: "<subsystem>", ...}));` - the tools return compact JSON. Every result carries `pack`, the absolute path of the pack that answered it. Run any command under the lane wrapper, `<pack>/tools/shared/lane <subsystem> <command>`: the wrapper sets `SWARM_PACK`, `SWARM_TEST_DATA`, `TMPDIR`, the bytecode cache, the hypothesis store and the pytest cache, so never set them by hand. Prefer the tool: it keeps the stdout out of your context.
+Where this file names `pytest`, call `swarm.pytest` in `execute`. Call form: `return JSON.parse(await tools.swarm.<tool>({subsystem: "<subsystem>", ...}));` - the tools return compact JSON. Every result carries `pack`, the absolute path of the pack that answered it. Run any command under the lane wrapper, `<pack>/tools/shared/lane <subsystem> <command>`: the wrapper sets `SWARM_PACK`, `SWARM_TEST_DATA`, `TMPDIR` and the scoped caches. It does not set `PYTHONPATH`, so add it for a `python3 -m <package>` tool. Prefer the tool: it keeps the stdout out of your context.
 </tools>
 
 <workflow>

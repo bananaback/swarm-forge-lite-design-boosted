@@ -120,7 +120,7 @@ The list tools return counts by default. Pass `view:"rows"` for the rows, `view:
 read / glob / grep / edit / write - the files.
 `question` - ask the operator. The shell is available, but the `swarm.*` tools replace it for the tests and the lint. Send a shell command through the lane wrapper.
 
-Where this file names `crapper`, `dryer`, `ruff4py`, `pytest`, `run_acceptance.py`, `sync_python.py`, `render.py`, or `harness.py <command>`, call the matching `swarm.*` tool in `execute`. Call form: `return JSON.parse(await tools.swarm.<tool>({subsystem: "<subsystem>", ...}));` - the tools return compact JSON. Every result carries `pack`, the absolute path of the pack that answered it. Run any command under the lane wrapper, `<pack>/tools/shared/lane <subsystem> <command>`: the wrapper sets `SWARM_PACK`, `SWARM_TEST_DATA`, `TMPDIR`, the bytecode cache, the hypothesis store and the pytest cache, so never set them by hand. Prefer the tool: it keeps the stdout out of your context.
+Where this file names `crapper`, `dryer`, `ruff4py`, `pytest`, `run_acceptance.py`, `sync_python.py`, `render.py`, or `harness.py <command>`, call the matching `swarm.*` tool in `execute`. Call form: `return JSON.parse(await tools.swarm.<tool>({subsystem: "<subsystem>", ...}));` - the tools return compact JSON. Every result carries `pack`, the absolute path of the pack that answered it. Run any command under the lane wrapper, `<pack>/tools/shared/lane <subsystem> <command>`: the wrapper sets `SWARM_PACK`, `SWARM_TEST_DATA`, `TMPDIR` and the scoped caches. It does not set `PYTHONPATH`, so add it for a `python3 -m <package>` tool. Prefer the tool: it keeps the stdout out of your context.
 </tools>
 
 <rules>

@@ -64,7 +64,7 @@ Out: one `subagent` dispatch for each role (the build envelope from `dispatch.md
 The scratchpad is yours. Do not make a role write it.</scratchpad>
 
 <tools>
-`subagent` - dispatch one role at a time. `agent` is the role id. `prompt` is the build or design dispatch. Omit `sessionID` to start a new session. Pass the returned id to continue.
+`subagent` - dispatch one role at a time. Pass `agent` (the role id), `description`, `prompt` and `background`; add `sessionID` only to continue a session.
 `question` - operator gates and project-fact gaps.
 
 Code Mode tools (call inside `execute`; each returns compact JSON - parse with `JSON.parse`). The plugin resolves the pack, so no path is needed and no shell is needed:
@@ -83,7 +83,7 @@ Code Mode tools (call inside `execute`; each returns compact JSON - parse with `
 - `swarm.docs()` -> the catalog of every tool.
 - `swarm.help({tool})` -> one tool's full help: params, return shape, and an example.
 
-Where the loop names `harness.py <command>`, call the matching `swarm.*` tool in `execute`: status -> `swarm.status({subsystem})`, envelope -> `swarm.envelope({role,subsystem})`, decisions -> `swarm.decisions({role,subsystem})`. Call form: `return JSON.parse(await tools.swarm.<tool>({subsystem: "<subsystem>", ...}));` - the tools return compact JSON. Every result carries `pack`, the absolute path of the pack that answered it. Run any command under the lane wrapper, `<pack>/tools/shared/lane <subsystem> <command>`: the wrapper sets `SWARM_PACK`, `SWARM_TEST_DATA`, `TMPDIR`, the bytecode cache, the hypothesis store and the pytest cache, so never set them by hand. Prefer the tool: it keeps the stdout out of your context.
+Where the loop names `harness.py <command>`, call the matching `swarm.*` tool in `execute`: status -> `swarm.status({subsystem})`, envelope -> `swarm.envelope({role,subsystem})`, decisions -> `swarm.decisions({role,subsystem})`. Call form: `return JSON.parse(await tools.swarm.<tool>({subsystem: "<subsystem>", ...}));` - the tools return compact JSON. Every result carries `pack`, the absolute path of the pack that answered it. Run any command under the lane wrapper, `<pack>/tools/shared/lane <subsystem> <command>`: the wrapper sets `SWARM_PACK`, `SWARM_TEST_DATA`, `TMPDIR` and the scoped caches. It does not set `PYTHONPATH`, so add it for a `python3 -m <package>` tool. Prefer the tool: it keeps the stdout out of your context.
 </tools>
 
 <loop>
