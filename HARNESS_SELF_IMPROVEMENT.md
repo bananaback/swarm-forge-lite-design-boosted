@@ -344,8 +344,6 @@ These are the remaining real items. Do not re-open closed items above.
 - [ ] **WIRING/INSTALL/UPDATE** still contain a few direct-pytest examples and
   generic prose. Align them with the lane rule and flat record.
 - [ ] **`PUBLISH-DOCS.md`** still uses `find`; workspace `AGENTS.md` forbids it.
-- [ ] **`defect-notes.md`** is historical. Keep it as session evidence, but treat
-  this file as current. Add a banner to it.
 - [ ] **`page` and handle output** are rarely used. Remove both together, or keep
   them documented as a large-result escape hatch.
 - [ ] **`convo`** still has N+1 listing, role-filter paging, and schema
@@ -590,7 +588,6 @@ SWARM_CONFIG=$PWD/harness.selftest.json \
 | `swarm-forge-lite/harness_tests/` | harness self-tests |
 | `tdd_harness/` | publishable clone |
 | `HARNESS_SELF_IMPROVEMENT.md` | this file |
-| `defect-notes.md` | historical session audit (not current) |
 
 ---
 
