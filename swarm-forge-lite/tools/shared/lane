@@ -28,16 +28,16 @@ state="$(printf '%s' "$config" | python3 -c 'import json, sys; print(json.load(s
 
 # Per-lane claim metadata: awareness, not a lock. The last command to run in the
 # lane records who ran it, so another session can tell a foreign change from a bug.
-mkdir -p "$state"
-owner_tmp="$state/owner.$$"
-{
-  printf 'session: %s\n' "${OPENCODE_SESSION_ID:-pid-$$}"
-  printf 'pid: %s\n' "$$"
-  printf 'host: %s\n' "${HOSTNAME:-$(uname -n 2>/dev/null || echo -)}"
-  printf 'lane: %s\n' "$lane"
-  printf 'updated: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-} > "$owner_tmp"
-mv "$owner_tmp" "$state/owner"
+if mkdir -p "$state" 2>/dev/null; then
+  owner_tmp="$state/owner.$$"
+  {
+    printf 'session: %s\n' "${OPENCODE_SESSION_ID:-pid-$$}"
+    printf 'pid: %s\n' "$$"
+    printf 'host: %s\n' "${HOSTNAME:-$(uname -n 2>/dev/null || echo -)}"
+    printf 'lane: %s\n' "$lane"
+    printf 'updated: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  } > "$owner_tmp" 2>/dev/null && mv "$owner_tmp" "$state/owner" 2>/dev/null || true
+fi
 
 mkdir -p "$artifacts/pycache" "$artifacts/tmp" "$artifacts/hypothesis" "$artifacts/pytest-cache" "$artifacts/testdata"
 export SWARM_TEST_DATA="$artifacts/testdata"
