@@ -22,6 +22,71 @@ If the owner explicitly asks for the shared task board or the deferred-goal queu
 work on section 5b instead. Those are features, not cleanup. Do not add them
 unless the owner asks.
 
+## 0.5 Read before you improve
+
+Do not edit the harness from this file alone. This page is the map, not the
+territory. Read the live files first, in this order. The cost is paid once; it
+prevents a “small optimization” that breaks the pipeline.
+
+### Read order
+
+1. **This file**, sections 1–5 and 7. You need the goal, the current shape, the
+   baseline, and the open list.
+2. **`AGENTS.md`** and **`opencode.json`**. These control search, Code Mode,
+   permissions, models, and which instruction file OpenCode loads.
+3. **All ten role prompts** in `.opencode/agents/`:
+   `orchestrator`, `interrogator`, `specifier`, `architect`, `designer`,
+   `critic`, `coder`, `test-reviewer`, `refactorer`, `hotfixer`.
+   Read the whole body, not only the frontmatter. You must know what each role
+   reads, writes, and hands off.
+4. **`swarm-forge-lite/constitution.md`** and its three articles:
+   `engineering`, `workflow`, `communication`. These are the binding rules.
+5. **`swarm-forge-lite/protocol/`**: `README`, `dispatch`,
+   `design-protocol`, `design-procedure`, and every `protocol/<role>.md` answer
+   template. This is the pipeline and the stop vocabulary.
+6. **`swarm-forge-lite/reference/`**: `module-rules`, `design-quality`,
+   `design-craft-*`, `test-quality`, `code-craft`, `model-format`. Skim all;
+   read the one your change touches in full.
+7. **`swarm-forge-lite/tools/README.md`** and the main tool entry points:
+   `lane`, `harness.py`, `harness_cmds.py`, `swarm_json.py`, `swarm_gate.py`,
+   `swarm_test.py`, `swarm_core.py`, `record_task.py`, `record_lint_*.py`,
+   `questions.py`, `swarm_modules.py`, `swarm_uml.py`.
+8. **`swarm-forge-lite/harness_tests/persistent/`**. The tests pin the intended
+   behavior more honestly than the prose. Read the unit tests for the area you
+   will change.
+9. **The record shape**: one migrated subsystem under
+   `swarm-forge-lite/design/subsystems/<subsystem>/`. Read
+   `requirements.md`, `architecture.md`, one `modules/<m>.md`, `review.md`,
+   `SKELETON.md`, and `GOAL.md`. Do not read `model.html`.
+10. **The wired project**: `harness.json`, `PROJECT.md`, and the target layout
+    under `ds91app-jetson-mount/`. You must know what is shipped and therefore
+    untouchable.
+
+### You are ready only when you can answer
+
+- Which role writes `requirements.md`, `architecture.md`, `modules/<m>.md`,
+  `SKELETON.md`, and `model.json`?
+- Which gate ends each role, and which tool enforces it?
+- Which block does a design role end with, and which does a build role use?
+- What is per-lane, and what is shared?
+- Which five checks does `gate` run by default, and what does `crap:true` add?
+- What is generated, and what is authored?
+- What does the project ship, and what is only working state?
+- Which files are project-owned and must never travel?
+
+If you cannot answer one, read the exact file that owns it before editing.
+
+### Guardrails for a new agent
+
+- Do not redesign the pipeline before you can explain the current one.
+- Do not delete a gate because its artifact is small. Delete the artifact, keep
+  the check.
+- Do not edit more than one layer at a time: tool, prompt, protocol, docs.
+  Change them together only when one rule moved.
+- Do not touch `model.html`, generated skeletons, `dump/`, or `hot_tests/`.
+- Do not touch the shipped project.
+- Run the baseline before and after. Update this file with the result.
+
 ---
 
 ## 1. The owner's goal, in the owner's words
@@ -516,7 +581,7 @@ style guide.
 
 ### Takeover checklist
 
-1. Read this file fully.
+1. Read this file fully, then complete the onboarding in section 0.5.
 2. Run the baseline commands in section 4. If any fail, fix that first and update
    this file.
 3. Pick one open item from section 5. Prefer P0.
@@ -599,5 +664,6 @@ SWARM_CONFIG=$PWD/harness.selftest.json \
 | 2026-10-18 | `0ba4dc2` | flat record, 29 tools, −79% prompts, migrated records, clone sync |
 | 2026-10-18 | `a60793d` | takeover guide added; orchestrator accepts `STATE` and `STATUS` |
 | 2026-10-18 | this commit | planned feature track: shared task board and deferred goal queue |
+| 2026-10-18 | this commit | onboarding read order and pre-edit understanding gate |
 
 Update this table after every publish. Keep it short: date, commit, one line.
