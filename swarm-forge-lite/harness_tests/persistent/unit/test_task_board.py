@@ -12,7 +12,7 @@ BOARD = """# TASK BOARD
 Updated: 2026-10-18T08:00:00Z
 Stale after: 60 minutes
 
-| Claim | Session | Role | Subsystem | Task | Files | State | Since |
+| Claim | Session | Role | Subsystem | Task | Files | State | Touched |
 |---|---|---|---|---|---|---|---|
 | C1 | ses_a | orchestrator | audio-output | implement clip gate | app/audio/**, tests/audio/** | active | 2026-10-18T07:30:00Z |
 | C2 | ses_b | orchestrator | detection-extraction | add filter | app/detect/** | active | 2026-10-18T05:00:00Z |

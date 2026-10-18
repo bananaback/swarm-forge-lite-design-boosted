@@ -57,15 +57,18 @@ The board is awareness, not a lock.
 1. Read `design/TASK_BOARD.md` before you classify or dispatch. If it is absent,
    copy `design/templates/TASK_BOARD.md` to it.
 2. Start a unit of work with one `active` row: `C<n>`, the full session id, the
-   role, subsystem, task, file allowlist, state, and an ISO-8601 UTC `Since`.
+   role, subsystem, task, file allowlist, state, and an ISO-8601 UTC `Touched`.
+   Refresh `Touched` on every dispatch for that claim. It is the last-touched
+   time, not the start.
 3. Build `#OTHER SESSIONS`:
    `python3 <pack>/tools/shared/harness.py board --session <id> --subsystem <s> --files "<globs>"`.
    Paste the block into the dispatch. Same subsystem or overlapping files is a
    conflict: queue, pick a disjoint task, or ask the operator. Never start a
    second writer.
 4. On done or blocked, set the row's state. Keep at most the last 5 done rows;
-   delete older done rows. An active claim past `Stale after` is stale: surface
-   it and let the operator decide.
+   delete older done rows. An active claim whose `Touched` is older than
+   `Stale after` (60 minutes by default) is stale: surface it and let the
+   operator decide.
 5. `pick the todo goal` takes the top `Ready: yes` row of `design/TODO.md`;
    `pick T<n>` takes that id. Move it to the board, then use the normal change
    class. Never auto-pick. Record the result and the commit in `TODO.md`.

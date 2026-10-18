@@ -231,7 +231,7 @@ The shipped requirement document is `<SPECS>/NN-<subsystem>.md`, a view synced b
 ### Cross-session state
 
 ```
-design/TASK_BOARD.md   shared claims: claim, session, role, subsystem, task, files, state, since
+design/TASK_BOARD.md   shared claims: claim, session, role, subsystem, task, files, state, touched
 design/TODO.md         deferred goals: id, goal, subsystem, ready, done when, notes
 ```
 
@@ -518,7 +518,7 @@ Proposed shape:
 Updated: <ISO-8601 UTC>
 Stale after: 60 minutes
 
-| Claim | Session | Role | Subsystem | Task | Files | State | Since |
+| Claim | Session | Role | Subsystem | Task | Files | State | Touched |
 |---|---|---|---|---|---|---|---|
 | C1 | ses_ab12... | orchestrator | audio-output | implement clip gate | app/audio/**, tests/audio/** | active | 2026-10-18T07:30:00Z |
 ```
@@ -527,7 +527,8 @@ Rules:
 
 1. The orchestrator reads the board before it classifies or dispatches.
 2. The orchestrator writes one claim row when it starts a unit of work. `Session`
-   is the full session id. `Files` is the allowlist, not a vague area.
+   is the full session id. `Files` is the allowlist, not a vague area. `Touched`
+   is refreshed on every dispatch; it is the last-touched time, not the start.
 3. Every dispatch carries `#OTHER SESSIONS`: the active claims whose files
    overlap the role's allowlist. The subagent knows a changed file may belong to
    another session.
@@ -536,8 +537,9 @@ Rules:
    asks the operator, or picks a disjoint task.
 5. On done or blocked, the orchestrator marks the claim `done` or `blocked` and
    keeps the row for one short history window. It keeps the last 5 done rows.
-6. A claim older than `Stale after` without an update is `stale`. A stale claim
-   is surfaced, not silently broken. The operator decides.
+6. An active claim whose `Touched` time is older than `Stale after` (60 minutes
+   by default) is `stale`. A stale claim is surfaced, not silently broken. The
+   operator decides.
 7. The board is **awareness, not a lock**. Correctness still comes from disjoint
    write sets and frozen interfaces.
 8. Only the orchestrator writes the board. Subagents report files and results.

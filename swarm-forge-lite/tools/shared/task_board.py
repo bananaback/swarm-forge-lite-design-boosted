@@ -34,15 +34,15 @@ class Claim:
     task: str
     files: tuple[str, ...]
     state: str
-    since: datetime | None
+    touched: datetime | None
 
     def is_active(self) -> bool:
         return self.state.lower() == ACTIVE
 
     def is_stale(self, now: datetime, minutes: int) -> bool:
-        if not self.is_active() or self.since is None:
+        if not self.is_active() or self.touched is None:
             return False
-        return (now - self.since).total_seconds() > minutes * 60
+        return (now - self.touched).total_seconds() > minutes * 60
 
 
 @dataclass(frozen=True)
@@ -126,7 +126,7 @@ def read_board(path: Path) -> Board:
                     task=table.value(row, "task") or "",
                     files=files,
                     state=(table.value(row, "state") or ACTIVE).strip(),
-                    since=_utc(table.value(row, "since") or ""),
+                    touched=_utc(table.value(row, "touched", "since") or ""),
                 )
             )
     return Board(updated, stale, tuple(claims))
@@ -183,10 +183,12 @@ def render_other(
     for claim in claims:
         state = "stale" if claim.is_stale(now, minutes) else "active"
         files = ", ".join(claim.files) or "-"
-        since = claim.since.isoformat().replace("+00:00", "Z") if claim.since else "-"
+        touched = (
+            claim.touched.isoformat().replace("+00:00", "Z") if claim.touched else "-"
+        )
         lines.append(
             f"- {claim.id} {claim.session} [{claim.subsystem}] {state} "
-            f"{claim.task} files={files} since={since}"
+            f"{claim.task} files={files} touched={touched}"
         )
     return "\n".join(lines)
 
