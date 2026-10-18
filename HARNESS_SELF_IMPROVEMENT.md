@@ -300,6 +300,10 @@ Fixed along the way:
 - `message-publish` had no `GOAL.md`; added.
 - The orchestrator now routes both `STATE` (design roles) and `STATUS` (build roles).
 
+**Settled, do not reopen:** the model sampling is `temperature: 1`,
+`top_p: 0.95`. This is the tested best setup for the DeepSeek model in use. Do
+not lower it for “determinism”.
+
 ---
 
 ## 4. Verified current state
@@ -393,9 +397,6 @@ These are the remaining real items. Do not re-open closed items above.
   CONFLICT loop the same cap and name the escalation.
 - [ ] **Permissions precedence.** `git *` deny precedes specific allows; blanket
   allow precedes `.env` deny. State the precedence or simplify the rules.
-- [ ] **Sampling.** All roles run `temperature: 1`, `top_p: 0.95`. If
-  determinism matters for interrogator/specifier, lower it; otherwise remove
-  “deterministic” from the prose.
 - [ ] **`initWork` for non-design roles.** It now errors cleanly for
   specifier/coder, but the tool schema still advertises every role. Restrict the
   enum or document the refusal.
