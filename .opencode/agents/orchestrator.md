@@ -39,7 +39,8 @@ business effect.
 1. `swarm.envelope({role,subsystem,module})`.
 2. Add `#CHANGE CLASS`, `#FROZEN`, `#ALLOWLIST`, `#DONE`, `#VERIFY`.
 3. Send one `subagent` call with the envelope and the operator's ask.
-4. Read the returned protocol block. Route by `STATUS`.
+4. Read the returned protocol block. The build roles report `STATUS`; the design
+   roles report `STATE`. Route on either one.
 
 Answer a role's `ASK` yourself when it is design-internal. Ask the operator only
 for a business choice, a gate, or a blocker.
