@@ -373,7 +373,7 @@ python3 tools/shared/sync_pack.py --to ../tdd_harness
 cd ../tdd_harness/swarm-forge-lite
 SWARM_CONFIG=$PWD/harness.selftest.json \
   tools/shared/lane harness bash -c 'cd harness_tests && python3 -m pytest -q'
-# -> 263 passed, 4 skipped
+# -> 273 passed, 4 skipped
 ```
 
 Five PLANNED subsystems contain only `GOAL.md`: `camera-source`,
@@ -713,7 +713,7 @@ SWARM_CONFIG=$PWD/harness.selftest.json \
 | 2026-10-18 | `0ba4dc2` | flat record, 29 tools, −79% prompts, migrated records, clone sync |
 | 2026-10-18 | `a60793d` | takeover guide added; orchestrator accepts `STATE` and `STATUS` |
 | 2026-10-18 | `3e4b93f` | pass 3: strict traceability, uniform `ok`, `clean --drop`, `swarm.doctor`, entry points, loop cap, role enum, docs |
-| 2026-10-18 | this commit | pass 4: convo counts/paging/schema, shared Python DB reader, lane owner, one-command sync |
+| 2026-10-18 | `32dfec0` | pass 4: convo counts/paging/schema, shared Python DB reader, lane owner, one-command sync |
 | 2026-10-18 | this commit | planned feature track: shared task board and deferred goal queue |
 | 2026-10-18 | this commit | onboarding read order and pre-edit understanding gate |
 
