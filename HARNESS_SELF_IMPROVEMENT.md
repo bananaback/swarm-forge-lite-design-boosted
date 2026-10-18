@@ -8,6 +8,16 @@ without re-auditing the whole workspace.
 Last updated: **2026-10-18** · branch `v2-python` · baseline commit `0ba4dc2`
 (plus the prompt/doc sync that follows it) · both packs green.
 
+## 0. Next action
+
+Read sections 1–4, run the baseline in section 4, then take the **first unchecked
+P0 item in section 5**: make `trace-no-test` fail the record gate or add a strict
+mode. Change the code, the prompt/protocol that mentions it, and the test. Then
+follow the takeover checklist in section 7.
+
+Do not start by re-auditing the workspace. The audit is done. Continue from the
+open list.
+
 ---
 
 ## 1. The owner's goal, in the owner's words
