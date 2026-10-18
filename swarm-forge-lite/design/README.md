@@ -32,7 +32,7 @@ working state. Keep it short.
   top `Ready: yes` row; `--id T2` returns that row.
 
 A new workspace copies `templates/TASK_BOARD.md` and `templates/TODO.md` into
-`design/` when the first claim starts. The live files are project-owned.
+`design/` when the first unit starts. The live files are project-owned.
 
 ## Rules
 

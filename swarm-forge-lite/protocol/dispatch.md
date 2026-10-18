@@ -32,7 +32,7 @@ Then add:
 ```
 
 `#OTHER SESSIONS` is a copy of the other rows in `design/TASK_BOARD.md`, not a
-computed overlap. If another session names the same subsystem, ask the operator
+computed conflict. If another session names the same subsystem, ask the operator
 before a second writer starts. The board is a short note, not a lock.
 
 A foreign change is not corruption. Check `design/TASK_BOARD.md` before you

@@ -60,8 +60,7 @@ The board is a short note to other sessions, not a lock.
    are doing. Remove the row when the work is done. One row per unit.
 3. If another session names the same subsystem, ask the operator before you
    dispatch a second writer.
-4. Paste the other active rows as `#OTHER SESSIONS` (or `- none`). Do not compute
-   file overlaps or timers.
+4. Paste the other active rows as `#OTHER SESSIONS` (or `- none`).
 5. `pick the todo goal` takes the top `Ready: yes` row of `design/TODO.md`;
    `pick T<n>` takes that id. Move it to the board, then use the normal change
    class. Never auto-pick. Record the result and the commit in `TODO.md`.
