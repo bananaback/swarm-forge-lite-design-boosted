@@ -163,8 +163,8 @@ for layer in ("unit", "property"):
 ls features/*.feature | wc -l
 grep -hcE '^[[:space:]]*(Scenario|Scenario Outline):' features/*.feature | awk '{s+=$1} END {print s}'
 
-# step handlers: every .py under acceptance/steps/ except __init__.py
-ls acceptance/steps/*.py | grep -vc '__init__.py'
+# step handlers: every .py under acceptance/steps/, at any depth, except __init__.py
+find acceptance/steps -name '*.py' ! -name '__init__.py' | wc -l
 
 # acceptance: the count and the green or red result
 python3 acceptance/run_acceptance.py
@@ -200,6 +200,13 @@ file, for the source root as a whole and for each module directory under it:
 ```bash
 python3 - <the pack>/dump/target/coverage/python/lcov.info <<'PY'
 import sys
+
+# The project's source root, as a fragment of the report's paths. It is not a
+# prefix: read one SF: line and pick the segment that every source file shares.
+# Run the block once, read the message, and set it. A wrong fragment stops the
+# block. It never prints 0.0%.
+SEGMENT = "/src/"
+
 found, hit, cur = {}, {}, None
 for line in open(sys.argv[1]):
     line = line.rstrip()
@@ -212,9 +219,11 @@ for line in open(sys.argv[1]):
         found[cur] += 1
         if int(h) > 0:
             hit[cur] += 1
-root = [f for f in found if "/src/" in f]     # the source root segment
+root = [f for f in found if SEGMENT in f]
 lf = sum(found[f] for f in root)
 lh = sum(hit[f] for f in root)
+if not lf:
+    sys.exit(f"no file in the report matches {SEGMENT!r}. Set SEGMENT to the source root.")
 print(f"source root: {lh} / {lf} = {100*lh/lf:.1f}%  ({len(root)} files)")
 PY
 ```
