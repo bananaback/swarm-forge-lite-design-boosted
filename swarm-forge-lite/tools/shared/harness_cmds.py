@@ -34,11 +34,13 @@ def cmd_clean(
     target_name: str,
     paths: PathSet,
     tree: DisposableTree,
+    drop: bool = False,
 ) -> None:
     """Clear the target's roots.
 
     Run it inside a lane (`tools/shared/lane <subsystem> harness.py clean`) so it
-    touches only that subsystem's disposable roots."""
+    touches only that subsystem's disposable roots. `drop=True` also removes a
+    root that is empty after the clear, so no empty lane directory remains."""
     if target_name == "all" and not os.environ.get("SWARM_LANE"):
         raise HarnessError(
             "clean all needs a lane: run it through tools/shared/lane <subsystem>"
@@ -48,6 +50,9 @@ def cmd_clean(
         removed = tree.count_entries(root)
         tree.clear(root)
         print(ClearReport(label, root, removed).render())
+        if drop and root.is_dir() and not any(root.iterdir()):
+            tree.remove(root)
+            print(f"DROPPED {label}: {root}")
 
 
 # --------------------------------------------------------------------------- #
@@ -188,7 +193,10 @@ def cmd_init_work(args, paths: PathSet) -> None:
         )
     written = questions.emit_flat(args.role, work, getattr(args, "module", None))
     if not written:
-        raise HarnessError(f"role {args.role} has no flat record file")
+        raise HarnessError(
+            f"role {args.role} has no flat record file; only interrogator, "
+            "architect, designer, and critic call init-work"
+        )
     print(f"INIT {args.role}: wrote {len(written)} flat file(s) -> {work}")
 
 

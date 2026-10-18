@@ -296,7 +296,8 @@ testpaths = .
 ```
 
 - `testpaths = .` makes the persistent root its own pytest root, so
-  `cd <persistent root> && python3 -m pytest` works in place.
+  `<pack>/tools/shared/lane <subsystem> bash -c 'cd <persistent root> && python3 -m pytest'`
+  works in place.
 - The pytest cache is redirected by the `lane` wrapper, which adds
   `-o cache_dir=<pack>/dump/pytest-cache` through `PYTEST_ADDOPTS`. Do not put a
   `cache_dir` in `pytest.ini`: a bare `pytest` outside the lane writes
@@ -339,11 +340,13 @@ python3 swarm-forge-lite/tools/shared/harness.py config
 # 3. Clean the shared areas before the first run of a new project
 python3 swarm-forge-lite/tools/shared/harness.py clean all
 
-# 4. The project's unit + property tests (from the chosen persistent root)
-cd <persistent root> && python3 -m pytest
+# 4. The project's unit + property tests, through the lane
+swarm-forge-lite/tools/shared/lane <subsystem> \
+  bash -c 'cd <persistent root> && python3 -m pytest'
 
 # 5. The project's acceptance pipeline (parse -> dry -> generate -> run)
-python3 <persistent root>/acceptance/run_acceptance.py
+swarm-forge-lite/tools/shared/lane <subsystem> \
+  python3 <persistent root>/acceptance/run_acceptance.py
 ```
 
 `<persistent root>` is the resolved `PERSIST` row: Option A is
@@ -397,6 +400,7 @@ with `SWARM_CONFIG` or `--config`:
 python3 swarm-forge-lite/tools/shared/harness.py \
   --config swarm-forge-lite/harness.myproject.json status
 SWARM_CONFIG=swarm-forge-lite/harness.myproject.json \
+  swarm-forge-lite/tools/shared/lane <subsystem> \
   python3 swarm-forge-lite/project_tests/persistent/acceptance/run_acceptance.py
 ```
 

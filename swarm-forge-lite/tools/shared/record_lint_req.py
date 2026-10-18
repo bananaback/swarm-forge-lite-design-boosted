@@ -262,7 +262,7 @@ def lint_traceability(document: Document, report: Report, rn_set: set) -> None:
                 "trace-orphan", table.path, line, f"{rn} is not a declared requirement"
             )
         if is_placeholder(table.value(row, "test")):
-            report.warn(
+            report.error(
                 "trace-no-test",
                 table.path,
                 line,

@@ -8,18 +8,21 @@ that answered.
 The plugin resolves the pack from `SWARM_PACK` (only when it holds
 `harness.json`), then the plugin-relative pack, then an upward walk from cwd.
 
-## Tools (29)
+## Tools (30)
 
 | Group | Tools |
 |---|---|
-| resolve | `status`, `modules`, `interface`, `goal`, `envelope` |
+| resolve | `status`, `envelope`, `modules`, `interface`, `goal`, `doctor` |
 | method | `guide` |
-| record | `check`, `lintRecord`, `genDoc`, `decisions`, `initWork`, `clean`, `checkEnvelope`, `vocabRename`, `genRecord` |
+| record | `check`, `lintRecord`, `genDoc`, `decisions`, `initWork`, `clean`, `checkEnvelope`, `vocabRename`, `genRecord`, `report` |
 | quality | `ruff`, `dry`, `crap`, `pytest`, `acceptance` |
 | gherkin | `gherkinParse`, `gherkinDry` |
-| UML | `uml` (`query`, `mutate`, `render`, `sync`, `scan`) |
-| aggregate | `gate`, `ready` |
-| meta | `docs`, `help`, `report`, `page` |
+| uml | `uml` |
+| aggregate | `page`, `gate`, `ready` |
+| meta | `docs`, `help` |
+
+Regenerate this table with `python3 <pack>/tools/shared/swarm_json.py docs
+'{"table":true}'`. A test keeps it equal to the catalog.
 
 ## Compact results
 

@@ -273,6 +273,7 @@ def cmd_check(args: dict) -> dict:
         report = record.lint_record_tree(workdir, specs)
     out = {"role": role, "subsystem": subsystem, "work": _short(workdir)}
     out.update(_report_summary(report))
+    out["ok"] = report.passed()
     out["stop_test"] = questions.render_stop_test(report)
     out["stop_test_line"] = questions.STOP_TESTS.get(role)
     if args.get("view") in ("rows", "full"):
@@ -302,6 +303,7 @@ def cmd_lint_record(args: dict) -> dict:
     report = record.lint_record_tree(target, specs)
     out = {"subsystem": subsystem, "record": _short(target)}
     out.update(_report_summary(report))
+    out["ok"] = report.passed()
     if args.get("view") in ("rows", "full"):
         out.update(_report_rows(report, int(args.get("limit", 50))))
     return out
@@ -360,6 +362,7 @@ def cmd_decisions(args: dict) -> dict:
         "subsystem": subsystem,
         "open": open_count,
         "total": len(rows),
+        "ok": open_count == 0,
         "rows": shown,
     }
 
@@ -387,7 +390,10 @@ def cmd_init_work(args: dict) -> dict:
         )
     written = questions.emit_flat(role, workdir, args.get("module"))
     if not written:
-        raise SwarmError(f"role {role} has no flat record file")
+        raise SwarmError(
+            f"role {role} has no flat record file; only interrogator, architect, "
+            "designer, and critic call initWork"
+        )
     return {
         "role": role,
         "work": _short(workdir),
@@ -396,7 +402,7 @@ def cmd_init_work(args: dict) -> dict:
 
 
 def cmd_clean(args: dict) -> dict:
-    """Clear a disposable root of the active lane."""
+    """Clear a disposable root of the active lane. drop:true removes an empty root."""
     target_name = args.get("target", "hot")
     paths = _paths()
     tree = harness.OsTree()
@@ -405,7 +411,11 @@ def cmd_clean(args: dict) -> dict:
     for label, root in target.roots(paths):
         removed = tree.count_entries(root)
         tree.clear(root)
-        cleared.append({"label": label, "path": _short(root), "removed": removed})
+        entry = {"label": label, "path": _short(root), "removed": removed}
+        if args.get("drop") and root.is_dir() and not any(root.iterdir()):
+            tree.remove(root)
+            entry["dropped"] = True
+        cleared.append(entry)
     return {"target": target_name, "cleared": cleared}
 
 

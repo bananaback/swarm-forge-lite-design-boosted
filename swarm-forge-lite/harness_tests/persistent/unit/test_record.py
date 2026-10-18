@@ -429,6 +429,35 @@ def test_traceability_orphan_and_missing(tmp_path):
     assert "trace-missing" in codes
 
 
+def test_a_traceability_row_without_a_test_is_an_error(tmp_path):
+    """A requirement may not settle without a named test."""
+    _write(
+        tmp_path,
+        "7-requirements.md",
+        """# R
+| Rn | EARS | Statement | Scale | Meter | Target | Verification |
+|---|---|---|---|---|---|---|
+| R1 | Ubiquitous | s | s | m | 1 | test |
+
+| ACn | Rn | Check |
+|---|---|---|
+| AC1 | R1 | ok |
+""",
+    )
+    _write(
+        tmp_path,
+        "11-traceability.md",
+        """# TRACE
+| Rn | Goal | Test |
+|---|---|---|
+| R1 | G1 | - |
+""",
+    )
+    report = record.lint_task(tmp_path)
+    assert [f.code for f in report.errors] == ["trace-no-test"]
+    assert not report.passed()
+
+
 def test_spec_number_duplicate_and_gap_are_warnings(tmp_path):
     """A repeated number and a hole in the sequence are both reported."""
     specs = tmp_path / "specs"

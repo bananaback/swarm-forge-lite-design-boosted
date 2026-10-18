@@ -158,6 +158,8 @@ class DisposableTree(Protocol):
 
     def clear(self, path: Path) -> None: ...
 
+    def remove(self, path: Path) -> None: ...
+
 
 class ResolvedWiring:
     """Adapt a wiring.Wiring to the PathSet port."""
@@ -219,6 +221,14 @@ class OsTree:
             else:
                 child.unlink()
 
+    def remove(self, path: Path) -> None:
+        """Remove an empty directory. A directory that is not empty stays."""
+        if path.is_dir():
+            try:
+                path.rmdir()
+            except OSError:
+                pass
+
 
 def load_path_set(config: str | None) -> PathSet:
     """Resolve wiring and wrap it; raise HarnessError on a bad config."""
@@ -271,5 +281,3 @@ def _optional_row(label: str, root: OptionalRoot, tree: DisposableTree) -> PathS
 
 def _persistent_row(root: PersistentRoot, tree: DisposableTree) -> PathStatus:
     return PathStatus("PERSIST", f"{root.path} ({root.kind})", tree.exists(root.path))
-
-

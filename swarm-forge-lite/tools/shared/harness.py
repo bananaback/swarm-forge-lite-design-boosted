@@ -5,6 +5,7 @@ Usage:
   harness config            print resolved wiring as JSON
   harness status            print every resolved path and the active lane
   harness clean [TARGET]    clean hot (default), state, artifacts, or all
+  harness clean --drop      also remove a root that is empty after the clear
   harness lint-record       lint a subsystem's record (or an explicit --record dir)
   harness gen-doc           sync a subsystem's requirement document to its record, keyed by id
   harness check ROLE        lint the record a role wrote, and write the computed stop test
@@ -121,6 +122,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     clean = sub.add_parser("clean")
     clean.add_argument("target", nargs="?", choices=TARGET_NAMES, default="hot")
+    clean.add_argument(
+        "--drop",
+        action="store_true",
+        help="remove the root itself when it is empty after the clear",
+    )
 
     lint = sub.add_parser("lint-record", help="lint a subsystem's requirement record")
     lint.add_argument("--subsystem")
@@ -200,7 +206,7 @@ def main(argv=None) -> int:
         elif args.command == "status":
             cmd_status(paths, tree)
         elif args.command == "clean":
-            cmd_clean(args.target, paths, tree)
+            cmd_clean(args.target, paths, tree, drop=args.drop)
         elif args.command == "lint-record":
             cmd_lint_record(args, paths)
         elif args.command == "gen-doc":

@@ -148,12 +148,14 @@ not a git repository, and it must not become one.
 
    ```bash
    git -C <clone> checkout v2-python
-   cd <clone>/swarm-forge-lite/harness_tests && SWARM_PROJECT=<clone> python3 -m pytest -q
+   cd <clone>/swarm-forge-lite
+   SWARM_CONFIG=$PWD/harness.selftest.json tools/shared/lane harness \
+     bash -c 'cd harness_tests && python3 -m pytest -q'
    ```
-   The clone keeps the placeholder `<PROJECT_ROOT>` in `harness.json` (it is the
-   unwired template), so its suite needs `SWARM_PROJECT=<clone>`; see WIRING.md,
-   the placeholder contract. The clone's suite must be green. It cannot use project
-   data, so a test that needs it belongs in `.harness-local`, not in the clone.
+   The clone's `harness.selftest.json` resolves inside the pack. `harness.json`
+   keeps the placeholder `<PROJECT_ROOT>` (it is the unwired template). The
+   clone's suite must be green. It cannot use project data, so a test that needs
+   it belongs in `.harness-local`, not in the clone.
 6. Commit and push:
 
    ```bash
@@ -200,7 +202,8 @@ never overwrite blind.
 
    ```bash
    python3 swarm-forge-lite/tools/shared/harness.py status     # every row [ok]
-   cd swarm-forge-lite/harness_tests && python3 -m pytest -q
+   swarm-forge-lite/tools/shared/lane harness \
+     bash -c 'cd swarm-forge-lite/harness_tests && python3 -m pytest -q'
    ```
    Run the project's acceptance pipeline too when the diff touched `project_tests/`.
 8. Write the full commit sha into `.harness-version`.

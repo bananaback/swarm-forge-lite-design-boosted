@@ -14,9 +14,26 @@ from swarm_support import (
 
 _WORKSPACE = PACK.parent
 
+
+def tool_table() -> str:
+    """The tool table, generated from the catalog so a README cannot drift."""
+    from swarm_json import TOOLS
+
+    lines = [f"## Tools ({len(TOOLS)})", "", "| Group | Tools |", "|---|---|"]
+    for group in _GROUPS:
+        names = [t["name"] for t in TOOLS if t["group"] == group]
+        if names:
+            cells = ", ".join(f"`{name}`" for name in names)
+            lines.append(f"| {group} | {cells} |")
+    return "\n".join(lines)
+
+
 def cmd_docs(args: dict) -> dict:
     """The compact catalog: every tool with a summary and one example."""
     from swarm_json import TOOLS
+
+    if args.get("table"):
+        return {"markdown": tool_table()}
     return {
         "pack": str(PACK),
         "backend": str(Path(__file__).resolve()),
@@ -38,6 +55,7 @@ def cmd_docs(args: dict) -> dict:
 def cmd_help(args: dict) -> dict:
     """One tool's full help. With no tool, the whole catalog."""
     from swarm_json import BY_NAME, TOOLS
+
     name = args.get("tool") or args.get("name")
     if not name:
         return {
@@ -61,6 +79,7 @@ def cmd_help(args: dict) -> dict:
 def _help_text(name: str | None = None) -> str:
     """A plain-text usage page, for `python3 swarm_json.py --help`."""
     from swarm_json import BY_NAME, TOOLS
+
     if name is None:
         lines = [
             "swarm_json -- the backend of the swarm.* Code Mode tools",
@@ -131,5 +150,3 @@ _GROUPS = [
     "aggregate",
     "meta",
 ]
-
-

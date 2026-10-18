@@ -4,6 +4,28 @@ from swarm_catalog_support import _M, _R, _tool
 
 GATE_TOOLS = [
     _tool(
+        "doctor",
+        "resolve",
+        "harness.py status + toolchain probes",
+        "Check the wiring, the toolchain, and the agent model plan.",
+        [
+            _M,
+        ],
+        "{lane, checks:[{check,ok,detail}], pass}",
+        "swarm.doctor({subsystem:'clip'})",
+        {
+            "lane": "clip",
+            "checks": [
+                {"check": "PACK", "ok": True, "detail": "swarm-forge-lite"},
+                {"check": "WORKSPACE", "ok": True, "detail": "myproject"},
+                {"check": "model variants", "ok": True, "detail": "not declared"},
+            ],
+            "pass": True,
+        },
+        "Run it once at session start. A red row names the exact item to fix. It never writes.",
+        "orchestrator",
+    ),
+    _tool(
         "page",
         "aggregate",
         "list tools",
@@ -67,12 +89,12 @@ GATE_TOOLS = [
                 "Subset of ['check','record','decisions'].",
             ),
         ],
-        "{check, record, decisions, pass}",
+        "{check, record, decisions, pass} with ok per check",
         "swarm.ready({role:'architect',subsystem:'clip'})",
         {
-            "check": {"passed": True},
-            "record": {"passed": True},
-            "decisions": {"open": 0},
+            "check": {"passed": True, "ok": True},
+            "record": {"passed": True, "ok": True},
+            "decisions": {"open": 0, "ok": True},
             "pass": True,
         },
         "The record gate in one call: check, lint-record, and the open decision count.",
@@ -122,8 +144,8 @@ GATE_TOOLS = [
         "meta",
         "-",
         "The compact catalog: every tool with a summary and an example.",
-        [],
-        "{pack, backend, tools:[{command,summary,example}]}",
+        [("table", "bool", "false", "Return the Markdown tool table only.")],
+        "{pack, backend, tools:[{command,summary,example}]} or {markdown}",
         "swarm.docs()",
         {"tools": [{"command": "ruff", "summary": "..."}]},
         "The catalog: every tool with a summary and an example. Then swarm.help({tool}) for one tool.",

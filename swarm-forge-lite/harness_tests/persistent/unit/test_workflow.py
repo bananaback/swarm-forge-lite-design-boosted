@@ -12,6 +12,7 @@ import json
 import re
 from pathlib import Path
 
+import pytest
 import swarm_json
 import swarm_support
 
@@ -108,6 +109,42 @@ def test_every_tool_the_plugin_registers_is_catalogued_and_the_reverse():
     text = PLUGIN.read_text(encoding="utf-8")
     registered = set(re.findall(r"\badd\(\s*\n\s*\"([A-Za-z]+)\"", text))
     assert registered == set(catalog())
+
+
+def test_the_doctor_checks_the_agent_model_plan(monkeypatch, tmp_path):
+    """A declared model variant must exist; an external provider is reported, not failed."""
+    import swarm_gate
+
+    workspace = tmp_path / "work"
+    pack = workspace / "swarm-forge-lite"
+    agents = workspace / ".opencode" / "agents"
+    pack.mkdir(parents=True)
+    agents.mkdir(parents=True)
+    (agents / "probe.md").write_text("---\nmodel: p/m#high\n---\n", encoding="utf-8")
+    (workspace / "opencode.json").write_text(
+        json.dumps(
+            {
+                "model": "p/m#high",
+                "providers": {"p": {"models": {"m": {"variants": [{"id": "high"}]}}}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(swarm_gate, "PACK", pack)
+    checks = swarm_gate._model_checks()
+    assert checks[0]["ok"] is True
+    assert "1 agents" in checks[0]["detail"]
+
+    (agents / "probe.md").write_text("---\nmodel: p/m#low\n---\n", encoding="utf-8")
+    assert swarm_gate._model_checks()[0]["ok"] is False
+
+
+def test_the_plugin_readme_tool_table_is_generated_from_the_catalog():
+    """The README table must be the catalog's own table, not a hand copy."""
+    from swarm_help import tool_table
+
+    readme = PLUGIN.parent / "README.md"
+    assert tool_table() in readme.read_text(encoding="utf-8")
 
 
 def test_a_bare_output_name_goes_to_the_artifacts_root(monkeypatch, tmp_path):
@@ -263,34 +300,71 @@ def test_ready_passes_only_when_every_part_passes(monkeypatch):
     monkeypatch.setattr(
         swarm_json,
         "cmd_check",
-        lambda a: {"passed": True, "errors": 0, "warnings": 0, "byCode": {}},
+        lambda a: {
+            "passed": True,
+            "errors": 0,
+            "warnings": 0,
+            "byCode": {},
+            "ok": True,
+        },
     )
     monkeypatch.setattr(
-        swarm_json, "cmd_lint_record", lambda a: {"passed": True, "errors": 0}
+        swarm_json,
+        "cmd_lint_record",
+        lambda a: {"passed": True, "errors": 0, "ok": True},
     )
-    monkeypatch.setattr(swarm_json, "cmd_decisions", lambda a: {"open": 0})
+    monkeypatch.setattr(swarm_json, "cmd_decisions", lambda a: {"open": 0, "ok": True})
     assert swarm_json.cmd_ready({"role": "critic", "subsystem": "x"})["pass"] is True
 
-    monkeypatch.setattr(swarm_json, "cmd_decisions", lambda a: {"open": 1})
+    monkeypatch.setattr(swarm_json, "cmd_decisions", lambda a: {"open": 1, "ok": False})
     assert swarm_json.cmd_ready({"role": "critic", "subsystem": "x"})["pass"] is False
 
-    monkeypatch.setattr(swarm_json, "cmd_decisions", lambda a: {"open": 0})
+    monkeypatch.setattr(swarm_json, "cmd_decisions", lambda a: {"open": 0, "ok": True})
     monkeypatch.setattr(
         swarm_json,
         "cmd_check",
-        lambda a: {"passed": False, "errors": 1, "warnings": 0, "byCode": {"x": 1}},
+        lambda a: {
+            "passed": False,
+            "errors": 1,
+            "warnings": 0,
+            "byCode": {"x": 1},
+            "ok": False,
+        },
     )
+    assert swarm_json.cmd_ready({"role": "critic", "subsystem": "x"})["pass"] is False
+
+
+def test_a_record_command_without_a_subsystem_or_work_raises_cleanly():
+    """A missing selector must be a SwarmError, never a TypeError on a None path."""
+    for command in (swarm_json.cmd_check, swarm_json.cmd_decisions):
+        with pytest.raises(swarm_json.SwarmError, match="subsystem or work"):
+            command({"role": "architect"})
+
+
+def test_ready_uses_each_commands_ok_verdict(monkeypatch):
+    """A command that says ok:false fails the gate even when its counts look clean."""
+    monkeypatch.setattr(
+        swarm_json, "cmd_check", lambda a: {"passed": True, "errors": 0, "ok": False}
+    )
+    monkeypatch.setattr(
+        swarm_json,
+        "cmd_lint_record",
+        lambda a: {"passed": True, "errors": 0, "ok": True},
+    )
+    monkeypatch.setattr(swarm_json, "cmd_decisions", lambda a: {"open": 0, "ok": True})
     assert swarm_json.cmd_ready({"role": "critic", "subsystem": "x"})["pass"] is False
 
 
 def test_gate_passes_only_when_every_check_is_clean(monkeypatch):
     """The terminal gate is an AND. One finding must fail it."""
-    monkeypatch.setattr(swarm_json, "cmd_dry", lambda a: {"total": 0})
-    monkeypatch.setattr(swarm_json, "cmd_ruff", lambda a: {"total": 0, "byCode": {}})
+    monkeypatch.setattr(swarm_json, "cmd_dry", lambda a: {"total": 0, "ok": True})
+    monkeypatch.setattr(
+        swarm_json, "cmd_ruff", lambda a: {"total": 0, "byCode": {}, "ok": True}
+    )
     checks = {"subsystem": "x", "checks": ["dry", "ruff"]}
     assert swarm_json.cmd_gate(checks)["pass"] is True
 
-    monkeypatch.setattr(swarm_json, "cmd_dry", lambda a: {"total": 3})
+    monkeypatch.setattr(swarm_json, "cmd_dry", lambda a: {"total": 3, "ok": False})
     assert swarm_json.cmd_gate(checks)["pass"] is False
 
 

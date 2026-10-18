@@ -87,6 +87,9 @@ def cmd_pytest(args: dict) -> dict:
         "failures": failures,
         "summary": "; ".join(summaries) or None,
         "exit": max(exits) if exits else 0,
+        "ok": (max(exits) if exits else 0) == 0
+        and tallies["failed"] == 0
+        and tallies["errors"] == 0,
     }
 
 
@@ -129,6 +132,7 @@ def cmd_acceptance(args: dict) -> dict:
         "failures": failures,
         "summary": "; ".join(summaries) or None,
         "exit": max(exits) if exits else 0,
+        "ok": (max(exits) if exits else 0) == 0 and tallies["failed"] == 0,
     }
 
 

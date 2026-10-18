@@ -69,7 +69,9 @@ verbatim. Cite inputs as `path:line`. Verify every citation before sending.
 | `new-subsystem` | full chain |
 
 The class comes from the change, never from record state. A business effect is
-the only reason to escalate to `requirement-level`.
+the only reason to escalate to `requirement-level`. A `module-internal` change
+starts from the existing module file and its feature. A `module-cut` change
+starts from `architecture.md` and the accepted `SKELETON.md`.
 
 ## Scope gate
 

@@ -28,6 +28,10 @@ operator
 | test-reviewer | `VERDICT: accept` |
 | terminal | `swarm.gate({subsystem,feature,crap:true})` |
 
+Every record and quality command returns `ok`. `swarm.ready` and `swarm.gate`
+return `pass:true` only when every selected command returns `ok:true`. Never
+infer a gate from a count.
+
 ## Durable outputs
 
 - `docs/specs/NN-<subsystem>.md` — shipped requirement document.
@@ -57,7 +61,9 @@ Everything else in the record is working state. Keep it short. Do not ship it.
 
 - `contained` -> hotfixer alone.
 - `module-internal` -> affected designer, critic, coder, test-reviewer, refactorer.
+  Entry: the existing `modules/<module>.md` and its accepted feature.
 - `module-cut` -> architect first, then the build loop.
+  Entry: `architecture.md` and the accepted `SKELETON.md`.
 - `requirement-level` / `new-subsystem` -> full chain.
 
 The class comes from the change. Never escalate without a business effect.

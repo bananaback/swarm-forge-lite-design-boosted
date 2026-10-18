@@ -5,15 +5,21 @@ to improve the SwarmForge Lite harness. It records the owner's long-term goal, t
 decisions already made, what is finished, what is still open, and how to continue
 without re-auditing the whole workspace.
 
-Last updated: **2026-10-18** · branch `v2-python` · baseline commit `0ba4dc2`
-(plus the prompt/doc sync that follows it) · both packs green.
+Last updated: **2026-10-18** · branch `v2-python` · pass 3 closes all
+actionable P0, P1, and P2 items · both packs green.
 
 ## 0. Next action
 
-Read sections 1–4, run the baseline in section 4, then take the **first unchecked
-P0 item in section 5**: make `trace-no-test` fail the record gate or add a strict
-mode. Change the code, the prompt/protocol that mentions it, and the test. Then
-follow the takeover checklist in section 7.
+Pass 3 is finished. Read sections 1–4 and run the baseline in section 4 before
+touching the harness.
+
+The only open work left is deliberate:
+
+- **P1 measurement:** run one real, operator-nominated feature through the flat
+  flow and record per-role tokens. It needs a real feature and spends real
+  tokens, so only the operator starts it.
+- **P2 `convo`:** fix its N+1 listing only if it becomes a real tax.
+- **P3 scale:** conditional on concurrent sessions. `swarm.sync` stays excluded.
 
 Do not start by re-auditing the workspace. The audit is done. Continue from the
 open list.
@@ -234,18 +240,18 @@ The record has **no** `01-interrogator/`, `02-architect/`, `04-critic/`,
 
 ### Tools
 
-29 `swarm.*` Code Mode tools:
+30 `swarm.*` Code Mode tools:
 
 | Group | Tools |
 |---|---|
-| resolve | `status`, `modules`, `interface`, `goal`, `envelope` |
+| resolve | `status`, `modules`, `interface`, `goal`, `envelope`, `doctor` |
 | method | `guide` |
-| record | `check`, `lintRecord`, `genDoc`, `decisions`, `initWork`, `clean`, `checkEnvelope`, `vocabRename`, `genRecord` |
+| record | `check`, `lintRecord`, `genDoc`, `decisions`, `initWork`, `clean`, `checkEnvelope`, `vocabRename`, `genRecord`, `report` |
 | quality | `ruff`, `dry`, `crap`, `pytest`, `acceptance` |
 | gherkin | `gherkinParse`, `gherkinDry` |
 | UML | `uml` (`query`, `mutate`, `render`, `sync`, `scan`) |
-| aggregate | `gate`, `ready` |
-| meta | `docs`, `help`, `report`, `page` |
+| aggregate | `gate`, `ready`, `page` |
+| meta | `docs`, `help` |
 
 `gate({subsystem,feature,crap:true})` is the terminal gate. It returns an
 explicit `ok` per check. `ready` fails closed on a check error. `pytest` and
@@ -274,6 +280,18 @@ explicit `ok` per check. `ready` fails closed on a check error. `pytest` and
 | Code Mode tools | 36 | **29** | **−7** |
 | Record files per subsystem | ~20 | **4 + model** | **−75%** |
 | Design-record files | 533 | 101 | mostly generated HTML remains |
+
+Pass 3 did not cut structure. It closed correctness gaps and made one gate
+stricter. The one new tool is `doctor`, a startup check:
+
+| Metric | Pass 2 | Pass 3 | Change |
+|---|---:|---:|---:|
+| Agent prompts (10) | 25,410 B | 25,865 B | +455 B (doctor, two entry points, loop cap) |
+| Constitution | 9,125 B | 9,750 B | +625 B (change-class entry, permission precedence) |
+| Protocol | 14,173 B | 14,581 B | +408 B (ok rule, entry points, CONFLICT cap) |
+| Code Mode tools | 29 | **30** | +1 (`doctor`) |
+| Pack self-tests | 279 | **285** | +6 |
+| Record errors | 0 | 0 | `trace-no-test` is now an error |
 
 Specific removals:
 
@@ -314,7 +332,7 @@ Run these before changing anything. They are the baseline.
 # project pack self-tests
 cd swarm-forge-lite
 tools/shared/lane harness bash -c 'cd harness_tests && python3 -m pytest -q'
-# -> 279 passed
+# -> 285 passed
 
 # project suite (the shipped code)
 tools/shared/lane audio-output bash -c \
@@ -324,6 +342,10 @@ tools/shared/lane audio-output bash -c \
 # lint the tools and tests
 python3 tools/shared/ruff4py tools harness_tests
 # -> All checks passed
+
+# check the resolved roots, toolchain, and agent model plan
+python3 tools/shared/swarm_json.py doctor '{"subsystem":"audio-output"}' | tail -1
+# -> "pass": true
 
 # every full record
 for s in audio-output detection-extraction message-publish model-file-registry \
@@ -337,7 +359,7 @@ done
 cd ../tdd_harness/swarm-forge-lite
 SWARM_CONFIG=$PWD/harness.selftest.json \
   tools/shared/lane harness bash -c 'cd harness_tests && python3 -m pytest -q'
-# -> 257 passed, 4 skipped
+# -> 263 passed, 4 skipped
 ```
 
 Five PLANNED subsystems contain only `GOAL.md`: `camera-source`,
@@ -370,56 +392,61 @@ These are the remaining real items. Do not re-open closed items above.
 
 ### P0 — correctness and trust
 
-- [ ] **`trace-no-test` is still a warning.** A requirement can settle without a
-  test. Decide whether `ready` runs strict mode or the rule becomes an error.
-  File: `tools/shared/record_lint_req.py`.
-- [ ] **`clean` leaves empty lane directories.** Add a `--rmdir`/`drop` behavior
-  or document it. File: `tools/shared/harness_cmds.py`.
-- [ ] **Uniform `ok` only exists in `gate`.** `ready` still infers from `passed`.
-  Give every command an `ok` and make all aggregates use it. Files:
-  `swarm_gate.py`, `swarm_core.py`, `swarm_quality.py`, `swarm_test.py`.
-- [ ] **`swarm_json.check` without `subsystem`/`work` can build a `None` path**
-  and raise `TypeError` instead of a clean `SwarmError`. File: `swarm_core.py`.
-- [ ] **Model/provider check.** Agent frontmatter uses
-  `deepseek/deepseek-flash#low`. The `deepseek` provider exposes that variant,
-  but nothing verifies the plan at startup. A tiny `swarm.doctor` is proposed
-  below. Do not churn the model unless a real session fails.
+- [x] **`trace-no-test` is an error.** A traceability row with no test now fails
+  the record gate. The message-publish record named real tests to clear it.
+  Files: `tools/shared/record_lint_req.py`, interrogator prompt, stop test.
+- [x] **`clean` can drop empty lane directories.** `harness.py clean --drop` and
+  `swarm.clean({drop:true})` remove a root that is empty after the clear.
+  Files: `harness.py`, `harness_cmds.py`, `harness_values.py`, `swarm_core.py`.
+- [x] **Uniform `ok`.** `check`, `lintRecord`, `decisions`, `ruff`, `dry`,
+  `format`, `pytest`, `acceptance`, and `crap` return `ok`. `gate` and `ready`
+  use it and no longer infer from a count.
+- [x] **`check`/`decisions` without a selector.** Both raise a clean `SwarmError`;
+  a regression test runs both paths.
+- [x] **Model/provider check.** `swarm.doctor` verifies roots, the toolchain,
+  agent model shape, and declared variants. An external provider is reported as
+  unverifiable, not failed. Files: `swarm_gate.py`, catalog, plugin.
 
 ### P1 — design-team cost and ambiguity
 
 - [ ] **Run one real feature through the flat flow** and record per-role tokens.
-  This is the only way to prove the design team's cost fell. Use the existing
-  project specs; do not invent a feature.
-- [ ] **Change-class entry points.** `module-internal` and `module-cut` still
-  need a defined starting input (existing feature/skeleton). Add one line to the
-  orchestrator and protocol.
-- [ ] **Loop caps.** The orchestrator caps the test-reviewer loop at 3; give the
-  CONFLICT loop the same cap and name the escalation.
-- [ ] **Permissions precedence.** `git *` deny precedes specific allows; blanket
-  allow precedes `.env` deny. State the precedence or simplify the rules.
-- [ ] **`initWork` for non-design roles.** It now errors cleanly for
-  specifier/coder, but the tool schema still advertises every role. Restrict the
-  enum or document the refusal.
+  Deferred: needs an operator-nominated feature and spends real tokens. Do not
+  invent one.
+- [x] **Change-class entry points.** `module-internal` starts from the existing
+  module file and feature. `module-cut` starts from `architecture.md` and the
+  accepted `SKELETON.md`. Files: orchestrator, `protocol/README.md`,
+  `communication.md`.
+- [x] **Loop caps.** The CONFLICT loop has the same cap as the test-reviewer loop
+  (3 rounds), then `CONFLICT: unresolved` goes to the operator. Files:
+  orchestrator, `design-protocol.md`.
+- [x] **Permissions precedence.** `AGENTS.md` states last-match-wins and the
+  global-before-agent order. The existing rules are correct under that rule.
+- [x] **`initWork` for non-design roles.** The plugin schema and catalog restrict
+  the role enum to interrogator, architect, designer, and critic. The backend
+  error names those roles.
 
 ### P2 — docs and observability
 
-- [ ] **Add `swarm.doctor`.** Resolve pack/config/roots, check the model/variant,
-  `bb`, `ruff`, `coverage`, and multi-root consistency; print one green/red line.
-- [ ] **Generate tool tables from the catalog** (`swarm_help.py` / `TOOLS`) so
-  README and `docs()` cannot drift again.
-- [ ] **WIRING/INSTALL/UPDATE** still contain a few direct-pytest examples and
-  generic prose. Align them with the lane rule and flat record.
-- [ ] **`PUBLISH-DOCS.md`** still uses `find`; workspace `AGENTS.md` forbids it.
-- [ ] **`page` and handle output** are rarely used. Remove both together, or keep
-  them documented as a large-result escape hatch.
-- [ ] **`convo`** still has N+1 listing, role-filter paging, and schema
-  fragility. Fix only if it becomes a real tax.
+- [x] **`swarm.doctor`.** Resolves pack/config/roots, checks Python, pytest,
+  ruff, coverage, `bb`, `node`, multi-root presence, and the agent model plan.
+  Prints one `pass`, with a `{check,ok,detail}` row per item.
+- [x] **Tool tables follow the catalog.** `swarm.docs({table:true})` renders the
+  Markdown table from `TOOLS`. A test keeps the plugin README equal to it.
+- [x] **WIRING/INSTALL/UPDATE.** Direct pytest examples now run through the lane
+  wrapper. The clone `UPDATE.md` names the selftest config it actually uses.
+- [x] **`PUBLISH-DOCS.md` uses no `find`.** The step-handler count and the
+  publish verify block are Python snippets.
+- [x] **`page` and handle output stay.** They remain documented as the
+  large-result escape hatch; no role reads them in a normal run.
+- [ ] **`convo` N+1 listing.** Deferred: it is not a pack tool and is not a
+  measured tax yet. Fix only when a session pays for it.
 
 ### P3 — scale
 
 - [ ] Per-lane claim metadata (`.swarmforge/<lane>/owner`) if concurrent sessions
   become common.
-- [ ] `swarm.report` and `convo` duplicate DB parsing. Share one reader.
+- [ ] `swarm.report` and `convo` duplicate DB parsing. `convo` is outside the
+  pack, so this waits for a real reader change.
 - [ ] One-command sync. The operator excluded `swarm.sync`; do not add it
   without explicit approval.
 
@@ -664,6 +691,7 @@ SWARM_CONFIG=$PWD/harness.selftest.json \
 | 2026-10-18 | `8bd980a` | baseline before the subtraction pass |
 | 2026-10-18 | `0ba4dc2` | flat record, 29 tools, −79% prompts, migrated records, clone sync |
 | 2026-10-18 | `a60793d` | takeover guide added; orchestrator accepts `STATE` and `STATUS` |
+| 2026-10-18 | this commit | pass 3: strict traceability, uniform `ok`, `clean --drop`, `swarm.doctor`, entry points, loop cap, role enum, docs |
 | 2026-10-18 | this commit | planned feature track: shared task board and deferred goal queue |
 | 2026-10-18 | this commit | onboarding read order and pre-edit understanding gate |
 

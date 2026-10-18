@@ -74,6 +74,8 @@ Rules:
   framework, element, or code span in a requirement statement.
 - One verification method per requirement.
 - Every `Rn` has at least one `ACn`. Every `ACn` names a real `Rn`.
+- Every traceability row names the test that closes its `Rn`. A blank test is an
+  error, not a warning.
 - A value you cannot obtain is a `DECISION` row. Never invent it.
 - Scope gate: near-term use cases, expected scale, out of scope. Record the
   answers before you write the spec.

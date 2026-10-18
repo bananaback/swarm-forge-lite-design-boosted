@@ -109,7 +109,7 @@ ROLE_TOOLS: dict[str, str] = {
 }
 
 STOP_TESTS: dict[str, str] = {
-    "interrogator": "each Rn has one EARS pattern, Scale/Meter/Target, one verification, and one ACn; each ACn names an Rn; each Cn has a class; each Xn has a reason; each Rn has a traceability row; zero open decisions; the spec document matches the record.",
+    "interrogator": "each Rn has one EARS pattern, Scale/Meter/Target, one verification, and one ACn; each ACn names an Rn; each Cn has a class; each Xn has a reason; each Rn has a traceability row that names its test; zero open decisions; the spec document matches the record.",
     "architect": "write sets are disjoint; the graph is acyclic; one secret per module; every shared edge has a frozen interface section in architecture.md; every acceptance check crosses a declared interface; zero model violations; zero open decisions.",
     "designer": "every method has pre, post, invariant, and one CQS tag; every acceptance check has a named test wired to a signature; every OCP seam is built or has a YAGNI reason; no duplicated policy; zero open decisions; every frozen interface is honored.",
     "critic": "no implementer violates a frozen interface; no interface method is unused by every client; zero duplicated policy across modules; every module earns its keep; SKELETON.md is generated; zero model violations; zero open decisions.",
@@ -124,7 +124,6 @@ STOP_TESTS: dict[str, str] = {
 # --------------------------------------------------------------------------- #
 # Composition roots used by harness.py
 # --------------------------------------------------------------------------- #
-
 
 
 FLAT_FILES = {

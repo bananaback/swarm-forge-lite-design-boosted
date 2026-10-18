@@ -58,6 +58,7 @@ from swarm_gate import (  # noqa: F401
     _checked,
     _table_exists,
     _write_union_skeleton,
+    cmd_doctor,
     cmd_gate,
     cmd_gen_record,
     cmd_ready,
@@ -144,24 +145,17 @@ from swarm_uml import (  # noqa: F401
 PACK = _PACK_ALIAS
 HERE = _HERE_ALIAS
 
-TOOLS = (
-    CORE_TOOLS
-    + MODULES_TOOLS
-    + QUALITY_TOOLS
-    + TEST_TOOLS
-    + UML_TOOLS
-    + GATE_TOOLS
-)
+TOOLS = CORE_TOOLS + MODULES_TOOLS + QUALITY_TOOLS + TEST_TOOLS + UML_TOOLS + GATE_TOOLS
 BY_NAME = {t["name"]: t for t in TOOLS}
 
 COMMANDS = {
     "status": cmd_status,
+    "doctor": cmd_doctor,
     "modules": cmd_modules,
     "interface": cmd_interface,
     "goal": cmd_goal,
     "envelope": cmd_envelope,
     "guide": cmd_guide,
-
     "check": cmd_check,
     "lint_record": cmd_lint_record,
     "decisions": cmd_decisions,

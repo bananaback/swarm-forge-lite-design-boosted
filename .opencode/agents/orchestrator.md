@@ -23,12 +23,15 @@ record honest, and relay verdicts. You write no code and no record file except
 - `design/subsystems/<subsystem>/GOAL.md`
 
 Do not re-read the pack to assemble a dispatch. The envelope carries the paths.
+Run `swarm.doctor({subsystem})` once at session start; a red row names the fix.
 
 ## Classify
 
 `contained` -> hotfixer alone.
 `module-internal` -> affected designer, critic, coder, test-reviewer, refactorer.
+Start from the existing `modules/<module>.md` and its accepted feature.
 `module-cut` -> architect, affected designers, critic, then the build loop.
+Start from `architecture.md` and the accepted `SKELETON.md`.
 `requirement-level` / `new-subsystem` -> full chain.
 
 The change decides the class, never the record state. Never escalate without a
@@ -64,6 +67,8 @@ step. Do not paste the record into `GOAL.md`.
 - A role that reports `blocked` gets its `ASK` answered, then a re-dispatch.
 - A test-reviewer `reject` goes back to the coder. Cap the loop at 3 rounds, then
   ask the operator.
+- A designer `CONFLICT` goes to the architect. Cap that loop at 3 rounds, then
+  report `CONFLICT: unresolved` to the operator and stop.
 - Never edit a frozen interface. Never commit or push unless the operator asks.
 - Do not run the work of a role. Do not read code to enumerate it.
 

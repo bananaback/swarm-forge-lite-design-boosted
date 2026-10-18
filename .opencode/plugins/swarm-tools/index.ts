@@ -111,6 +111,11 @@ const ROLE = {
   type: "string",
   description: "The role id: interrogator | architect | designer | critic | specifier | coder | test-reviewer | refactorer | hotfixer.",
 }
+const RECORD_ROLE = {
+  type: "string",
+  enum: ["interrogator", "architect", "designer", "critic"],
+  description: "The roles that write a flat record file: interrogator | architect | designer | critic.",
+}
 const VIEW = {
   type: "string",
   enum: ["summary", "rows", "all"],
@@ -214,7 +219,7 @@ export default Plugin.define({
 
       add(
         "check",
-        "Lint the record a role wrote, and write its computed stop test. Returns {passed,errors,warnings,byCode,stop_test}. " +
+        "Lint the record a role wrote, and write its computed stop test. Returns {passed,errors,warnings,byCode,ok,stop_test}. " +
           "view:'rows' adds the findings (cols+rows). This is the design-role edit loop: fix a finding, call it again. " +
           "Example: tools.swarm.check({role:'architect',subsystem:'clip'})",
         { role: ROLE, subsystem: SUBSYSTEM, work: { type: "string", description: "Override the work directory." }, view: VIEW, limit: LIMIT },
@@ -223,7 +228,7 @@ export default Plugin.define({
 
       add(
         "lintRecord",
-        "Lint the accepted subsystem record. Returns {passed,errors,warnings,byCode}. view:'rows' adds the findings. " +
+        "Lint the accepted subsystem record. Returns {passed,errors,warnings,byCode,ok}. view:'rows' adds the findings. " +
           "Example: tools.swarm.lintRecord({subsystem:'clip'})",
         {
           subsystem: SUBSYSTEM,
@@ -237,7 +242,7 @@ export default Plugin.define({
 
       add(
         "decisions",
-        "The decision ledger. Default returns only the OPEN rows (the ones the gate needs) plus {open,total}. " +
+        "The decision ledger. Default returns only the OPEN rows (the ones the gate needs) plus {open,total,ok}. " +
           "all:true returns every row. Example: tools.swarm.decisions({role:'interrogator',subsystem:'clip'})",
         { role: ROLE, subsystem: SUBSYSTEM, work: { type: "string", description: "Override the work directory." }, all: { type: "boolean", description: "Include answered rows." } },
         "decisions",
@@ -249,7 +254,7 @@ export default Plugin.define({
           "Refuses when the file exists unless force:true. " +
           "Example: tools.swarm.initWork({role:'architect',subsystem:'clip',flat:true})",
         {
-          role: ROLE,
+          role: RECORD_ROLE,
           subsystem: SUBSYSTEM,
           work: { type: "string", description: "Override the work directory." },
           module: { type: "string", description: "Module id for a designer record." },
@@ -266,6 +271,7 @@ export default Plugin.define({
         {
           target: { type: "string", enum: ["hot", "state", "artifacts", "all"], description: "Which root to clear (default hot)." },
           subsystem: SUBSYSTEM,
+          drop: { type: "boolean", description: "Remove a root that is empty after the clear, so no empty lane directory remains." },
         },
         "clean",
       )
@@ -298,7 +304,7 @@ export default Plugin.define({
 
       add(
         "ruff",
-        "Ruff findings, without the annotated source frames. Default: {total, byCode}. " +
+        "Ruff findings, without the annotated source frames. Default: {total, byCode, ok}. " +
           "view:'rows' gives cols+rows (capped by limit); view:'all' gives a paging handle. " +
           "Example: tools.swarm.ruff({paths:['<source_root>']})",
         { paths: { type: "array", items: { type: "string" }, description: "Files or dirs. Default: the source and persistent roots." }, subsystem: SUBSYSTEM, view: VIEW, limit: LIMIT },
@@ -307,7 +313,7 @@ export default Plugin.define({
 
       add(
         "dry",
-        "Duplicate-code pairs (dryer). Default: {total}. view:'rows' gives pairs as ['file:start-end','file:start-end']. " +
+        "Duplicate-code pairs (dryer). Default: {total, ok}. view:'rows' gives pairs as ['file:start-end','file:start-end']. " +
           "Example: tools.swarm.dry({paths:['<source_root>']})",
         {
           paths: { type: "array", items: { type: "string" }, description: "Files or dirs. Default: the source roots." },
@@ -323,7 +329,7 @@ export default Plugin.define({
 
       add(
         "pytest",
-        "Run pytest. Returns {passed,failed,errors,failures:[{test,reason}],summary,exit}, not the whole log. " +
+        "Run pytest. Returns {passed,failed,errors,failures:[{test,reason}],summary,exit,ok}, not the whole log. " +
           "Default: the full persistent suite. Pass k or paths to scope it. " +
           "Example: tools.swarm.pytest({k:'privacy',subsystem:'clip'})",
         {
@@ -338,7 +344,7 @@ export default Plugin.define({
       add(
         "crap",
         "CRAP (complexity x coverage) from the vendored crapper, at the pack's CRAP 10 threshold. " +
-          "Default: only the rows above it, plus {total,above}. all:true for every row. " +
+          "Default: only the rows above it, plus {total,above,ok}. all:true for every row. " +
           "Example: tools.swarm.crap({reuseFresh:true,subsystem:'clip'})",
         {
           subsystem: SUBSYSTEM,
@@ -353,7 +359,7 @@ export default Plugin.define({
 
       add(
         "acceptance",
-        "Run the acceptance pipeline (parse, dry-check, generate, run). Returns {features,passed,failed,failures,summary,exit}. " +
+        "Run the acceptance pipeline (parse, dry-check, generate, run). Returns {features,passed,failed,failures,summary,exit,ok}. " +
           "Example: tools.swarm.acceptance({feature:'privacy_recording'})",
         { feature: { type: "string", description: "A feature stem, or '*' for every feature." }, subsystem: SUBSYSTEM },
         "acceptance",
@@ -425,7 +431,7 @@ export default Plugin.define({
 
       add(
         "ready",
-        "The record gate in one call: check + lint-record + decisions. Returns each verdict, plus pass. " +
+        "The record gate in one call: check + lint-record + decisions. Returns each verdict with its own ok, plus pass. " +
           "checks defaults to all three. Example: tools.swarm.ready({role:'architect',subsystem:'clip'})",
         {
           role: ROLE,
@@ -465,6 +471,15 @@ export default Plugin.define({
       )
 
       add(
+        "doctor",
+        "Check the wiring, the toolchain, and the agent model plan. " +
+          "Returns {lane, checks:[{check,ok,detail}], pass}. A red row names the exact item to fix. " +
+          "Example: tools.swarm.doctor({subsystem:'clip'})",
+        { subsystem: SUBSYSTEM },
+        "doctor",
+      )
+
+      add(
         "page",
         "Fetch a page of a saved handle (from a view:'all' call). Returns {total,offset,returned,next,items}. " +
           "Example: tools.swarm.page({handle:'abc123',offset:50})",
@@ -487,8 +502,8 @@ export default Plugin.define({
       add(
         "docs",
         "The compact catalog: every swarm tool with a group, a summary, and an example. " +
-          "For one tool's params and output, call swarm.help({tool}). No arguments.",
-        {},
+          "For one tool's params and output, call swarm.help({tool}). table:true returns the Markdown tool table.",
+        { table: { type: "boolean", description: "Return the Markdown tool table only." } },
         "docs",
       )
     })

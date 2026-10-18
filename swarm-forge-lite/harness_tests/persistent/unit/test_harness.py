@@ -268,6 +268,17 @@ def test_main_clean_empties_the_hot_area(tmp_path, capsys):
     assert list(hot.iterdir()) == []
 
 
+def test_clean_drop_removes_an_empty_lane_directory(tmp_path, capsys):
+    """A cleared lane must not leave an empty directory behind."""
+    config = _write_config(tmp_path)
+    hot = tmp_path / "hot"
+    hot.mkdir()
+    (hot / "a.txt").write_text("x")
+    assert harness.main(["--config", str(config), "clean", "hot", "--drop"]) == 0
+    assert not hot.exists()
+    assert "DROPPED hot" in capsys.readouterr().out
+
+
 def test_main_refuses_a_missing_config(tmp_path, capsys):
     code = harness.main(["--config", str(tmp_path / "missing.json"), "status"])
     assert code == 2

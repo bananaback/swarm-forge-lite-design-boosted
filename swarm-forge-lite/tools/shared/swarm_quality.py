@@ -24,6 +24,7 @@ from swarm_support import (
 
 _WORKSPACE = PACK.parent
 
+
 def cmd_ruff(args: dict) -> dict:
     """Structured ruff findings, without the annotated source frames.
 
@@ -67,6 +68,7 @@ def cmd_ruff(args: dict) -> dict:
         "total": len(rows),
         "byCode": _by_code([r[0] for r in rows]),
         "exit": code,
+        "ok": code == 0 and not rows,
     }
     view = args.get("view", "summary")
     if view in ("rows", "full"):
@@ -109,7 +111,12 @@ def cmd_format(args: dict) -> dict:
     code, out, err = _run(argv)
     match = re.search(r"(\d+) files? would be reformatted", out)
     count = int(match.group(1)) if match else 0
-    result = {"tool": "ruff-format", "total": count, "exit": code}
+    result = {
+        "tool": "ruff-format",
+        "total": count,
+        "exit": code,
+        "ok": code == 0 and count == 0,
+    }
     if err.strip():
         result["stderr"] = err.strip()[:300]
     return result
@@ -168,7 +175,12 @@ def cmd_dry(args: dict) -> dict:
     argv = _dry_argv(paths, args) + resolved
     code, out, err = _run(argv, env=_dry_env(paths))
     pairs = _dry_pairs(out)
-    result = {"tool": DRY_NAME, "total": len(pairs), "exit": code}
+    result = {
+        "tool": DRY_NAME,
+        "total": len(pairs),
+        "exit": code,
+        "ok": code == 0 and not pairs,
+    }
     view = args.get("view", "summary")
     if view in ("rows", "full"):
         limit = int(args.get("limit", 50))
@@ -328,6 +340,7 @@ def cmd_crap(args: dict) -> dict:
         "above": len(_crap_over(rows)),
         "rows": rows if args.get("all") else _crap_over(rows),
         "exit": code,
+        "ok": code == 0 and not _crap_over(rows),
     }
     if err.strip():
         result["stderr"] = err.strip()[:300]
@@ -358,5 +371,3 @@ _CRAP_ROW = re.compile(
 
 
 RUFF_COLS = ["code", "file", "line", "col", "message", "fix_applicability"]
-
-

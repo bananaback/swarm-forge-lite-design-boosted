@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import json
 import os
+import re
+import shutil
 import sqlite3
 import sys
 from pathlib import Path
@@ -18,6 +20,8 @@ from swarm_core import (
 from swarm_quality import cmd_dry, cmd_format, cmd_ruff
 from swarm_support import (
     SwarmError,
+    _paths,
+    _run,
     _short,
 )
 from swarm_test import cmd_acceptance, cmd_pytest
@@ -44,70 +48,45 @@ def cmd_gate(args: dict) -> dict:
         checks = [*checks, "crap"]
     out: dict = {}
 
-    def verdict(r: dict, counts: str) -> dict:
-        """One check's compact result plus an explicit ok/exit verdict."""
-        ok = not r.get("error") and int(r.get("exit", 0)) == 0
-        if ok and counts != "exit":
-            ok = int(r.get(counts, 0)) == 0
-        return {**r, "ok": ok}
+    def verdict(r: dict, keep: list[str]) -> dict:
+        """One check's compact result plus the command's own ok verdict."""
+        return {**{key: r.get(key) for key in keep}, "ok": bool(r.get("ok"))}
 
     if "dry" in checks:
         out["dry"] = _checked(
             cmd_dry,
             args,
-            lambda r: verdict(
-                {"total": r.get("total", 0), "exit": r.get("exit", 0)}, "total"
-            ),
+            lambda r: verdict(r, ["total", "exit"]),
         )
     if "ruff" in checks:
         out["ruff"] = _checked(
             cmd_ruff,
             args,
-            lambda r: verdict(
-                {
-                    "total": r.get("total", 0),
-                    "byCode": r.get("byCode", {}),
-                    "exit": r.get("exit", 0),
-                },
-                "total",
-            ),
+            lambda r: verdict(r, ["total", "byCode", "exit"]),
         )
     if "format" in checks:
         out["format"] = _checked(
             cmd_format,
             args,
-            lambda r: verdict(
-                {"total": r.get("total", 0), "exit": r.get("exit", 0)}, "total"
-            ),
+            lambda r: verdict(r, ["total", "exit"]),
         )
     if "pytest" in checks:
         out["pytest"] = _checked(
             cmd_pytest,
             args,
-            lambda r: verdict(
-                {
-                    "passed": r.get("passed", 0),
-                    "failed": r.get("failed", 0),
-                    "errors": r.get("errors", 0),
-                    "exit": r.get("exit", 0),
-                    "failures": [f["test"] for f in r.get("failures", [])],
-                },
-                "failed",
-            ),
+            lambda r: {
+                **verdict(r, ["passed", "failed", "errors", "exit"]),
+                "failures": [f["test"] for f in r.get("failures", [])],
+            },
         )
     if "acceptance" in checks:
         out["acceptance"] = _checked(
             cmd_acceptance,
             args,
-            lambda r: verdict(
-                {
-                    "passed": r.get("passed", 0),
-                    "failed": r.get("failed", 0),
-                    "exit": r.get("exit", 0),
-                    "failures": [f["test"] for f in r.get("failures", [])],
-                },
-                "failed",
-            ),
+            lambda r: {
+                **verdict(r, ["passed", "failed", "exit"]),
+                "failures": [f["test"] for f in r.get("failures", [])],
+            },
         )
     if "crap" in checks:
         from swarm_quality import cmd_crap
@@ -115,9 +94,7 @@ def cmd_gate(args: dict) -> dict:
         out["crap"] = _checked(
             cmd_crap,
             args,
-            lambda r: verdict(
-                {"above": r.get("above", 0), "exit": r.get("exit", 0)}, "above"
-            ),
+            lambda r: verdict(r, ["above", "exit"]),
         )
     out["pass"] = all(v.get("ok") for v in out.values() if isinstance(v, dict))
     return out
@@ -130,36 +107,26 @@ def cmd_ready(args: dict) -> dict:
     """
     checks = args.get("checks") or ["check", "record", "decisions"]
     out: dict = {}
+
+    def verdict(r: dict, keep: list[str]) -> dict:
+        """One check's compact result plus the command's own ok verdict."""
+        return {**{key: r.get(key) for key in keep}, "ok": bool(r.get("ok"))}
+
     if "check" in checks:
         out["check"] = _checked(
             cmd_check,
             args,
-            lambda r: {
-                "passed": r.get("passed"),
-                "errors": r.get("errors"),
-                "warnings": r.get("warnings"),
-                "byCode": r.get("byCode", {}),
-            },
+            lambda r: verdict(r, ["passed", "errors", "warnings", "byCode"]),
         )
     if "record" in checks:
         out["record"] = _checked(
             cmd_lint_record,
             args,
-            lambda r: {
-                "passed": r.get("passed"),
-                "errors": r.get("errors"),
-                "warnings": r.get("warnings"),
-            },
+            lambda r: verdict(r, ["passed", "errors", "warnings"]),
         )
     if "decisions" in checks:
-        out["decisions"] = _checked(
-            cmd_decisions, args, lambda r: {"open": r.get("open", 0)}
-        )
-    checks_ok = all(
-        isinstance(v, dict) and not v.get("error") and v.get("passed") is not False
-        for v in out.values()
-    )
-    out["pass"] = checks_ok and out.get("decisions", {}).get("open", 0) == 0
+        out["decisions"] = _checked(cmd_decisions, args, lambda r: verdict(r, ["open"]))
+    out["pass"] = all(isinstance(v, dict) and bool(v.get("ok")) for v in out.values())
     return out
 
 
@@ -322,3 +289,156 @@ def _table_exists(con, name: str) -> bool:
         ).fetchone()
         is not None
     )
+
+
+_MODEL = re.compile(r"(?P<provider>[^/#]+)/(?P<model>[^#]+)(?:#(?P<variant>[^#]+))?$")
+
+
+def _declared_variants() -> dict:
+    """The model variants declared under `providers` in the workspace opencode.json."""
+    config = PACK.parent / "opencode.json"
+    declared: dict = {}
+    if not config.is_file():
+        return declared
+    try:
+        document = json.loads(config.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return declared
+    for provider in (document.get("providers") or {}).values():
+        for model, spec in (provider.get("models") or {}).items():
+            declared[model] = {
+                str(variant.get("id"))
+                for variant in (spec.get("variants") or [])
+                if variant.get("id")
+            }
+    return declared
+
+
+def _model_checks() -> list[dict]:
+    """The agent model ids are well formed, and any declared variant exists."""
+    config = PACK.parent / "opencode.json"
+    agents = sorted((PACK.parent / ".opencode" / "agents").glob("*.md"))
+    checks: list[dict] = []
+    default = None
+    if config.is_file():
+        try:
+            default = json.loads(config.read_text(encoding="utf-8")).get("model")
+        except (json.JSONDecodeError, OSError):
+            checks.append(
+                {"check": "opencode.json", "ok": False, "detail": "cannot parse"}
+            )
+    declared = _declared_variants()
+    unverified = set()
+    malformed = []
+    for path in agents:
+        match = re.search(
+            r"^model:\s*(\S+)\s*$", path.read_text(encoding="utf-8"), re.MULTILINE
+        )
+        model_id = match.group(1) if match else ""
+        parsed = _MODEL.match(model_id)
+        if parsed is None:
+            malformed.append(f"{path.stem}:{model_id or '(none)'}")
+            continue
+        model, variant = parsed.group("model"), parsed.group("variant")
+        if model in declared and variant and variant not in declared[model]:
+            malformed.append(f"{path.stem}:{model_id}: variant is not declared")
+        elif model not in declared:
+            unverified.add(model_id)
+    checks.append(
+        {
+            "check": "agent models",
+            "ok": not malformed,
+            "detail": "; ".join(malformed)
+            or f"{len(agents)} agents, default {default or '(none)'}",
+        }
+    )
+    if unverified:
+        checks.append(
+            {
+                "check": "model variants",
+                "ok": True,
+                "detail": "not declared in opencode.json, not verifiable offline: "
+                + ", ".join(sorted(unverified)),
+            }
+        )
+    return checks
+
+
+def cmd_doctor(args: dict) -> dict:
+    """Check the wiring, the toolchain, and the agent model plan.
+
+    Returns one {check, ok, detail} row per item and a single `pass`. A red row
+    names the thing to fix; it never writes.
+    """
+    paths = _paths()
+    checks: list[dict] = []
+    checks.append(
+        {
+            "check": "python",
+            "ok": sys.version_info >= (3, 10),
+            "detail": sys.version.split()[0],
+        }
+    )
+    for label, path, is_file in (
+        ("PACK", paths.pack_root(), False),
+        ("CONFIG", paths.config_path(), True),
+        ("WORKSPACE", paths.workspace_root(), False),
+    ):
+        target = Path(path)
+        checks.append(
+            {
+                "check": label,
+                "ok": target.is_file() if is_file else target.is_dir(),
+                "detail": _short(target),
+            }
+        )
+    for label, root in (("SPECS", paths.specs()), ("FEATURES", paths.features())):
+        configured = root.is_configured()
+        checks.append(
+            {
+                "check": label,
+                "ok": not configured or Path(root.text()).is_dir(),
+                "detail": root.text(),
+            }
+        )
+    for source in paths.source_roots():
+        checks.append(
+            {"check": "SOURCE", "ok": Path(source).is_dir(), "detail": _short(source)}
+        )
+    for entry in paths.persistent_roots():
+        checks.append(
+            {
+                "check": "PERSIST",
+                "ok": Path(entry.path).is_dir(),
+                "detail": f"{_short(entry.path)} ({entry.kind})",
+            }
+        )
+    for name, argv in (
+        ("pytest", [sys.executable, "-m", "pytest", "--version"]),
+        ("ruff", [sys.executable, "-m", "ruff", "--version"]),
+        ("coverage", [sys.executable, "-m", "coverage", "--version"]),
+    ):
+        code, out, err = _run(argv)
+        checks.append(
+            {
+                "check": name,
+                "ok": code == 0,
+                "detail": (out or err).strip().splitlines()[0] if (out or err) else "",
+            }
+        )
+    for name, required in (("bb", True), ("node", False)):
+        found = shutil.which(name)
+        checks.append(
+            {
+                "check": name,
+                "ok": bool(found) or not required,
+                "detail": found
+                or ("not on PATH (optional)" if not required else "not on PATH"),
+            }
+        )
+    checks.extend(_model_checks())
+    return {
+        "lane": (os.environ.get("SWARM_LANE") or "").strip() or None,
+        "checks": checks,
+        "pass": all(check["ok"] for check in checks),
+    }

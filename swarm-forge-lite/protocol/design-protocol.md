@@ -61,7 +61,8 @@ CONFLICT: <interface path>:<line> - <new line> - <why>
 ```
 
 The architect answers. Only consumers named in the changed interface are
-re-dispatched.
+re-dispatched. Cap the CONFLICT loop at 3 rounds, then report
+`CONFLICT: unresolved` to the operator and stop.
 
 ## Scope gate
 

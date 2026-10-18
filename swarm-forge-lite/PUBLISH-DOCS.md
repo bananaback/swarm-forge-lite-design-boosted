@@ -163,7 +163,7 @@ ls features/*.feature | wc -l
 grep -hcE '^[[:space:]]*(Scenario|Scenario Outline):' features/*.feature | awk '{s+=$1} END {print s}'
 
 # step handlers: every .py under acceptance/steps/, at any depth, except __init__.py
-find acceptance/steps -name '*.py' ! -name '__init__.py' | wc -l
+python3 -c 'from pathlib import Path; print(len([p for p in Path("acceptance/steps").rglob("*.py") if p.name != "__init__.py"]))'
 
 # acceptance: the count and the green or red result
 python3 acceptance/run_acceptance.py
@@ -252,12 +252,21 @@ Report any regression to the operator, for example a rise in the CRAP count.
 
 ```bash
 DOCS=<the project's docs directory>
-find "$DOCS" -name '*.json' -print                              # expect no output
-find "$DOCS" \( -name '01-interrogator' -o -name '02-architect' -o -name '04-critic' \
-  -o -name interfaces -o -name modules -o -name work \) -print   # expect no output
+python3 - "$DOCS" <<'PY'
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+print("json:", [str(p) for p in root.rglob("*.json")])  # expect []
+names = {"01-interrogator", "02-architect", "04-critic", "interfaces", "modules", "work"}
+print("internal dirs:", [str(p) for p in root.rglob("*") if p.name in names])  # expect []
+print("files:")
+for path in sorted(root.rglob("*")):
+    if path.is_file():
+        print(path)
+PY
 grep -rlE "swarm-forge-lite|dump/|\.\./" "$DOCS" \
   || echo "clean: no internal path leaked"
-find "$DOCS" -type f | sort
 ```
 
 ## 8. Report and hand off
