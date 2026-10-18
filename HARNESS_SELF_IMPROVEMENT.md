@@ -458,6 +458,6 @@ SWARM_CONFIG=$PWD/harness.selftest.json \
 |---|---|---|
 | 2026-10-18 | `8bd980a` | baseline before the subtraction pass |
 | 2026-10-18 | `0ba4dc2` | flat record, 29 tools, −79% prompts, migrated records, clone sync |
-| 2026-10-18 | pending | document consolidation; orchestrator accepts `STATE` and `STATUS` |
+| 2026-10-18 | `a60793d` | takeover guide added; orchestrator accepts `STATE` and `STATUS` |
 
 Update this table after every publish. Keep it short: date, commit, one line.
