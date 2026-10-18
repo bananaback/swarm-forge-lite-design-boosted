@@ -292,7 +292,7 @@ stricter. The one new tool is `doctor`, a startup check:
 | Record errors | 0 | 0 | `trace-no-test` is now an error |
 
 Pass 4 closed the remaining scale and observability items without a new Code Mode
-tool. It added one Python reader, one sync CLI, and one small lane write:
+tool. It added one Python reader and one small lane write:
 
 | Metric | Pass 3 | Pass 4 | Change |
 |---|---:|---:|---:|
@@ -300,8 +300,7 @@ tool. It added one Python reader, one sync CLI, and one small lane write:
 | Constitution | 9,750 B | 9,922 B | +172 B (lane owner) |
 | Protocol | 14,581 B | 14,581 B | no change |
 | Code Mode tools | 30 | **30** | no change |
-| Pack self-tests | 285 | **295** | +10 |
-| `swarm.sync` tool | excluded | still excluded | `tools/shared/sync_pack.py` is an operator CLI |
+| Pack self-tests | 285 | **291** | +6 |
 
 Specific removals:
 
@@ -342,7 +341,7 @@ Run these before changing anything. They are the baseline.
 # project pack self-tests
 cd swarm-forge-lite
 tools/shared/lane harness bash -c 'cd harness_tests && python3 -m pytest -q'
-# -> 295 passed
+# -> 291 passed
 
 # project suite (the shipped code)
 tools/shared/lane audio-output bash -c \
@@ -365,15 +364,11 @@ for s in audio-output detection-extraction message-publish model-file-registry \
 done
 # -> 0 errors each
 
-# preview a clone sync (writes nothing)
-python3 tools/shared/sync_pack.py --to ../tdd_harness
-# -> the pack-owned files that differ
-
 # clone self-tests
 cd ../tdd_harness/swarm-forge-lite
 SWARM_CONFIG=$PWD/harness.selftest.json \
   tools/shared/lane harness bash -c 'cd harness_tests && python3 -m pytest -q'
-# -> 273 passed, 4 skipped
+# -> 269 passed, 4 skipped
 ```
 
 Five PLANNED subsystems contain only `GOAL.md`: `camera-source`,
@@ -467,9 +462,10 @@ These are the remaining real items. Do not re-open closed items above.
   the database read-only, prefers `session_v2`, and selects only declared columns.
   `swarm.report` uses it. `convo` is a Bun plugin and keeps its own reader; a
   process boundary would cost more than the duplication.
-- [x] **One-command sync.** `python3 tools/shared/sync_pack.py --to <clone>` is a
-  dry run. `--apply` copies only pack-owned files, never deletes, and runs the
-  clone self-tests. The `swarm.sync` tool stays excluded.
+- [ ] **One-command sync is rejected.** The update protocol needs per-file
+  reconciliation and the operator's decision on every deletion. A copier, even a
+  dry-run one, replaces that judgement with a copy. Keep the `diff -rq` runbook
+  in `UPDATE.md`. Do not add `swarm.sync` or a copy script without a new design.
 
 ---
 
@@ -713,7 +709,8 @@ SWARM_CONFIG=$PWD/harness.selftest.json \
 | 2026-10-18 | `0ba4dc2` | flat record, 29 tools, −79% prompts, migrated records, clone sync |
 | 2026-10-18 | `a60793d` | takeover guide added; orchestrator accepts `STATE` and `STATUS` |
 | 2026-10-18 | `3e4b93f` | pass 3: strict traceability, uniform `ok`, `clean --drop`, `swarm.doctor`, entry points, loop cap, role enum, docs |
-| 2026-10-18 | `32dfec0` | pass 4: convo counts/paging/schema, shared Python DB reader, lane owner, one-command sync |
+| 2026-10-18 | `32dfec0` | pass 4: convo counts/paging/schema, shared Python DB reader, lane owner |
+| 2026-10-18 | this commit | remove `sync_pack`: the update path reconciles, it never copies |
 | 2026-10-18 | this commit | planned feature track: shared task board and deferred goal queue |
 | 2026-10-18 | this commit | onboarding read order and pre-edit understanding gate |
 
