@@ -462,10 +462,6 @@ These are the remaining real items. Do not re-open closed items above.
   the database read-only, prefers `session_v2`, and selects only declared columns.
   `swarm.report` uses it. `convo` is a Bun plugin and keeps its own reader; a
   process boundary would cost more than the duplication.
-- [ ] **One-command sync is rejected.** The update protocol needs per-file
-  reconciliation and the operator's decision on every deletion. A copier, even a
-  dry-run one, replaces that judgement with a copy. Keep the `diff -rq` runbook
-  in `UPDATE.md`. Do not add `swarm.sync` or a copy script without a new design.
 
 ---
 
