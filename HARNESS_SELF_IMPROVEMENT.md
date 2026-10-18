@@ -18,6 +18,10 @@ follow the takeover checklist in section 7.
 Do not start by re-auditing the workspace. The audit is done. Continue from the
 open list.
 
+If the owner explicitly asks for the shared task board or the deferred-goal queue,
+work on section 5b instead. Those are features, not cleanup. Do not add them
+unless the owner asks.
+
 ---
 
 ## 1. The owner's goal, in the owner's words
@@ -357,6 +361,134 @@ These are the remaining real items. Do not re-open closed items above.
 
 ---
 
+## 5b. Planned feature track — cross-session awareness and deferred goals
+
+Two owner-requested features. They are **not implemented**. Build them only when
+the owner asks. The design target is deliberately small: **two state files, a few
+orchestrator rules, and no new framework** unless a real race proves one is
+needed.
+
+The problem they solve:
+
+- The current harness is single-session. An orchestrator knows what it is doing,
+  but not what another orchestrator in another session is doing. When files change
+  under it, it can be surprised and waste turns re-reading or overwriting.
+- The owner often works from a phone. He cannot type a long task description.
+  He wants to prepare goals ahead of time and later say “pick the todo goal”.
+
+### F1 — Shared task board
+
+**One file:** `design/TASK_BOARD.md` at the pack root. It is shared by every
+session in the workspace. It is small and human-readable.
+
+Proposed shape:
+
+```
+# TASK BOARD
+
+Updated: <ISO-8601>
+Stale after: <minutes>
+
+| Claim | Session | Role | Subsystem | Task | Files (allowlist) | State | Since |
+|---|---|---|---|---|---|---|---|
+| C1 | ses_ab12... | orchestrator | audio-output | implement clip gate | app/audio/**, tests/audio/** | active | 12:10 |
+```
+
+Rules:
+
+1. The orchestrator reads the board before it classifies or dispatches.
+2. The orchestrator writes one claim row when it starts a unit of work. `Session`
+   is the full session id. `Files` is the allowlist, not a vague area.
+3. Every dispatch carries `#OTHER SESSIONS`: the active claims whose files
+   overlap the role's allowlist. The subagent knows a changed file may belong to
+   another session.
+4. A claim that touches the same subsystem or an overlapping file set is a
+   **conflict**. The orchestrator does not dispatch a second writer. It queues,
+   asks the operator, or picks a disjoint task.
+5. On done or blocked, the orchestrator marks the claim `done` or `blocked` and
+   keeps the row for one short history window. It does not delete evidence.
+6. A claim older than `Stale after` without an update is `stale`. A stale claim
+   is surfaced, not silently broken. The operator decides.
+7. The board is **awareness, not a lock**. Correctness still comes from disjoint
+   write sets and frozen interfaces.
+8. Only the orchestrator writes the board. Subagents report files and results.
+
+What it costs: one short read per dispatch, one row write per task. No new tool
+is required for the first version. If concurrent writes corrupt the table, add
+one tiny atomic helper later; do not start there.
+
+Acceptance:
+
+- Two separate sessions see each other’s active claims.
+- An overlapping dispatch is refused or queued before a subagent starts.
+- A subagent receives `#OTHER SESSIONS` and does not treat a foreign change as
+  corruption.
+- A finished claim is marked done, and a stale claim is visible.
+- The board stays under ~100 lines in normal use.
+
+### F2 — Deferred goal queue
+
+**One file:** `design/TODO.md`, operator-owned. It holds tasks that are not for
+now. The owner adds them in advance, often from a phone.
+
+Proposed shape:
+
+```
+# TODO
+
+| Id | Goal | Subsystem | Ready | Done when | Notes |
+|---|---|---|---|---|---|
+| T1 | add cross-session board | harness | yes | two sessions see one claim | owner |
+| T2 | add deferred queue | harness | no | pick T2 works | wait for T1 |
+```
+
+Rules:
+
+1. The operator owns this file. The orchestrator never invents a goal.
+2. On “pick the todo goal”, the orchestrator picks the top `Ready: yes` row.
+   On “pick T2”, it picks that id.
+3. Picking a goal moves it to `TASK_BOARD.md` as an active claim and dispatches
+   it through the normal change-class path. It does not bypass the pipeline.
+4. When done, the row records the result and the commit. Keep the row short.
+5. A blocked goal stays in `TODO.md` with the blocker in `Notes`.
+6. Do not auto-pick goals. Only the explicit owner phrase starts one.
+7. The queue is not a second requirement record. It is a pointer to work, with
+   just enough context to start.
+
+What it costs: one short file read when the owner asks, one row update when the
+task finishes. No new tool required.
+
+Acceptance:
+
+- `pick the todo goal` starts the top ready task.
+- `pick T2` starts the named task.
+- A done task records its commit; a blocked task records its blocker.
+- The orchestrator never starts a queued task without the owner’s phrase.
+- The file stays under ~80 lines in normal use.
+
+### Minimal implementation plan
+
+1. Add `design/TASK_BOARD.md` and `design/TODO.md` templates with the tables above.
+2. Add ~10 lines to `orchestrator.md`: read board, add claim, pass
+   `#OTHER SESSIONS`, mark done/stale, honor “pick the todo goal”.
+3. Add one line to `protocol/dispatch.md` for `#OTHER SESSIONS`.
+4. Add one line to `communication.md`: a foreign change is not corruption; check
+   the board before assuming a bug.
+5. Add one test that proves a claim is read and an overlap is surfaced. Prefer a
+   pure file/parser test over a new tool.
+6. Do not add a new Code Mode tool until a real concurrent-write failure appears.
+
+### Open questions for the owner
+
+- Board location: `design/TASK_BOARD.md` (travels with the record) or a
+  workspace-level `TASK_BOARD.md` (shared by several projects)? Recommend
+  `design/` for one project per workspace.
+- Stale threshold: 30 or 60 minutes?
+- Should the board show only active claims, or keep the last N done rows?
+- Should `TODO.md` live beside the board, or inside the project's `PROJECT.md`?
+
+---
+
 ## 6. Recurring failure patterns to avoid
 
 These caused real waste in past sessions. They are more useful than a generic
@@ -469,5 +601,6 @@ SWARM_CONFIG=$PWD/harness.selftest.json \
 | 2026-10-18 | `8bd980a` | baseline before the subtraction pass |
 | 2026-10-18 | `0ba4dc2` | flat record, 29 tools, −79% prompts, migrated records, clone sync |
 | 2026-10-18 | `a60793d` | takeover guide added; orchestrator accepts `STATE` and `STATUS` |
+| 2026-10-18 | this commit | planned feature track: shared task board and deferred goal queue |
 
 Update this table after every publish. Keep it short: date, commit, one line.
