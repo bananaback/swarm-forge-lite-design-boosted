@@ -28,5 +28,5 @@ Inside `execute`, only `tools.convo.*`, `tools.swarm.*`, and `tools.opencode.*` 
 
 ## Tools
 
-`ruff4py` and `dryer` are package directories, not binaries. Run ruff as `python3 <pack>/tools/shared/ruff4py ...`. Run dryer as `python3 -m dryer` with `<pack>/tools/shared` on `PYTHONPATH`. Run pytest and ruff through the lane wrapper: `<pack>/tools/shared/lane <subsystem> ...`. Never run them directly. A direct run lacks `SWARM_PACK`, `SWARM_TEST_DATA`, and `PYTHONPATH`.
+`ruff4py` and `dryer` are package directories, not binaries. Run ruff as `python3 <pack>/tools/shared/ruff4py ...`. Run dryer as `python3 -m dryer` with `<pack>/tools/shared` on `PYTHONPATH`. Run pytest and ruff through the lane wrapper: `<pack>/tools/shared/lane <subsystem> ...`. Never run them directly. A direct run lacks `SWARM_PACK` and `SWARM_TEST_DATA`, and writes its caches into the source tree. The lane wrapper does not set `PYTHONPATH`: add it yourself for a `python3 -m <package>` tool.
 
