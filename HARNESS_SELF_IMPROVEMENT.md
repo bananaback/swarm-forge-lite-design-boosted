@@ -691,7 +691,7 @@ SWARM_CONFIG=$PWD/harness.selftest.json \
 | 2026-10-18 | `8bd980a` | baseline before the subtraction pass |
 | 2026-10-18 | `0ba4dc2` | flat record, 29 tools, −79% prompts, migrated records, clone sync |
 | 2026-10-18 | `a60793d` | takeover guide added; orchestrator accepts `STATE` and `STATUS` |
-| 2026-10-18 | this commit | pass 3: strict traceability, uniform `ok`, `clean --drop`, `swarm.doctor`, entry points, loop cap, role enum, docs |
+| 2026-10-18 | `3e4b93f` | pass 3: strict traceability, uniform `ok`, `clean --drop`, `swarm.doctor`, entry points, loop cap, role enum, docs |
 | 2026-10-18 | this commit | planned feature track: shared task board and deferred goal queue |
 | 2026-10-18 | this commit | onboarding read order and pre-edit understanding gate |
 
