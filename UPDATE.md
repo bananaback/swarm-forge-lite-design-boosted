@@ -109,7 +109,8 @@ skipped: 71fdb75  this project runs its own pytest wrapper
 ```
 
 Both directions read it first. Without it, fall back to a whole-tree diff and say so in
-your report. After a successful publish or pull, write the new commit.
+your report. After a successful publish or pull, write the new commit. Write the `commit:`
+value as the full 40-character sha, so the next run resolves `<synced>` without a guess.
 
 A `skipped:` line records a change the operator decided this project does not take
 (section 7). Keep the line, so the next pull does not offer that commit again, and name
@@ -158,7 +159,7 @@ not a git repository, and it must not become one.
    git -C <clone> commit -m "<what changed and why>"
    git -C <clone> push origin v2-python
    ```
-7. Write the new commit into the project's `.harness-version`.
+7. Write the full commit sha into the project's `.harness-version`.
 
 ## 7. Pull (repo -> project)
 
@@ -201,7 +202,7 @@ never overwrite blind.
    cd swarm-forge-lite/harness_tests && python3 -m pytest -q
    ```
    Run the project's acceptance pipeline too when the diff touched `project_tests/`.
-8. Write the new commit into `.harness-version`.
+8. Write the full commit sha into `.harness-version`.
 
 ## 8. Rules
 
