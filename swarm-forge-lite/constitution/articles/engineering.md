@@ -85,12 +85,15 @@ Prefer the `swarm.*` tools. The shell forms are fallback only.
 - `model.html` is generated. Never read it, never edit it.
 - `swarm.uml` queries: `classes`, `ops`, `edges`, `violations`, `stats`, `check`.
 - `swarm.uml({op:'render'})` renders the page after a change.
+- After a CRAP change, `swarm.crap` writes the text report; `swarm.uml({op:'sync'})` uses it by default and refuses without it. A class with no source class is ungraded; a class with a source but no metrics is red.
 
 ## Quality
 
 - Files stay under 600 lines. Split in the same change.
 - CRAP per function is at most 10. DRY threshold is 0.82.
-- Terminal gate: `swarm.gate({subsystem, feature, crap:true})` returns `pass:true`
-  only when dry, ruff, format, pytest, acceptance, and CRAP are clean.
+- Terminal gate: run `swarm.crap({subsystem,reuseFresh:true})`, then
+  `swarm.gate({subsystem,checks:['dry','ruff','format','pytest','acceptance'],scope:'full'})`.
+  Both must pass. Keep them as two calls: one call with `crap:true` can exceed the
+  OpenCode 45 s event-stream limit.
 - The test-reviewer gate runs after the coder and before the refactorer.
 - Acceptance mutation is out of scope; test quality is judged by the reviewer.

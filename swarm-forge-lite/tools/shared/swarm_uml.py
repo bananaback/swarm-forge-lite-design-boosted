@@ -52,10 +52,45 @@ def cmd_uml_render(args: dict) -> dict:
     }
 
 
+def _lane_from_model(model: Path) -> str | None:
+    """The subsystem whose design tree holds the model, if any."""
+    base = PACK / "design" / "subsystems"
+    try:
+        parts = model.resolve().relative_to(base.resolve()).parts
+    except (ValueError, OSError):
+        return None
+    return parts[0] if parts else None
+
+
+def _default_report(paths, model: Path) -> Path:
+    """The lane's CRAP report; a model under design/subsystems names the lane."""
+    lane = _lane_from_model(model)
+    if lane:
+        return PACK / "dump" / lane / ".metrics" / "crap.txt"
+    return paths.artifacts_root() / ".metrics" / "crap.txt"
+
+
 def cmd_uml_sync(args: dict) -> dict:
     """Overlay the real signatures and CRAP metrics onto the model."""
     model = _resolve_model(args.get("model") or "model.json", args.get("subsystem"))
     paths = _paths()
+    if args.get("crap"):
+        report = _resolve_any(args["crap"], paths)
+        warning = None
+    else:
+        report = _default_report(paths, model)
+        if not report.is_file():
+            return {
+                "tool": "umlview-sync",
+                "model": _short(model),
+                "exit": 2,
+                "ok": False,
+                "stderr": (
+                    f"sync: no CRAP report at {report}; "
+                    "run swarm.crap first or pass crap=<path>"
+                ),
+            }
+        warning = f"sync: using default CRAP report {report}"
     argv = [
         sys.executable,
         str(PACK / "tools" / "shared" / "umlview" / "sync_python.py"),
@@ -66,20 +101,23 @@ def cmd_uml_sync(args: dict) -> dict:
             if args.get("source")
             else (paths.source_roots()[0] if paths.source_roots() else ".")
         ),
+        "--crap",
+        str(report),
     ]
-    if args.get("crap"):
-        argv += ["--crap", str(_resolve_any(args["crap"], paths))]
     # Overlay model.json itself. One topology, one review page. No model.live copy.
     out_path = _out_path(args["out"]) if args.get("out") else model
     argv += ["--out", str(out_path)]
     code, out, err = _run(argv)
-    return {
+    result = {
         "tool": "umlview-sync",
         "model": _short(model),
         "exit": code,
         "stdout": out.strip() or None,
         "stderr": err.strip() or None,
     }
+    if warning:
+        result["warn"] = warning
+    return result
 
 
 def cmd_uml_scan(args: dict) -> dict:

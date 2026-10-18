@@ -26,17 +26,21 @@ operator
 | critic | union review; `swarm.genRecord`; operator Proceed |
 | coder | red for the right reason, then green; ruff clean |
 | test-reviewer | `VERDICT: accept` |
-| terminal | `swarm.gate({subsystem,feature,crap:true})` |
+| terminal | `swarm.crap`, then `swarm.gate` without `crap`; both pass (two calls, each under 45 s) |
 
 Every record and quality command returns `ok`. `swarm.ready` and `swarm.gate`
 return `pass:true` only when every selected command returns `ok:true`. Never
 infer a gate from a count.
 
+On OpenCode, the client aborts a call after 45 seconds with no event. Run
+`swarm.crap` and the rest of `swarm.gate` as two calls. The six checks together
+exceed the limit on this repo because `crap` runs a coverage pass.
+
 ## Durable outputs
 
 - `docs/specs/NN-<subsystem>.md` — shipped requirement document.
 - `FEATURES/*.feature` — shipped behavior.
-- `design/subsystems/<subsystem>/model.html` — review page, generated.
+- `design/subsystems/<subsystem>/model.html` — review page, generated after `swarm.uml({op:'sync'})` uses the `swarm.crap` text report; a bare sync refuses.
 - `design/subsystems/<subsystem>/model.json` — topology, tool-edited.
 - Source code and authored tests.
 

@@ -156,6 +156,8 @@ def _crap_sample(module, rolled):
     functions but no CRAP data is the red threshold, once per function. A module
     with no functions has nothing to measure, so it contributes no group:
     upstream weights it as one function, and that grades an enum red."""
+    if (module.get("live") or {}).get("status") == "missing":
+        return None
     scores = op_scores(module)
     summary = module.get("crap")
     has_summary = isinstance(summary, dict) and summary.get("mu") is not None

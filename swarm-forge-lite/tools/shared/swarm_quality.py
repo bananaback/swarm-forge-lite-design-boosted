@@ -333,12 +333,16 @@ def cmd_crap(args: dict) -> dict:
     paths = _paths()
     code, out, err = _run(_crap_argv(paths, args), env=_crap_env(paths))
     rows = _crap_rows(out)
+    report = paths.artifacts_root() / ".metrics" / "crap.txt"
+    report.parent.mkdir(parents=True, exist_ok=True)
+    report.write_text(out)
     result = {
         "tool": CRAP_NAME,
         "threshold": CRAP_THRESHOLD,
         "total": len(rows),
         "above": len(_crap_over(rows)),
         "rows": rows if args.get("all") else _crap_over(rows),
+        "report": _short(report),
         "exit": code,
         "ok": code == 0 and not _crap_over(rows),
     }
