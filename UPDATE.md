@@ -49,6 +49,7 @@ swarm-forge-lite/PUBLISH-DOCS.md
 .opencode/commands/**
 INSTALL.md
 UPDATE.md
+HARNESS_SELF_IMPROVEMENT.md
 .gitignore
 ```
 

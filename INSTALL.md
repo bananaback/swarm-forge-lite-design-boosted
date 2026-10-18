@@ -1,5 +1,8 @@
 # Install the harness
 
+Read `HARNESS_SELF_IMPROVEMENT.md` first. It records the owner's goal, the
+current harness shape, the verified baseline, and the open optimization work.
+
 This folder is a complete, self-contained agent harness for a Python project. Drop it
 at the root of a workspace, install the dependencies, calibrate it to the project,
 and run it. It ships **unwired**: it names no project and resolves no project path
