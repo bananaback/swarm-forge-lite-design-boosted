@@ -141,7 +141,7 @@ The list tools return counts by default. Pass `view:"rows"` for the rows.
 read / glob / grep / edit / write - the files.
 `question` - an owner decision.
 
-Where this file names `harness.py <command>`, `pytest`, `run_acceptance.py`, or `ruff4py`, call the matching `swarm.*` tool in `execute`. Call form: `return JSON.parse(await tools.swarm.<tool>({subsystem: "<subsystem>", ...}));` - the tools return compact JSON. A shell command is a fallback: wrap it with `<pack>/tools/shared/lane <subsystem> <command>`, because the wrapper sets `SWARM_PACK`, `SWARM_TEST_DATA`, `TMPDIR`, the bytecode cache, the hypothesis store and the pytest cache. Prefer the tool: it keeps the stdout out of your context.
+Where this file names `harness.py <command>`, `pytest`, `run_acceptance.py`, or `ruff4py`, call the matching `swarm.*` tool in `execute`. Call form: `return JSON.parse(await tools.swarm.<tool>({subsystem: "<subsystem>", ...}));` - the tools return compact JSON. Every result carries `pack`, the absolute path of the pack that answered it. A shell command is a fallback: wrap it with `<pack>/tools/shared/lane <subsystem> <command>`, because the wrapper sets `SWARM_PACK`, `SWARM_TEST_DATA`, `TMPDIR`, the bytecode cache, the hypothesis store and the pytest cache. Prefer the tool: it keeps the stdout out of your context.
 </tools>
 
 <rules>
