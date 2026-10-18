@@ -8,6 +8,7 @@ disagree about the same path.
 Each test states the behavior, not the wording.
 """
 
+import json
 import re
 from pathlib import Path
 
@@ -315,6 +316,22 @@ def test_a_saved_handle_pages_its_rows(tmp_path, monkeypatch):
         assert "no such handle" in str(err)
     else:
         raise AssertionError("an unknown handle must raise")
+
+
+def test_every_cli_result_carries_the_pack_that_answered(capsys):
+    """Two packs hold the same tool names, so every result names the one that ran.
+
+    The project copy and the clone both resolve `swarm-forge-lite`. An agent that
+    reads the wrong pair has no other evidence to correct itself, and the error
+    path is the one a lost agent sees first.
+    """
+    assert swarm_json.main(["docs", "{}"]) == 0
+    assert json.loads(capsys.readouterr().out)["pack"] == str(PACK)
+
+    assert swarm_json.main(["not-a-command", "{}"]) == 0
+    failure = json.loads(capsys.readouterr().out)
+    assert failure["pack"] == str(PACK)
+    assert "error" in failure
 
 
 class _Paths:

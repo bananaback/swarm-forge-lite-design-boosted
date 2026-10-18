@@ -40,7 +40,8 @@ the chunk's own gate>
 2. <observable check>
 3. <observable check>
 
-Output: <pack>/protocol/<role>.md - exactly that block, no preface, no trailing prose.
+Output: print the block that lives in <pack>/protocol/<role>.md, filled with your
+own values. That file is read-only: never write to it. No preface, no trailing prose.
 If a detail is missing: `ASSUMED: <...>` in one line, then continue.
 ```
 
@@ -93,7 +94,7 @@ The orchestrator assembles every field by cite or by copy. It never invents cont
 - `#ALLOWLIST` - the paths named by the `FILES` of the previous message, plus the source and test areas the operator named.
 - `#SCOPE` - the ask. For the refactorer, name **one exact target**, or write `no cleanup`. Never write an open-ended license such as `cleanup where safe`. An open license makes the role hunt for work that does not exist.
 - `#CARRIED` - the failures that are not this chunk's to fix, each with its reason. `pass` means the chunk's own gate alone. The refactorer refreshes `model.live.json` and `model.html` and never touches `model.json`.
-- `#VERIFY` - the standard verification of the role, scoped to the chunk, copied exactly from `engineering.md`, with `python3` in front of every python tool. Ruff uses `python3 <pack>/tools/shared/ruff4py` (a package directory, never a binary). Pytest must run through the lane wrapper (`<pack>/tools/shared/lane <subsystem> ...`), never directly. Coder: the pinned test of the chunk and the acceptance of its feature. Refactorer: CRAP, then DRY. Add the failing side when one exists. The numbers the orchestrator cites come from the tool, never by hand, so the tool and the role agree.
+- `#VERIFY` - the standard verification of the role, scoped to the chunk, copied exactly from `engineering.md`. Name the `swarm.*` tool when the role has it: `swarm.pytest({subsystem,k})` for pytest, `swarm.acceptance({feature,subsystem})` for a feature, `swarm.ruff({paths,subsystem})` for the lint. The shell form is the fallback: `python3 <pack>/tools/shared/ruff4py` (a package directory, never a binary), and pytest through the lane wrapper `<pack>/tools/shared/lane <subsystem> ...`, never directly. Coder: the pinned test of the chunk and the acceptance of its feature. Refactorer: CRAP, then DRY. Add the failing side when one exists. The numbers the orchestrator cites come from the tool, never by hand, so the tool and the role agree.
 - `#DONE` - up to three checks that a script, a reviewer, or a diff can verify. No quality words, no restatement of the ask.
 - `#LANE` - always the subsystem name. The role prefixes every shell command with `<pack>/tools/shared/lane <subsystem>`, so the artifacts, caches, and generated tests are scoped to this subsystem alone. One subsystem, one lane: the steps of a change run in order.
 

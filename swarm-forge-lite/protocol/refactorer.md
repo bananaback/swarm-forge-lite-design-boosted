@@ -8,7 +8,7 @@ The final message of the refactorer. The cleanup is in the tree. Report referenc
 SUBSYSTEM: <subsystem>
 STATUS: done | blocked | needs-input
 NEXT: operator
-VERIFY: <the verification command> => exit <n>
+VERIFY: <the swarm.gate command, then CRAP and DRY> => exit <n>
 FILES: <path:line ...>
 DIAGRAM: <design/subsystems/<subsystem>/model.html, or "none" when the task has no model>
 ASSUMPTIONS: <path:line, or "none">

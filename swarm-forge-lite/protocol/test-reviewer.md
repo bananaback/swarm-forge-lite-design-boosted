@@ -9,7 +9,7 @@ SUBSYSTEM: <subsystem>
 STATUS: done | blocked | needs-input
 VERDICT: accept | reject
 NEXT: refactorer | coder
-VERIFY: <the pytest command, run one and run two> => exit <n>
+VERIFY: <the swarm.pytest command, run one and run two> => exit <n>
 FILES: <test file path:line ...>
 FINDINGS: <count> - <findings file path:line, path:line ...>
 ASSUMPTIONS: <path:line, or "none">

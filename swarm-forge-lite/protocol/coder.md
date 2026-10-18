@@ -8,7 +8,7 @@ The final message of the coder. The change is in the tree. Report references, no
 SUBSYSTEM: <subsystem>
 STATUS: done | blocked | needs-input
 NEXT: refactorer
-VERIFY: <the exact command> => exit <n>
+VERIFY: <the swarm.pytest command, then swarm.acceptance, then swarm.ruff> => exit <n>
 FILES: <path:line ...>
 ASSUMPTIONS: <path:line, or "none">
 ASK: <only when STATUS is not done>

@@ -109,7 +109,7 @@ Code Mode tools (call inside `execute`; each returns compact JSON - parse with `
 - `swarm.ruff({paths,subsystem})` -> structured findings, without the source frames. Replaces `ruff4py`.
 - `swarm.pytest({subsystem,scope})` -> `{passed,failed,failures,summary,exit}`. Replaces `pytest`.
 - `swarm.acceptance({feature,subsystem})` -> `{features,passed,failed,failures,summary,exit}`. Replaces `run_acceptance.py`.
-- `swarm.umlSync({model:"model.json",subsystem,source,crap})` and `swarm.umlRender({model:"model.json",subsystem})` -> refresh the live diagram. Replace `sync_python.py` and `render.py`.
+- `swarm.umlSync({model:"model.json",subsystem,source,crap})` -> refresh `model.live.json` from it, then `swarm.umlRender({model:"model.live.json",subsystem})` -> refresh `model.html` from the live file. Never render `model.json` over a page that a `model.live.json` backs. Replace `sync_python.py` and `render.py`.
 - `swarm.uml({op,model,subsystem})` -> query `model.json` for the live overlay: `{op:"list"}` names every op, and `swarm.help({tool:"uml"})` gives the params. Use the query ops only (`violations`, `edges`, `classes`, `stats`); the model is read-only for you, so never mutate it.
 - `swarm.gate({subsystem,feature})` -> the terminal gate in one call: `{dry,ruff,pytest,acceptance,pass}`. Use it for the one full run. `checks` selects a subset.
 - `swarm.page({handle,offset})` -> fetch more rows when a call returns a `handle`.

@@ -127,6 +127,7 @@ export default Plugin.define({
         description:
           "The SwarmForge workflow as Code Mode tools. Compact JSON by default; ask for rows with view:'rows' or a handle with view:'all'. " +
           "Parse each result with JSON.parse. Aggregators: swarm.gate, swarm.ready, swarm.triage. " +
+          "Every result carries `pack`, the absolute path of the pack that answered it. " +
           "For one tool's params, defaults, return shape, and example, call swarm.help({tool:'ruff'}).",
       })
 

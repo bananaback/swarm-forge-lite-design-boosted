@@ -123,7 +123,8 @@ only what no file holds. There is no size limit.
 #STOP TEST
 <cite reference/design-quality.md section <role> - the pass clauses for this chunk. The full list is the module gate>
 
-Output: <pack>/protocol/<role>.md - exactly that block.
+Output: print the block that lives in <pack>/protocol/<role>.md, filled with your
+own values. That file is read-only: never write to it.
 If a detail is missing: `ASSUMED: <...>`, or surface it as a DECISION.
 ```
 

@@ -198,6 +198,17 @@ COMMANDS = {
 }
 
 
+def _with_pack(result):
+    """Stamp the result with the pack that answered.
+
+    The same tool name exists in the project copy and in the clone. The path is
+    the one field that tells the two apart.
+    """
+    if isinstance(result, dict):
+        result.setdefault("pack", str(PACK))
+    return result
+
+
 def main(argv=None) -> int:
     argv = list(sys.argv if argv is None else argv)
     if len(argv) < 2:
@@ -217,30 +228,24 @@ def main(argv=None) -> int:
     try:
         args = json.loads(raw) if raw.strip() else {}
     except json.JSONDecodeError as error:
-        print(json.dumps({"error": f"bad json args: {error}"}))
+        print(json.dumps({"error": f"bad json args: {error}", "pack": str(PACK)}))
         return 0
     subsystem = args.get("subsystem")
     if subsystem:
         os.environ["SWARM_LANE"] = str(subsystem)
     handler = COMMANDS.get(command)
     if handler is None:
-        print(
-            json.dumps(
-                {"error": f"unknown command: {command}", "known": sorted(COMMANDS)}
-            )
-        )
+        result = {"error": f"unknown command: {command}", "known": sorted(COMMANDS)}
+        print(json.dumps(_with_pack(result)))
         return 0
     try:
         result = handler(args)
     except Exception as error:  # noqa: BLE001  # one JSON error object, never a traceback
-        print(
-            json.dumps(
-                {"error": f"{type(error).__name__}: {error}", "command": command}
-            )
-        )
+        result = {"error": f"{type(error).__name__}: {error}", "command": command}
+        print(json.dumps(_with_pack(result)))
         return 0
     try:
-        print(json.dumps(result, default=str))
+        print(json.dumps(_with_pack(result), default=str))
     except BrokenPipeError:
         pass
     return 0

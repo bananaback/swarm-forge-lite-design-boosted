@@ -41,9 +41,9 @@ hidden. Defaults produce one page:
 | Option | Default | Notes |
 | --- | --- | --- |
 | `limit` | `20` messages | `0` = all messages |
-| `maxText` | `1500` chars | per text/reasoning block; `0` = no cap |
-| `toolOutput` | `1200` chars | per tool result; `0` = no cap, `-1` = omit |
-| `toolInput` | `800` chars | per tool input; `0` = no cap, `-1` = omit |
+| `maxText` | `3000` chars | per text/reasoning block; `0` = no cap |
+| `toolOutput` | `3000` chars | per tool result; `0` = no cap, `-1` = omit |
+| `toolInput` | `1500` chars | per tool input; `0` = no cap, `-1` = omit |
 | `reasoning` | `true` | pass `false` to drop reasoning blocks |
 | `tools` | `true` | pass `false` to drop tool calls/results |
 | `subs` | `false` | include sub-sessions recursively |
@@ -54,7 +54,7 @@ Every page ends with a footer that teaches the next move, e.g.:
 ```
 -- messages 0..20 of 185 --
 -- more: call again with offset=20 --
--- caps: maxText=1500 toolOutput=1200 toolInput=800 (pass 0 for no cap, -1 to omit) --
+-- caps: maxText=3000 toolOutput=3000 toolInput=1500 (pass 0 for no cap, -1 to omit) --
 ```
 
 So the agent pages with `offset=20`, or calls `limit: 0` with caps set to `0`

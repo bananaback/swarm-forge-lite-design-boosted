@@ -9,7 +9,7 @@ SUBSYSTEM: <subsystem>
 STATUS: done | blocked | needs-input
 APPROVED: yes | no
 NEXT: <architect | interrogator>
-VERIFY: <parse + dry-check command> => exit <n>
+VERIFY: <swarm.gherkinParse + swarm.gherkinDry> => exit <n>
 FILES: <feature path:line, IR path, dry path>
 ASSUMPTIONS: <path:line, or "none">
 ASK: <only when STATUS is not done>

@@ -11,9 +11,9 @@ CAUSE: <path:line of the defect, or "unknown">
 FIX: <path:line of the change>
 LAYERS: <path:line, path:line ...>   (each twin that changed)
 VERIFY:
-- <pytest command> => exit <n>
-- <run_acceptance feature> => exit <n>
-- <ruff4py command> => exit <n>
+- <the swarm.pytest command, scoped, then the full suite> => exit <n>
+- <the swarm.acceptance command> => exit <n>
+- <the swarm.ruff command> => exit <n>
 RISKS: <path:line, or "none">
 ASK: <only when blocked>
 ```

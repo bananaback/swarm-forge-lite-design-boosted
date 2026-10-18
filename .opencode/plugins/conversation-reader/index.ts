@@ -431,15 +431,15 @@ export default Plugin.define({
             tools: { type: "boolean", description: "include tool calls/results (default true)" },
             toolOutput: {
               type: "integer",
-              description: "cap each tool result at N chars; 0 = no cap (default 1200), -1 omit",
+              description: "cap each tool result at N chars; 0 = no cap (default 3000), -1 omit",
             },
             toolInput: {
               type: "integer",
-              description: "cap each tool input at N chars; 0 = no cap (default 800), -1 omit",
+              description: "cap each tool input at N chars; 0 = no cap (default 1500), -1 omit",
             },
             maxText: {
               type: "integer",
-              description: "cap each text/reasoning block at N chars; 0 = no cap (default 1500)",
+              description: "cap each text/reasoning block at N chars; 0 = no cap (default 3000)",
             },
             role: { type: "string", enum: ["user", "assistant"], description: "only this role" },
             format: { type: "string", enum: ["text", "json"], description: "output format" },

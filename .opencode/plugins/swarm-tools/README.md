@@ -25,6 +25,17 @@ Measured on this repo (bytes):
 | `harness.py status` | 872 | 534 | 1.6x |
 | 4-part terminal gate | ~4 logs | 309 | large |
 
+## Which pack answered
+
+The workspace holds two packs: the project copy and the staging clone. The same
+tool name exists in both. Every result carries `pack`, the absolute path of the
+pack that served the call. Read it when a path or a number looks wrong.
+
+```js
+const r = JSON.parse(await tools.swarm.status({ subsystem: "clip" }))
+r.pack   // "/home/<user>/.../swarm-forge-lite"
+```
+
 ## Views (the list tools)
 
 Every list tool (`ruff`, `dry`, `crap`, `check`, `lintRecord`, `gherkinDry`) has:
