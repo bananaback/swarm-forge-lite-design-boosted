@@ -24,6 +24,16 @@ working state. Keep it short.
 `model.html` is generated. Agents never read it and never edit it. Agents query
 `model.json` through `swarm.uml` and render with `swarm.uml({op:'render'})`.
 
+## Cross-session state
+
+- `TASK_BOARD.md` — shared claims, written only by the orchestrator. Check it
+  before a dispatch. It is awareness, not a lock.
+- `TODO.md` — deferred goals, operator-owned. `harness.py todo --pick` returns the
+  top `Ready: yes` row; `--id T2` returns that row.
+
+A new workspace copies `templates/TASK_BOARD.md` and `templates/TODO.md` into
+`design/` when the first claim starts. The live files are project-owned.
+
 ## Rules
 
 - One fact has one home. Edit by delta. Never copy a template over a record.

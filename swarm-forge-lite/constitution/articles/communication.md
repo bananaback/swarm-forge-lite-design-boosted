@@ -20,6 +20,9 @@ Every dispatch carries:
 - `#ALLOWLIST`: the files the role may edit.
 - `#DONE`: the checks that end the run.
 - `#VERIFY`: the exact commands and the expected exit codes.
+- `#OTHER SESSIONS`: active claims from another session on the same subsystem or
+  overlapping files, or `- none`. A foreign change is not corruption; check
+  `design/TASK_BOARD.md` before you assume a bug.
 
 Use `swarm.envelope({role,subsystem,module})` to build the block. Paste it
 verbatim. Cite inputs as `path:line`. Verify every citation before sending.

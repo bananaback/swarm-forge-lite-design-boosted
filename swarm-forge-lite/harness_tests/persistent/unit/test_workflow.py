@@ -139,6 +139,19 @@ def test_the_doctor_checks_the_agent_model_plan(monkeypatch, tmp_path):
     assert swarm_gate._model_checks()[0]["ok"] is False
 
 
+def test_the_board_and_todo_are_wired_into_the_orchestrator():
+    """A template no prompt reads is paperwork; a rule no file backs is a guess."""
+    templates = PACK / "design" / "templates"
+    board = templates / "TASK_BOARD.md"
+    todo = templates / "TODO.md"
+    assert "| Claim | Session | Role |" in board.read_text(encoding="utf-8")
+    assert "| Id | Goal | Subsystem | Ready |" in todo.read_text(encoding="utf-8")
+    orchestrator = (AGENTS / "orchestrator.md").read_text(encoding="utf-8")
+    assert "#OTHER SESSIONS" in orchestrator
+    assert "design/TASK_BOARD.md" in orchestrator
+    assert "pick the todo goal" in orchestrator
+
+
 def test_the_plugin_readme_tool_table_is_generated_from_the_catalog():
     """The README table must be the catalog's own table, not a hand copy."""
     from swarm_help import tool_table

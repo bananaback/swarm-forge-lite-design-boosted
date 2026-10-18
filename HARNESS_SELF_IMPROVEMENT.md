@@ -5,12 +5,12 @@ to improve the SwarmForge Lite harness. It records the owner's long-term goal, t
 decisions already made, what is finished, what is still open, and how to continue
 without re-auditing the whole workspace.
 
-Last updated: **2026-10-18** · branch `v2-python` · pass 3 closes all
-actionable P0, P1, and P2 items · both packs green.
+Last updated: **2026-10-18** · branch `v2-python` · pass 5 implements the
+cross-session board and the deferred goal queue · both packs green.
 
 ## 0. Next action
 
-Pass 4 is finished. Read sections 1–4 and run the baseline in section 4 before
+Pass 5 is finished. Read sections 1–4 and run the baseline in section 4 before
 touching the harness.
 
 The only open work left is the cost measurement:
@@ -21,10 +21,6 @@ The only open work left is the cost measurement:
 
 Do not start by re-auditing the workspace. The audit is done. Continue from the
 open list.
-
-If the owner explicitly asks for the shared task board or the deferred-goal queue,
-work on section 5b instead. Those are features, not cleanup. Do not add them
-unless the owner asks.
 
 ## 0.5 Read before you improve
 
@@ -232,6 +228,18 @@ design/subsystems/<subsystem>/
 The shipped requirement document is `<SPECS>/NN-<subsystem>.md`, a view synced by
 `swarm.genDoc`. The shipped behavior is `FEATURES/*.feature`.
 
+### Cross-session state
+
+```
+design/TASK_BOARD.md   shared claims: claim, session, role, subsystem, task, files, state, since
+design/TODO.md         deferred goals: id, goal, subsystem, ready, done when, notes
+```
+
+Only the orchestrator writes the board. The operator owns `TODO.md`; the
+orchestrator updates a picked row. `harness.py board` renders `#OTHER SESSIONS`;
+`harness.py todo --pick|--id` returns a queued goal. They are CLI helpers, not
+Code Mode tools. The board is awareness, not a lock.
+
 The record has **no** `01-interrogator/`, `02-architect/`, `04-critic/`,
 `interfaces/`, per-module directories, `COUNTS.md`, `CONTRACTS.md`, or
 `model.live.*`. All nine full records are migrated to the flat layout.
@@ -302,6 +310,16 @@ tool. It added one Python reader and one small lane write:
 | Code Mode tools | 30 | **30** | no change |
 | Pack self-tests | 285 | **291** | +6 |
 
+Pass 5 implemented the two cross-session features. It added no Code Mode tool:
+
+| Metric | Pass 4 | Pass 5 | Change |
+|---|---:|---:|---:|
+| Agent prompts (10) | 25,865 B | 26,980 B | +1,115 B (claim rules) |
+| Constitution | 9,922 B | 10,470 B | +548 B (cross-session state) |
+| Protocol | 14,581 B | 15,072 B | +491 B (`#OTHER SESSIONS`) |
+| Code Mode tools | 30 | **30** | no change |
+| Pack self-tests | 291 | **299** | +8 |
+
 Specific removals:
 
 - Interrogator sections 0–13 as durable files; now one `requirements.md`.
@@ -341,7 +359,7 @@ Run these before changing anything. They are the baseline.
 # project pack self-tests
 cd swarm-forge-lite
 tools/shared/lane harness bash -c 'cd harness_tests && python3 -m pytest -q'
-# -> 291 passed
+# -> 299 passed
 
 # project suite (the shipped code)
 tools/shared/lane audio-output bash -c \
@@ -368,7 +386,7 @@ done
 cd ../tdd_harness/swarm-forge-lite
 SWARM_CONFIG=$PWD/harness.selftest.json \
   tools/shared/lane harness bash -c 'cd harness_tests && python3 -m pytest -q'
-# -> 269 passed, 4 skipped
+# -> 277 passed, 4 skipped
 ```
 
 Five PLANNED subsystems contain only `GOAL.md`: `camera-source`,
@@ -465,12 +483,19 @@ These are the remaining real items. Do not re-open closed items above.
 
 ---
 
-## 5b. Planned feature track — cross-session awareness and deferred goals
+## 5b. Cross-session awareness and deferred goals (implemented)
 
-Two owner-requested features. They are **not implemented**. Build them only when
-the owner asks. The design target is deliberately small: **two state files, a few
-orchestrator rules, and no new framework** unless a real race proves one is
-needed.
+Implemented in pass 5. The design target stayed small: **two state files, a few
+orchestrator rules, two read-only CLI commands, and no new Code Mode tool**.
+
+Decisions taken:
+
+- Board: `design/TASK_BOARD.md`, beside the record, one project per workspace.
+- TODO: `design/TODO.md`, beside the board.
+- Stale threshold: 60 minutes.
+- History: active claims plus the last 5 done rows.
+- The board is awareness, not a lock. A conflict asks the operator; it never
+  blocks a command.
 
 The problem they solve:
 
@@ -490,12 +515,12 @@ Proposed shape:
 ```
 # TASK BOARD
 
-Updated: <ISO-8601>
-Stale after: <minutes>
+Updated: <ISO-8601 UTC>
+Stale after: 60 minutes
 
-| Claim | Session | Role | Subsystem | Task | Files (allowlist) | State | Since |
+| Claim | Session | Role | Subsystem | Task | Files | State | Since |
 |---|---|---|---|---|---|---|---|
-| C1 | ses_ab12... | orchestrator | audio-output | implement clip gate | app/audio/**, tests/audio/** | active | 12:10 |
+| C1 | ses_ab12... | orchestrator | audio-output | implement clip gate | app/audio/**, tests/audio/** | active | 2026-10-18T07:30:00Z |
 ```
 
 Rules:
@@ -510,16 +535,15 @@ Rules:
    **conflict**. The orchestrator does not dispatch a second writer. It queues,
    asks the operator, or picks a disjoint task.
 5. On done or blocked, the orchestrator marks the claim `done` or `blocked` and
-   keeps the row for one short history window. It does not delete evidence.
+   keeps the row for one short history window. It keeps the last 5 done rows.
 6. A claim older than `Stale after` without an update is `stale`. A stale claim
    is surfaced, not silently broken. The operator decides.
 7. The board is **awareness, not a lock**. Correctness still comes from disjoint
    write sets and frozen interfaces.
 8. Only the orchestrator writes the board. Subagents report files and results.
 
-What it costs: one short read per dispatch, one row write per task. No new tool
-is required for the first version. If concurrent writes corrupt the table, add
-one tiny atomic helper later; do not start there.
+What it costs: one short read per dispatch, one row write per task, and one
+`harness.py board` call to render `#OTHER SESSIONS`. No new Code Mode tool.
 
 Acceptance:
 
@@ -560,7 +584,7 @@ Rules:
    just enough context to start.
 
 What it costs: one short file read when the owner asks, one row update when the
-task finishes. No new tool required.
+task finishes, and one `harness.py todo` call. No new Code Mode tool.
 
 Acceptance:
 
@@ -570,26 +594,24 @@ Acceptance:
 - The orchestrator never starts a queued task without the owner’s phrase.
 - The file stays under ~80 lines in normal use.
 
-### Minimal implementation plan
+### Implemented
 
-1. Add `design/TASK_BOARD.md` and `design/TODO.md` templates with the tables above.
-2. Add ~10 lines to `orchestrator.md`: read board, add claim, pass
-   `#OTHER SESSIONS`, mark done/stale, honor “pick the todo goal”.
-3. Add one line to `protocol/dispatch.md` for `#OTHER SESSIONS`.
-4. Add one line to `communication.md`: a foreign change is not corruption; check
-   the board before assuming a bug.
-5. Add one test that proves a claim is read and an overlap is surfaced. Prefer a
-   pure file/parser test over a new tool.
-6. Do not add a new Code Mode tool until a real concurrent-write failure appears.
+1. [x] Added `design/TASK_BOARD.md` and `design/TODO.md`, plus their
+   `design/templates/` copies.
+2. [x] Added the claim rules to `orchestrator.md`: read the board, write a claim,
+   pass `#OTHER SESSIONS`, mark done/stale, honor “pick the todo goal”.
+3. [x] Added `#OTHER SESSIONS` to `protocol/dispatch.md`.
+4. [x] Added the foreign-change rule to `communication.md`.
+5. [x] Added `tools/shared/task_board.py`, `harness.py board`, `harness.py todo`,
+   and unit tests for overlap, stale, and pick.
+6. [x] Added no new Code Mode tool.
 
-### Open questions for the owner
+### Decisions
 
-- Board location: `design/TASK_BOARD.md` (travels with the record) or a
-  workspace-level `TASK_BOARD.md` (shared by several projects)? Recommend
-  `design/` for one project per workspace.
-- Stale threshold: 30 or 60 minutes?
-- Should the board show only active claims, or keep the last N done rows?
-- Should `TODO.md` live beside the board, or inside the project's `PROJECT.md`?
+- Board location: `design/TASK_BOARD.md`, one project per workspace.
+- Stale threshold: 60 minutes.
+- History: active claims plus the last 5 done rows.
+- `TODO.md` lives beside the board, not inside `PROJECT.md`.
 
 ---
 
@@ -707,6 +729,7 @@ SWARM_CONFIG=$PWD/harness.selftest.json \
 | 2026-10-18 | `3e4b93f` | pass 3: strict traceability, uniform `ok`, `clean --drop`, `swarm.doctor`, entry points, loop cap, role enum, docs |
 | 2026-10-18 | `32dfec0` | pass 4: convo counts/paging/schema, shared Python DB reader, lane owner |
 | 2026-10-18 | `52e1081` | remove `sync_pack`: the update path reconciles, it never copies |
+| 2026-10-18 | this commit | pass 5: shared task board, deferred goal queue, claim CLI |
 | 2026-10-18 | this commit | planned feature track: shared task board and deferred goal queue |
 | 2026-10-18 | this commit | onboarding read order and pre-edit understanding gate |
 

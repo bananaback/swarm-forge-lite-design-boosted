@@ -4,10 +4,12 @@ import json
 import os
 import re
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 import questions
 import record
+import task_board
 from harness_values import (
     CleanTarget,
     ClearReport,
@@ -440,6 +442,48 @@ def cmd_decisions(args, paths: PathSet) -> None:
             f"{row['file']}:{row['line']}  {row['id']} [{row['status']}] {row['question']}  answer={answer}"
         )
     print(f"decisions: {open_count} open")
+
+
+def cmd_board(args, paths: PathSet) -> None:
+    """Print the `#OTHER SESSIONS` block for one dispatch.
+
+    The board is awareness, not a lock: a conflict here means ask the operator
+    before a second writer starts.
+    """
+    board = task_board.read_board(paths.pack_root() / "design" / "TASK_BOARD.md")
+    session = (args.session or os.environ.get("OPENCODE_SESSION_ID") or "-").strip()
+    now = datetime.now(UTC)
+    minutes = args.stale if args.stale is not None else board.stale_minutes
+    claims = task_board.conflicts(
+        board,
+        session,
+        (args.subsystem or "").strip(),
+        tuple(args.files or ()),
+    )
+    print(task_board.render_other(claims, now, minutes))
+
+
+def cmd_todo(args, paths: PathSet) -> None:
+    """Pick a deferred goal: the named id, or the top `Ready: yes` row."""
+    todos = task_board.read_todo(paths.pack_root() / "design" / "TODO.md")
+    if args.id or args.pick:
+        todo = task_board.pick_todo(todos, args.id if args.id else None)
+        if todo is None:
+            raise HarnessError(
+                f"no TODO row for {args.id or 'a ready goal'}; read design/TODO.md"
+            )
+        print(f"PICK {todo.id}: {todo.goal}")
+        print(f"SUBSYSTEM: {todo.subsystem or '-'}")
+        print(f"DONE WHEN: {todo.done_when or '-'}")
+        if todo.notes:
+            print(f"NOTES: {todo.notes}")
+        return
+    if not todos:
+        print("TODO: no rows")
+        return
+    for todo in todos:
+        state = "ready" if todo.is_ready() else "wait"
+        print(f"{todo.id} [{state}] {todo.goal} -> {todo.subsystem or '-'}")
 
 
 def cmd_check_envelope(args, paths: PathSet) -> None:

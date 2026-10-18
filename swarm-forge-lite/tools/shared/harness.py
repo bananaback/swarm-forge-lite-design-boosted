@@ -13,6 +13,8 @@ Usage:
   harness init-work ROLE    write a role's empty forms to a NEW subsystem's record directory
   harness decisions ROLE    print the decision ledger of a subsystem, and the open count
   harness check-envelope    lint a dispatch envelope (duplicate blocks, the cite hint)
+  harness board            print #OTHER SESSIONS for one dispatch from design/TASK_BOARD.md
+  harness todo             list or pick a row from design/TODO.md
   harness vocab-rename      bulk rename a token across files, with a verify pass
   harness envelope ROLE     print a dispatch block with every resolved path
 
@@ -31,6 +33,7 @@ from harness_cmds import (
     _subsystem,
     _subsystem_name,
     _work_dir_for,
+    cmd_board,
     cmd_check,
     cmd_check_envelope,
     cmd_clean,
@@ -42,6 +45,7 @@ from harness_cmds import (
     cmd_init_work,
     cmd_lint_record,
     cmd_status,
+    cmd_todo,
     cmd_vocab_rename,
     read_decision_rows,
 )
@@ -92,6 +96,7 @@ __all__ = [
     "_subsystem_name",
     "_work_dir_for",
     "build_parser",
+    "cmd_board",
     "cmd_check",
     "cmd_check_envelope",
     "cmd_clean",
@@ -103,6 +108,7 @@ __all__ = [
     "cmd_init_work",
     "cmd_lint_record",
     "cmd_status",
+    "cmd_todo",
     "cmd_vocab_rename",
     "config_document",
     "load_path_set",
@@ -193,6 +199,26 @@ def build_parser() -> argparse.ArgumentParser:
     )
     cenv.add_argument("file", nargs="?", default="-")
 
+    board = sub.add_parser(
+        "board", help="print #OTHER SESSIONS for one dispatch from design/TASK_BOARD.md"
+    )
+    board.add_argument(
+        "--session", help="The full session id (default OPENCODE_SESSION_ID)."
+    )
+    board.add_argument("--subsystem", help="The subsystem this dispatch touches.")
+    board.add_argument(
+        "--files", nargs="+", default=[], help="The allowlist globs, one or more."
+    )
+    board.add_argument(
+        "--stale", type=int, help="Stale threshold in minutes (default: the board's)."
+    )
+
+    todo = sub.add_parser("todo", help="list or pick a row from design/TODO.md")
+    todo.add_argument("--id", help="Pick this id, even when Ready is not yes.")
+    todo.add_argument(
+        "--pick", action="store_true", help="Pick the top Ready: yes row."
+    )
+
     return parser
 
 
@@ -225,6 +251,10 @@ def main(argv=None) -> int:
             cmd_decisions(args, paths)
         elif args.command == "check-envelope":
             cmd_check_envelope(args, paths)
+        elif args.command == "board":
+            cmd_board(args, paths)
+        elif args.command == "todo":
+            cmd_todo(args, paths)
     except HarnessError as error:
         print(f"harness: {error}", file=sys.stderr)
         return 2

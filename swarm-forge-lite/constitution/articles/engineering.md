@@ -25,10 +25,17 @@ design/subsystems/<subsystem>/
   docs/specs/NN-<subsystem>.md   the shipped requirement document (SPECS root)
 ```
 
+## Cross-session state
+
+- `design/TASK_BOARD.md` holds the active claims. Only the orchestrator writes
+  it. Read it before a dispatch.
+- `design/TODO.md` holds deferred goals. The operator owns it; the orchestrator
+  updates a picked row with its result and commit.
+- The board is awareness, not a lock. A foreign change is not corruption.
+
 ## Lanes
 
-- The subsystem name is the lane id. A parallel designer uses `<subsystem>.<module>`.
-- Every shell command runs through `<pack>/tools/shared/lane <lane> <command...>`.
+- The subsystem name is the lane id. A parallel designer uses `<subsystem>.<module>`.- Every shell command runs through `<pack>/tools/shared/lane <lane> <command...>`.
 - Never run `pytest`, `ruff`, `dryer`, or `crapper` directly.
 - The lane sets `SWARM_PACK`, `SWARM_LANE`, `SWARM_TEST_DATA`, `TMPDIR`,
   `PYTHONPYCACHEPREFIX`, `HYPOTHESIS_STORAGE_DIRECTORY`, and `PYTEST_ADDOPTS`.

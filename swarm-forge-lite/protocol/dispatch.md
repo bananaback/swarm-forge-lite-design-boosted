@@ -28,7 +28,17 @@ Then add:
 #ALLOWLIST     <paths the role may edit>
 #DONE          <the checks that end the run>
 #VERIFY        <exact command> => exit <n>
+#OTHER SESSIONS <active claims whose files overlap, or "- none">
 ```
+
+`#OTHER SESSIONS` comes from
+`python3 <pack>/tools/shared/harness.py board --session <id> --subsystem <s> --files "<globs>"`.
+A claim on the same subsystem or an overlapping file set is a conflict. Queue,
+pick a disjoint task, or ask the operator before a second writer starts. The
+board is awareness, not a lock.
+
+A foreign change is not corruption. Check `design/TASK_BOARD.md` before you
+assume a bug or overwrite a file.
 
 ## Rules
 

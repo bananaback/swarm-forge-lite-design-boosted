@@ -59,6 +59,8 @@ HARNESS_SELF_IMPROVEMENT.md
 swarm-forge-lite/harness.json
 swarm-forge-lite/PROJECT.md
 swarm-forge-lite/design/subsystems/**
+swarm-forge-lite/design/TASK_BOARD.md
+swarm-forge-lite/design/TODO.md
 swarm-forge-lite/dump/  swarm-forge-lite/hot_tests/  swarm-forge-lite/.swarmforge/
 .opencode/agents/**
 opencode.json
