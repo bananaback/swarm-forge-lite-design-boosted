@@ -142,10 +142,11 @@ def test_the_doctor_checks_the_agent_model_plan(monkeypatch, tmp_path):
 def test_the_board_and_todo_are_wired_into_the_orchestrator():
     """A template no prompt reads is paperwork; a rule no file backs is a guess."""
     templates = PACK / "design" / "templates"
-    board = templates / "TASK_BOARD.md"
-    todo = templates / "TODO.md"
-    assert "| Claim | Session | Role |" in board.read_text(encoding="utf-8")
-    assert "| Id | Goal | Subsystem | Ready |" in todo.read_text(encoding="utf-8")
+    board = (templates / "TASK_BOARD.md").read_text(encoding="utf-8")
+    todo = (templates / "TODO.md").read_text(encoding="utf-8")
+    assert "| Session | Subsystem | Doing |" in board
+    assert "Stale" not in board and "Touched" not in board
+    assert "| Id | Goal | Subsystem | Ready |" in todo
     orchestrator = (AGENTS / "orchestrator.md").read_text(encoding="utf-8")
     assert "#OTHER SESSIONS" in orchestrator
     assert "design/TASK_BOARD.md" in orchestrator

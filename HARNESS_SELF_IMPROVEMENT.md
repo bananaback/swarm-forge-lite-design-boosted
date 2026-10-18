@@ -231,14 +231,14 @@ The shipped requirement document is `<SPECS>/NN-<subsystem>.md`, a view synced b
 ### Cross-session state
 
 ```
-design/TASK_BOARD.md   shared claims: claim, session, role, subsystem, task, files, state, touched
+design/TASK_BOARD.md   active work: session, subsystem, doing
 design/TODO.md         deferred goals: id, goal, subsystem, ready, done when, notes
 ```
 
-Only the orchestrator writes the board. The operator owns `TODO.md`; the
-orchestrator updates a picked row. `harness.py board` renders `#OTHER SESSIONS`;
-`harness.py todo --pick|--id` returns a queued goal. They are CLI helpers, not
-Code Mode tools. The board is awareness, not a lock.
+Only the orchestrator writes the board; it removes a row when the work is done.
+The operator owns `TODO.md`; the orchestrator updates a picked row.
+`harness.py todo --pick|--id` returns a queued goal. It is a CLI helper, not a
+Code Mode tool. The board is a note, not a lock.
 
 The record has **no** `01-interrogator/`, `02-architect/`, `04-critic/`,
 `interfaces/`, per-module directories, `COUNTS.md`, `CONTRACTS.md`, or
@@ -314,11 +314,11 @@ Pass 5 implemented the two cross-session features. It added no Code Mode tool:
 
 | Metric | Pass 4 | Pass 5 | Change |
 |---|---:|---:|---:|
-| Agent prompts (10) | 25,865 B | 26,980 B | +1,115 B (claim rules) |
-| Constitution | 9,922 B | 10,470 B | +548 B (cross-session state) |
-| Protocol | 14,581 B | 15,072 B | +491 B (`#OTHER SESSIONS`) |
+| Agent prompts (10) | 25,865 B | 26,825 B | +960 B (board rules) |
+| Constitution | 9,922 B | 10,565 B | +643 B (cross-session state) |
+| Protocol | 14,581 B | 14,981 B | +400 B (`#OTHER SESSIONS`) |
 | Code Mode tools | 30 | **30** | no change |
-| Pack self-tests | 291 | **299** | +8 |
+| Pack self-tests | 291 | **294** | +3 |
 
 Specific removals:
 
@@ -359,7 +359,7 @@ Run these before changing anything. They are the baseline.
 # project pack self-tests
 cd swarm-forge-lite
 tools/shared/lane harness bash -c 'cd harness_tests && python3 -m pytest -q'
-# -> 299 passed
+# -> 294 passed
 
 # project suite (the shipped code)
 tools/shared/lane audio-output bash -c \
@@ -386,7 +386,7 @@ done
 cd ../tdd_harness/swarm-forge-lite
 SWARM_CONFIG=$PWD/harness.selftest.json \
   tools/shared/lane harness bash -c 'cd harness_tests && python3 -m pytest -q'
-# -> 277 passed, 4 skipped
+# -> 272 passed, 4 skipped
 ```
 
 Five PLANNED subsystems contain only `GOAL.md`: `camera-source`,
@@ -485,17 +485,16 @@ These are the remaining real items. Do not re-open closed items above.
 
 ## 5b. Cross-session awareness and deferred goals (implemented)
 
-Implemented in pass 5. The design target stayed small: **two state files, a few
-orchestrator rules, two read-only CLI commands, and no new Code Mode tool**.
+Implemented in pass 5. Simplicity is the point: one short board, one queue, a
+few orchestrator rules, one read-only TODO command, and no new Code Mode tool.
 
 Decisions taken:
 
 - Board: `design/TASK_BOARD.md`, beside the record, one project per workspace.
+- One row: session, subsystem, doing. No ids, files, timers, or states.
+- The board shows active work only. Remove the row when it is done.
+- Same subsystem: ask the operator before a second writer. No file-overlap logic.
 - TODO: `design/TODO.md`, beside the board.
-- Stale threshold: 60 minutes.
-- History: active claims plus the last 5 done rows.
-- The board is awareness, not a lock. A conflict asks the operator; it never
-  blocks a command.
 
 The problem they solve:
 
@@ -507,54 +506,42 @@ The problem they solve:
 
 ### F1 — Shared task board
 
-**One file:** `design/TASK_BOARD.md` at the pack root. It is shared by every
-session in the workspace. It is small and human-readable.
+**One file:** `design/TASK_BOARD.md` at the pack root. Every session in the
+workspace reads it.
 
-Proposed shape:
+Shape:
 
 ```
 # TASK BOARD
 
-Updated: <ISO-8601 UTC>
-Stale after: 60 minutes
+One row per active unit of work. Remove the row when it is done.
 
-| Claim | Session | Role | Subsystem | Task | Files | State | Touched |
-|---|---|---|---|---|---|---|---|
-| C1 | ses_ab12... | orchestrator | audio-output | implement clip gate | app/audio/**, tests/audio/** | active | 2026-10-18T07:30:00Z |
+| Session | Subsystem | Doing |
+|---|---|---|
+| ses_ab12... | audio-output | implement clip gate |
 ```
 
 Rules:
 
 1. The orchestrator reads the board before it classifies or dispatches.
-2. The orchestrator writes one claim row when it starts a unit of work. `Session`
-   is the full session id. `Files` is the allowlist, not a vague area. `Touched`
-   is refreshed on every dispatch; it is the last-touched time, not the start.
-3. Every dispatch carries `#OTHER SESSIONS`: the active claims whose files
-   overlap the role's allowlist. The subagent knows a changed file may belong to
-   another session.
-4. A claim that touches the same subsystem or an overlapping file set is a
-   **conflict**. The orchestrator does not dispatch a second writer. It queues,
-   asks the operator, or picks a disjoint task.
-5. On done or blocked, the orchestrator marks the claim `done` or `blocked` and
-   keeps the row for one short history window. It keeps the last 5 done rows.
-6. An active claim whose `Touched` time is older than `Stale after` (60 minutes
-   by default) is `stale`. A stale claim is surfaced, not silently broken. The
-   operator decides.
-7. The board is **awareness, not a lock**. Correctness still comes from disjoint
-   write sets and frozen interfaces.
-8. Only the orchestrator writes the board. Subagents report files and results.
+2. The orchestrator adds one row when it starts: the full session id, the
+   subsystem, and what it is doing.
+3. It removes the row when the work is done.
+4. Every dispatch carries `#OTHER SESSIONS`: the other active rows, or `- none`.
+5. If another row names the same subsystem, the orchestrator asks the operator
+   before a second writer starts. The board is a note, not a lock.
 
-What it costs: one short read per dispatch, one row write per task, and one
-`harness.py board` call to render `#OTHER SESSIONS`. No new Code Mode tool.
+What it costs: one short read per dispatch and one row write per task. No new
+tool.
 
 Acceptance:
 
-- Two separate sessions see each other’s active claims.
-- An overlapping dispatch is refused or queued before a subagent starts.
+- Two separate sessions see each other’s active rows.
+- A same-subsystem dispatch is surfaced before a second writer starts.
 - A subagent receives `#OTHER SESSIONS` and does not treat a foreign change as
   corruption.
-- A finished claim is marked done, and a stale claim is visible.
-- The board stays under ~100 lines in normal use.
+- A finished unit removes its row.
+- The board stays under ~40 lines in normal use.
 
 ### F2 — Deferred goal queue
 
@@ -600,19 +587,20 @@ Acceptance:
 
 1. [x] Added `design/TASK_BOARD.md` and `design/TODO.md`, plus their
    `design/templates/` copies.
-2. [x] Added the claim rules to `orchestrator.md`: read the board, write a claim,
-   pass `#OTHER SESSIONS`, mark done/stale, honor “pick the todo goal”.
+2. [x] Added the board rules to `orchestrator.md`: read it, add one row, pass
+   `#OTHER SESSIONS`, remove the row when done, honor “pick the todo goal”.
 3. [x] Added `#OTHER SESSIONS` to `protocol/dispatch.md`.
 4. [x] Added the foreign-change rule to `communication.md`.
-5. [x] Added `tools/shared/task_board.py`, `harness.py board`, `harness.py todo`,
-   and unit tests for overlap, stale, and pick.
+5. [x] Added `tools/shared/goal_queue.py`, `harness.py todo`, and unit tests for
+   the pick.
 6. [x] Added no new Code Mode tool.
 
 ### Decisions
 
 - Board location: `design/TASK_BOARD.md`, one project per workspace.
-- Stale threshold: 60 minutes.
-- History: active claims plus the last 5 done rows.
+- Board shape: session, subsystem, doing. No ids, files, timers, or states.
+- Active work only. Remove the row when done.
+- Same subsystem: ask the operator. No overlap logic.
 - `TODO.md` lives beside the board, not inside `PROJECT.md`.
 
 ---

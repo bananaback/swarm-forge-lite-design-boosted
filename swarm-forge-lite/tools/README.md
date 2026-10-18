@@ -22,7 +22,7 @@ tools/
 │   ├── swarm_gate.py     # gate/ready/gen_record/report commands
 │   ├── swarm_help.py     # docs/help commands
 │   ├── opencode_db.py    # read-only OpenCode DB reader for swarm.report
-│   ├── task_board.py     # shared claim board + deferred goal queue (harness.py board/todo)
+│   ├── goal_queue.py     # deferred goal queue (harness.py todo)
 │   ├── record.py         # facade: re-exports all record names
 │   ├── record_parse.py   # Finding, Report, Table, Document, parsing, helpers
 │   ├── record_lint_req.py # requirement-family linters

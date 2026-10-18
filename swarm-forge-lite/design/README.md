@@ -26,8 +26,8 @@ working state. Keep it short.
 
 ## Cross-session state
 
-- `TASK_BOARD.md` — shared claims, written only by the orchestrator. Check it
-  before a dispatch. It is awareness, not a lock.
+- `TASK_BOARD.md` — one row per active unit: session, subsystem, what it is
+  doing. Only the orchestrator writes it. It is a note, not a lock.
 - `TODO.md` — deferred goals, operator-owned. `harness.py todo --pick` returns the
   top `Ready: yes` row; `--id T2` returns that row.
 

@@ -4,12 +4,11 @@ import json
 import os
 import re
 import sys
-from datetime import UTC, datetime
 from pathlib import Path
 
+import goal_queue
 import questions
 import record
-import task_board
 from harness_values import (
     CleanTarget,
     ClearReport,
@@ -444,30 +443,11 @@ def cmd_decisions(args, paths: PathSet) -> None:
     print(f"decisions: {open_count} open")
 
 
-def cmd_board(args, paths: PathSet) -> None:
-    """Print the `#OTHER SESSIONS` block for one dispatch.
-
-    The board is awareness, not a lock: a conflict here means ask the operator
-    before a second writer starts.
-    """
-    board = task_board.read_board(paths.pack_root() / "design" / "TASK_BOARD.md")
-    session = (args.session or os.environ.get("OPENCODE_SESSION_ID") or "-").strip()
-    now = datetime.now(UTC)
-    minutes = args.stale if args.stale is not None else board.stale_minutes
-    claims = task_board.conflicts(
-        board,
-        session,
-        (args.subsystem or "").strip(),
-        tuple(args.files or ()),
-    )
-    print(task_board.render_other(claims, now, minutes))
-
-
 def cmd_todo(args, paths: PathSet) -> None:
     """Pick a deferred goal: the named id, or the top `Ready: yes` row."""
-    todos = task_board.read_todo(paths.pack_root() / "design" / "TODO.md")
+    todos = goal_queue.read_todo(paths.pack_root() / "design" / "TODO.md")
     if args.id or args.pick:
-        todo = task_board.pick_todo(todos, args.id if args.id else None)
+        todo = goal_queue.pick_todo(todos, args.id if args.id else None)
         if todo is None:
             raise HarnessError(
                 f"no TODO row for {args.id or 'a ready goal'}; read design/TODO.md"

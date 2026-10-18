@@ -1,7 +1,6 @@
 # TASK BOARD
 
-Updated: <ISO-8601 UTC>
-Stale after: 60 minutes
+One row per active unit of work. Remove the row when it is done.
 
-| Claim | Session | Role | Subsystem | Task | Files | State | Touched |
-|---|---|---|---|---|---|---|---|
+| Session | Subsystem | Doing |
+|---|---|---|

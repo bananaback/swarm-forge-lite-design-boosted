@@ -27,11 +27,13 @@ design/subsystems/<subsystem>/
 
 ## Cross-session state
 
-- `design/TASK_BOARD.md` holds the active claims. Only the orchestrator writes
-  it. Read it before a dispatch.
+- `design/TASK_BOARD.md` is a short note: one row per active unit of work, with
+  the session id, the subsystem, and what it is doing. Only the orchestrator
+  writes it and removes the row when the work is done.
 - `design/TODO.md` holds deferred goals. The operator owns it; the orchestrator
   updates a picked row with its result and commit.
-- The board is awareness, not a lock. A foreign change is not corruption.
+- The board is a note, not a lock. Same subsystem means ask the operator. A
+  foreign change is not corruption.
 
 ## Lanes
 
