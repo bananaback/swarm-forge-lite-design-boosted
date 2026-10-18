@@ -710,7 +710,7 @@ SWARM_CONFIG=$PWD/harness.selftest.json \
 | 2026-10-18 | `a60793d` | takeover guide added; orchestrator accepts `STATE` and `STATUS` |
 | 2026-10-18 | `3e4b93f` | pass 3: strict traceability, uniform `ok`, `clean --drop`, `swarm.doctor`, entry points, loop cap, role enum, docs |
 | 2026-10-18 | `32dfec0` | pass 4: convo counts/paging/schema, shared Python DB reader, lane owner |
-| 2026-10-18 | this commit | remove `sync_pack`: the update path reconciles, it never copies |
+| 2026-10-18 | `52e1081` | remove `sync_pack`: the update path reconciles, it never copies |
 | 2026-10-18 | this commit | planned feature track: shared task board and deferred goal queue |
 | 2026-10-18 | this commit | onboarding read order and pre-edit understanding gate |
 
