@@ -6,6 +6,8 @@ dry-run, and the `swarm.uml` wrapper (`swarm_json.cmd_uml`).
 
 import hashlib
 import json
+import shutil
+from pathlib import Path
 
 import pytest
 import swarm_json
@@ -430,6 +432,18 @@ def test_a_round_trip_keeps_a_one_space_indent(tmp_path):
     )
     before = _digest(path)
     _round_trip(path)
+    assert _digest(path) == before
+
+
+def test_a_round_trip_of_a_real_model_is_byte_identical(tmp_path):
+    source = Path(swarm_json.PACK) / "design" / "subsystems" / "model-file-registry"
+    real = source / "model.json"
+    if not real.is_file():
+        pytest.skip("no project design record in this pack")
+    path = tmp_path / "model.json"
+    shutil.copyfile(real, path)
+    before = _digest(path)
+    _round_trip(path, anchor="shell.DetectorGate")
     assert _digest(path) == before
 
 

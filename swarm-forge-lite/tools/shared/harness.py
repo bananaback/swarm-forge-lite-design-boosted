@@ -30,7 +30,6 @@ from harness_cmds import (
     _subsystem,
     _subsystem_name,
     _work_dir_for,
-    _write_stop_test,
     cmd_check,
     cmd_check_envelope,
     cmd_clean,
@@ -91,7 +90,6 @@ __all__ = [
     "_subsystem",
     "_subsystem_name",
     "_work_dir_for",
-    "_write_stop_test",
     "build_parser",
     "cmd_check",
     "cmd_check_envelope",
@@ -153,6 +151,12 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("role")
     init.add_argument("--subsystem")
     init.add_argument("--work")
+    init.add_argument("--module", help="module id for a flat designer record")
+    init.add_argument(
+        "--flat",
+        action="store_true",
+        help="write the lean flat record (requirements.md, architecture.md, review.md)",
+    )
     init.add_argument(
         "--force",
         action="store_true",

@@ -6,7 +6,7 @@ modules. It is the only thing two designers share.
 
 ## The module map
 
-`02-architect/ARCHITECTURE.md` holds one row for each module:
+`architecture.md` holds one row for each module:
 
 | Module | Owns (write set) | Provides | Requires | Secret |
 |---|---|---|---|---|
@@ -86,4 +86,4 @@ The consumer list bounds the re-dispatch. Only the named consumers run again.
 
 A disagreement the CHECKER can settle never reaches a role. A count, a stale line
 cite, and a mismatch between the record and a view are fixed by the tool: read the
-finding, apply `swarm.fix({code})`, and re-run the check.
+finding, read the hint in the `check` row, and re-run the check.

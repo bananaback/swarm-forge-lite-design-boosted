@@ -197,12 +197,34 @@ class Document:
             path, text, tuple(text.splitlines()), tuple(parse_tables(path, text))
         )
 
+    @staticmethod
+    def _cell_matches(name: str, keyword: str) -> bool:
+        """A short id (`cn`, `rn`) matches a whole cell; a phrase matches part."""
+        normal = _normalise(name)
+        keyword = _normalise(keyword)
+        return normal == keyword if len(keyword) <= 3 else keyword in normal
+
     def table_with(self, *keywords: str) -> Table | None:
         """The first table whose header carries any keyword."""
         for table in self.tables:
             for keyword in keywords:
-                if any(keyword in _normalise(name) for name in table.header):
+                if any(self._cell_matches(name, keyword) for name in table.header):
                     return table
+        return None
+
+    def table_with_all(self, *keywords: str) -> Table | None:
+        """The first table whose header carries every keyword.
+
+        A merged record keeps several tables in one file. Presence-based lookup
+        can then pick the wrong table (a traceability row also has an `Rn`
+        header). This selector requires every keyword in the same header.
+        """
+        for table in self.tables:
+            if all(
+                any(self._cell_matches(name, keyword) for name in table.header)
+                for keyword in keywords
+            ):
+                return table
         return None
 
 

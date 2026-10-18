@@ -137,7 +137,7 @@ def test_stop_test_has_one_source_and_covers_every_role():
 def test_the_stale_cell_driver_documentation_is_gone():
     """The old cell driver drove one form cell at a time, and it is gone.
 
-    The hand-maintained `index.md` is gone too: `swarm.forms` and
+    The hand-maintained `index.md` is gone too: `swarm.guide` and
     `harness.py guide` list the forms, so a static copy only drifts.
     """
     assert not (TEMPLATES / "interrogator" / "index.md").exists()
@@ -153,20 +153,18 @@ def test_the_stale_cell_driver_documentation_is_gone():
             )
 
 
-def test_the_interrogator_templates_match_the_live_forms(tmp_path):
-    """The templates dir is a copy of the live forms, and a copy can drift.
-
-    The interrogator reads this directory, so a stale copy teaches the wrong
-    rule. This test holds the two together.
-    """
-    written = questions.emit_templates(questions.SPECS["interrogator"], tmp_path)
-    live = {
-        path.name: path.read_text(encoding="utf-8")
-        for path in (TEMPLATES / "interrogator").glob("*.md")
-    }
-    assert set(live) == {path.name for path in written}
-    for name, text in live.items():
-        assert (tmp_path / name).read_text(encoding="utf-8") == text, f"{name} drifted"
+def test_flat_init_writes_one_file_per_role(tmp_path):
+    """A new subsystem gets one file per role, not a directory of forms."""
+    for role, name in (
+        ("interrogator", "requirements.md"),
+        ("architect", "architecture.md"),
+        ("critic", "review.md"),
+    ):
+        written = questions.emit_flat(role, tmp_path)
+        assert [path.name for path in written] == [name]
+    module = questions.emit_flat("designer", tmp_path, "engine")
+    assert [path.name for path in module] == ["engine.md"]
+    assert (tmp_path / "modules" / "engine.md").is_file()
 
 
 def test_every_interrogator_section_is_checked_or_exempt():
@@ -181,34 +179,18 @@ def test_every_interrogator_section_is_checked_or_exempt():
     assert not missing, f"unclassified sections: {missing}"
 
 
-def test_decisions_forms_teach_the_option_separator():
-    """The hint is taught. For the interrogator it lives in the guide, once."""
-    import swarm_json
-
-    section = next(
-        s for s in questions.SPECS["interrogator"].sections if s.file == "decisions.md"
-    )
-    rules = " ".join(item["rule"] for item in swarm_json._form_items(section))
-    assert "a `|` breaks the table" in rules
-    for role in ("architect", "designer", "critic"):
-        path = TEMPLATES / role / "decisions.md"
-        assert "a `|` breaks the table" in path.read_text(encoding="utf-8")
+def test_decisions_tables_teach_the_option_separator():
+    """Every flat template carries the DECISION table, so the parser never drifts."""
+    for text in (questions.FLAT_MODULE, questions.FLAT_ARCHITECTURE, questions.FLAT_REVIEW):
+        assert "| Dn | Question" in text
 
 
-def test_work_directories_are_numbered_and_agree_with_the_protocol():
-    assert questions.work_dir_for("interrogator") == "01-interrogator"
-    assert questions.work_dir_for("architect") == "02-architect"
+def test_flat_work_directories():
+    """The record is flat: design roles work at the root, designers in modules/."""
+    assert questions.work_dir_for("interrogator") == ""
+    assert questions.work_dir_for("architect") == ""
+    assert questions.work_dir_for("critic") == ""
     assert questions.work_dir_for("designer") == "modules"
-    assert questions.work_dir_for("critic") == "04-critic"
-    headers = {
-        "interrogator": "00-header.md",
-        "architect": "00-header.md",
-        "designer": "DESIGN.md",
-        "critic": "00-header.md",
-    }
-    for role in DESIGN_ROLES:
-        text = (TEMPLATES / role / headers[role]).read_text(encoding="utf-8")
-        assert f"design/subsystems/<subsystem>/{questions.work_dir_for(role)}/" in text
 
 
 def test_workflow_uses_one_term_per_concept():

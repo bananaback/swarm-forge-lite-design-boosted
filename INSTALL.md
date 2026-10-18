@@ -39,9 +39,9 @@ names these paths literally. Relocating any of them breaks the system.
 | Fixed | Why |
 | --- | --- |
 | `harness.json` at the pack root | The config locator reads that name at that place. A second config is fine, but it must be selected with `--config` or `SWARM_CONFIG`. |
-| The pack's internal layout: `tools/shared/wiring/`, `tools/shared/{harness.py,lane,record.py,questions.py,swarm_json.py}`, `tools/{specifier,refactorer}/`, `protocol/`, `reference/`, `constitution/`, `design/templates/`, `harness_tests/`, `project_tests/` | Entry points compute their own location from the pack root, and the tools import each other by these names. |
-| `design/templates/<role>/` and `protocol/<role>.md`, named by role | `harness.py init-work` copies `design/templates/<role>/`, and the dispatch envelope prints `protocol/<role>.md`. A role name and its directory name are one string. |
-| The role work directories under `design/subsystems/<subsystem>/` | `questions.work_dir_for` fixes them. The subsystem name, the `LANE`, and the directory name are one string. |
+| The pack's internal layout: `tools/shared/wiring/`, `tools/shared/{harness.py,lane,record.py,questions.py,swarm_json.py}`, `tools/{specifier,refactorer}/`, `protocol/`, `reference/`, `constitution/`, `design/templates/GOAL.md`, `harness_tests/`, `project_tests/` | Entry points compute their own location from the pack root, and the tools import each other by these names. |
+| `protocol/<role>.md`, named by role | The dispatch envelope prints it. A role name and its protocol file are one string. |
+| The flat record under `design/subsystems/<subsystem>/` | `requirements.md`, `architecture.md`, `modules/<module>.md`, `review.md`, `GOAL.md`, `model.json`, `model.html`. `questions.FLAT_FILES` fixes the names. The subsystem name and the `LANE` are one string. |
 | `PROJECT.md` and its `## ENV` heading | The dispatch envelope prints that block verbatim. The heading is parsed by name. |
 | The persistent-root contract (section 5 names where it may sit) | It is a pytest root: `pytest.ini` with `testpaths = .`, a `conftest.py`, and `acceptance/` (`packroot.py`, `run_acceptance.py`, `generator.py`, `runtime.py`, `steps/`). It holds `unit/`, `property/`, `features/`, `acceptance/steps/`. A step module exposes a `HANDLERS` list; `steps/__init__.py` discovers every sibling by filename, so there is no registry to edit. |
 | The pack's acceptance components: `run_acceptance.py`, `generator.py`, `runtime.py`, `steps/__init__.py` | Reuse them. Do not re-author them. Section 5 covers where they may live. |

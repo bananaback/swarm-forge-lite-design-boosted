@@ -8,16 +8,23 @@ MODULES_TOOLS = [
         "resolve",
         "-",
         "The module map, the frozen interfaces, and the module layout of a subsystem.",
-        [("subsystem", "string", "-", "The lane. Sets SWARM_LANE; the same string as the record id. (required).")],
+        [
+            (
+                "subsystem",
+                "string",
+                "-",
+                "The lane. Sets SWARM_LANE; the same string as the record id. (required).",
+            )
+        ],
         "{subsystem, architecture, interfaces:[{id,path}], modules:[{id,design,skeleton}], split_ready}",
         "swarm.modules({subsystem:'clip'})",
         {
             "subsystem": "clip",
-            "architecture": "design/subsystems/clip/02-architect/ARCHITECTURE.md",
+            "architecture": "design/subsystems/clip/architecture.md",
             "interfaces": [
                 {
                     "id": "engine-read-view",
-                    "path": "design/subsystems/clip/interfaces/engine-read-view.md",
+                    "path": "design/subsystems/clip/architecture.md",
                 }
             ],
             "modules": [{"id": "engine-read-view", "design": True, "skeleton": False}],
@@ -31,12 +38,20 @@ MODULES_TOOLS = [
         "resolve",
         "-",
         "The frozen interface text of one module.",
-        [("subsystem", "string", "-", "The lane. Sets SWARM_LANE; the same string as the record id. (required)."), ("module", "string", "-", "The module id (required).")],
+        [
+            (
+                "subsystem",
+                "string",
+                "-",
+                "The lane. Sets SWARM_LANE; the same string as the record id. (required).",
+            ),
+            ("module", "string", "-", "The module id (required)."),
+        ],
         "{subsystem, module, path, text}",
         "swarm.interface({subsystem:'clip',module:'engine-read-view'})",
         {
             "module": "engine-read-view",
-            "path": "design/subsystems/clip/interfaces/engine-read-view.md",
+            "path": "design/subsystems/clip/architecture.md",
             "text": "INTERFACE engine-read-view ...",
         },
         "Read the frozen interface of a module before you design or critique it. Only the architect edits it. Code Mode returns a JSON string; parse with JSON.parse() before reading fields.",
@@ -47,7 +62,15 @@ MODULES_TOOLS = [
         "resolve",
         "-",
         "Read, or write, the orchestrator's scratchpad (design/subsystems/<subsystem>/GOAL.md).",
-        [("subsystem", "string", "-", "The lane. Sets SWARM_LANE; the same string as the record id. (required)."), ("text", "string", "-", "The new scratchpad text. Omit to read.")],
+        [
+            (
+                "subsystem",
+                "string",
+                "-",
+                "The lane. Sets SWARM_LANE; the same string as the record id. (required).",
+            ),
+            ("text", "string", "-", "The new scratchpad text. Omit to read."),
+        ],
         "{subsystem, path, exists, text}",
         "swarm.goal({subsystem:'clip'})  ·  swarm.goal({subsystem:'clip',text:'# GOAL ...'})",
         {

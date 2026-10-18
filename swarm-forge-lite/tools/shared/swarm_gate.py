@@ -14,7 +14,6 @@ from swarm_core import (
     cmd_check,
     cmd_decisions,
     cmd_lint_record,
-    cmd_status,
 )
 from swarm_quality import cmd_dry, cmd_format, cmd_ruff
 from swarm_support import (
@@ -24,6 +23,7 @@ from swarm_support import (
 from swarm_test import cmd_acceptance, cmd_pytest
 
 _WORKSPACE = PACK.parent
+
 
 def _checked(fn, args: dict, project) -> dict:
     """Run a sub-command and project it, or return a compact error."""
@@ -40,47 +40,86 @@ def cmd_gate(args: dict) -> dict:
     checks defaults to all five. Example: swarm.gate({subsystem, feature})
     """
     checks = args.get("checks") or ["dry", "ruff", "format", "pytest", "acceptance"]
+    if args.get("crap") and "crap" not in checks:
+        checks = [*checks, "crap"]
     out: dict = {}
+
+    def verdict(r: dict, counts: str) -> dict:
+        """One check's compact result plus an explicit ok/exit verdict."""
+        ok = not r.get("error") and int(r.get("exit", 0)) == 0
+        if ok and counts != "exit":
+            ok = int(r.get(counts, 0)) == 0
+        return {**r, "ok": ok}
+
     if "dry" in checks:
-        out["dry"] = _checked(cmd_dry, args, lambda r: {"total": r.get("total", 0)})
+        out["dry"] = _checked(
+            cmd_dry,
+            args,
+            lambda r: verdict(
+                {"total": r.get("total", 0), "exit": r.get("exit", 0)}, "total"
+            ),
+        )
     if "ruff" in checks:
         out["ruff"] = _checked(
             cmd_ruff,
             args,
-            lambda r: {"total": r.get("total", 0), "byCode": r.get("byCode", {})},
+            lambda r: verdict(
+                {
+                    "total": r.get("total", 0),
+                    "byCode": r.get("byCode", {}),
+                    "exit": r.get("exit", 0),
+                },
+                "total",
+            ),
         )
     if "format" in checks:
         out["format"] = _checked(
-            cmd_format, args, lambda r: {"total": r.get("total", 0)}
+            cmd_format,
+            args,
+            lambda r: verdict(
+                {"total": r.get("total", 0), "exit": r.get("exit", 0)}, "total"
+            ),
         )
     if "pytest" in checks:
         out["pytest"] = _checked(
             cmd_pytest,
             args,
-            lambda r: {
-                "passed": r.get("passed", 0),
-                "failed": r.get("failed", 0),
-                "failures": [f["test"] for f in r.get("failures", [])],
-            },
+            lambda r: verdict(
+                {
+                    "passed": r.get("passed", 0),
+                    "failed": r.get("failed", 0),
+                    "errors": r.get("errors", 0),
+                    "exit": r.get("exit", 0),
+                    "failures": [f["test"] for f in r.get("failures", [])],
+                },
+                "failed",
+            ),
         )
     if "acceptance" in checks:
         out["acceptance"] = _checked(
             cmd_acceptance,
             args,
-            lambda r: {
-                "passed": r.get("passed", 0),
-                "failed": r.get("failed", 0),
-                "failures": [f["test"] for f in r.get("failures", [])],
-            },
+            lambda r: verdict(
+                {
+                    "passed": r.get("passed", 0),
+                    "failed": r.get("failed", 0),
+                    "exit": r.get("exit", 0),
+                    "failures": [f["test"] for f in r.get("failures", [])],
+                },
+                "failed",
+            ),
         )
-    ok = all(
-        isinstance(v, dict)
-        and not v.get("error")
-        and not v.get("failed")
-        and not v.get("total")
-        for v in out.values()
-    )
-    out["pass"] = ok
+    if "crap" in checks:
+        from swarm_quality import cmd_crap
+
+        out["crap"] = _checked(
+            cmd_crap,
+            args,
+            lambda r: verdict(
+                {"above": r.get("above", 0), "exit": r.get("exit", 0)}, "above"
+            ),
+        )
+    out["pass"] = all(v.get("ok") for v in out.values() if isinstance(v, dict))
     return out
 
 
@@ -116,11 +155,11 @@ def cmd_ready(args: dict) -> dict:
         out["decisions"] = _checked(
             cmd_decisions, args, lambda r: {"open": r.get("open", 0)}
         )
-    values = [v for v in out.values() if isinstance(v, dict) and not v.get("error")]
-    out["pass"] = (
-        all(v.get("passed") is not False for v in values)
-        and out.get("decisions", {}).get("open", 0) == 0
+    checks_ok = all(
+        isinstance(v, dict) and not v.get("error") and v.get("passed") is not False
+        for v in out.values()
     )
+    out["pass"] = checks_ok and out.get("decisions", {}).get("open", 0) == 0
     return out
 
 
@@ -146,49 +185,55 @@ def _write_union_skeleton(root, subsystem: str, counts: dict):
     mods = sorted(
         p for p in mod_root.iterdir() if p.is_dir() and (p / "SKELETON.md").is_file()
     )
-    if not mods:
+    flat = sorted(p for p in mod_root.glob("*.md"))
+    if not mods and not flat:
         return None
     brief_path = root / "04-critic" / "3-skeleton.md"
     brief = (
         brief_path.read_text(encoding="utf-8").strip() if brief_path.is_file() else ""
     )
+    if not brief:
+        review = root / "review.md"
+        brief = review.read_text(encoding="utf-8").strip() if review.is_file() else ""
+    names = [p.name for p in mods] + [p.stem for p in flat]
     body = [
         f"# SKELETON — {subsystem}",
         "",
-        "<!-- GENERATED by swarm.genRecord from the module skeletons. Do not hand-edit. -->",
+        "<!-- GENERATED by swarm.genRecord from the module contracts. Do not hand-edit. -->",
         "",
         "The whole brief for the coder and the refactorer. The contracts live once, in",
-        "`modules/<module>/SKELETON.md`, and this file concatenates them. The critic's",
-        "cross-module brief is `04-critic/3-skeleton.md`.",
+        "`modules/<module>.md`. The frozen interface text is in `architecture.md`.",
         "",
-        f"- modules: {', '.join(p.name for p in mods)}",
-        f"- interfaces: design/subsystems/{subsystem}/interfaces/<module>.md",
+        f"- modules: {', '.join(names)}",
+        f"- interfaces: design/subsystems/{subsystem}/architecture.md",
         (
             f"- counts: {counts['classes']} classes, {counts['ops']} ops,"
-            f" {counts['edges']} edges (see COUNTS.md)"
+            f" {counts['edges']} edges (from model.json)"
         ),
-        "- contract table: CONTRACTS.md",
-        "- cross-module sections: the architect's structure and module map, and",
-        "  the critic's review, economy, and decisions sections",
         "",
     ]
     if brief:
-        body += ["## The critic's cross-module brief", "", brief, ""]
+        body += ["## Cross-module brief", "", brief, ""]
     for mod in mods:
         text = (mod / "SKELETON.md").read_text(encoding="utf-8").strip()
         body += [f"## MODULE — {mod.name}", "", text, ""]
+    for path in flat:
+        body += [
+            f"## MODULE — {path.stem}",
+            "",
+            path.read_text(encoding="utf-8").strip(),
+            "",
+        ]
     out = root / "SKELETON.md"
     out.write_text("\n".join(body), encoding="utf-8")
     return out
 
 
 def cmd_gen_record(args: dict) -> dict:
-    """Generate the record counts from `model.json`, so no hand count exists.
+    """Project `SKELETON.md` from the module contracts, and return model counts.
 
-    Writes `design/subsystems/<subsystem>/COUNTS.md` and returns the counts. The
-    record cites that file for its numbers; no role re-derives a count by hand.
-    It also writes `CONTRACTS.md`, and projects `SKELETON.md` from the module
-    skeletons when the subsystem has split into modules.
+    Counts are returned as data, never written as a second document. The record
+    keeps one copy of each contract: `modules/<module>.md`.
     """
     subsystem = args.get("subsystem")
     if not subsystem:
@@ -217,57 +262,10 @@ def cmd_gen_record(args: dict) -> dict:
         "edges": len(model.get("edges", [])),
         "levels": len(model.get("levels", [])),
     }
-    body = [
-        f"# COUNTS — {subsystem}",
-        "",
-        "Generated by `swarm.genRecord`. Do not hand-edit. Cite this file for the",
-        "counts. A hand count drifts.",
-        "",
-        "| count | value |",
-        "|---|---|",
-        f"| classes | {counts['classes']} |",
-        f"| ops | {counts['ops']} |",
-        f"| commands | {counts['commands']} |",
-        f"| queries | {counts['queries']} |",
-        f"| edges | {counts['edges']} |",
-        f"| levels | {counts['levels']} |",
-        "",
-    ]
-    out = root / "COUNTS.md"
-    out.write_text("\n".join(body), encoding="utf-8")
-
-    contract_rows = []
-    for cls in classes:
-        cname = cls.get("name") or cls.get("id") or "?"
-        for op in cls.get("ops", []):
-            ann = op.get("annotations") or {}
-            cqs = str(ann.get("cqs") or "query").lower()
-            sig = (op.get("text") or op.get("name") or "?").replace("|", "\\|")
-            pre = (ann.get("pre") or "-").replace("|", "\\|")
-            post = (ann.get("post") or "-").replace("|", "\\|")
-            inv = (ann.get("invariant") or "-").replace("|", "\\|")
-            contract_rows.append(
-                f"| `{cname}.{sig}` | {cqs} | {pre} | {post} | {inv} |"
-            )
-    contracts = [
-        f"# CONTRACTS — {subsystem}",
-        "",
-        "Generated by `swarm.genRecord` from `model.json`. Do not hand-edit. The",
-        "record cites this file for the contract table. A hand copy drifts.",
-        "",
-        "| method | CQS | pre | post | invariant |",
-        "|---|---|---|---|---|",
-        *contract_rows,
-        "",
-    ]
-    contracts_out = root / "CONTRACTS.md"
-    contracts_out.write_text("\n".join(contracts), encoding="utf-8")
-
     skeleton_out = _write_union_skeleton(root, str(subsystem), counts)
     result = {
         "subsystem": subsystem,
-        "path": _short(out),
-        "contracts": _short(contracts_out),
+        "model": _short(model_path),
         "skeleton": _short(skeleton_out) if skeleton_out else None,
         **counts,
     }
@@ -324,45 +322,3 @@ def _table_exists(con, name: str) -> bool:
         ).fetchone()
         is not None
     )
-
-
-def cmd_triage(args: dict) -> dict:
-    """A fast read-only snapshot: status + ruff + decisions.
-
-    checks may add "pytest" or "check". Example: swarm.triage({subsystem})
-    """
-    checks = args.get("checks") or ["status", "ruff", "decisions"]
-    out: dict = {}
-    if "status" in checks:
-        out["status"] = _checked(
-            cmd_status,
-            args,
-            lambda r: {"lane": r.get("lane"), "missing": r.get("missing", [])},
-        )
-    if "ruff" in checks:
-        out["ruff"] = _checked(
-            cmd_ruff,
-            args,
-            lambda r: {"total": r.get("total", 0), "byCode": r.get("byCode", {})},
-        )
-    if "decisions" in checks:
-        out["decisions"] = _checked(
-            cmd_decisions,
-            {**args, "role": args.get("role") or "interrogator"},
-            lambda r: {"open": r.get("open", 0)},
-        )
-    if "pytest" in checks:
-        out["pytest"] = _checked(
-            cmd_pytest,
-            args,
-            lambda r: {"failed": r.get("failed", 0), "passed": r.get("passed", 0)},
-        )
-    if "check" in checks:
-        out["check"] = _checked(
-            cmd_check,
-            args,
-            lambda r: {"passed": r.get("passed"), "byCode": r.get("byCode", {})},
-        )
-    return out
-
-

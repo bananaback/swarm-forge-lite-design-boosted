@@ -126,7 +126,7 @@ export default Plugin.define({
         name: "swarm",
         description:
           "The SwarmForge workflow as Code Mode tools. Compact JSON by default; ask for rows with view:'rows' or a handle with view:'all'. " +
-          "Parse each result with JSON.parse. Aggregators: swarm.gate, swarm.ready, swarm.triage. " +
+          "Parse each result with JSON.parse. Aggregators: swarm.gate, swarm.ready. " +
           "Every result carries `pack`, the absolute path of the pack that answered it. " +
           "For one tool's params, defaults, return shape, and example, call swarm.help({tool:'ruff'}).",
       })
@@ -204,39 +204,10 @@ export default Plugin.define({
 
       add(
         "guide",
-        "The method map of a role: form file names, titles, the stop test, and a fetch hint. Compact. " +
-          "Use swarm.form for one form, swarm.fix for a finding fix. items:true adds the detail of every item. " +
+        "The method map of a role: form titles, the stop test, and the finding fixes. items:true adds the instrument and rule of every item. " +
           "Example: tools.swarm.guide({role:'architect',subsystem:'clip'})",
         { role: ROLE, subsystem: SUBSYSTEM, items: { type: "boolean", description: "Include the instrument and rule of every item." } },
         "guide",
-      )
-
-      add(
-        "forms",
-        "Just the form file names and titles of a role. The smallest method map. " +
-          "Example: tools.swarm.forms({role:'architect'})",
-        { role: ROLE },
-        "forms",
-      )
-
-      add(
-        "form",
-        "One form. For the interrogator: its items, with the instrument and rule of each. " +
-          "For every other role: the template file's text. Example: " +
-          "tools.swarm.form({role:'architect',file:'3-structure.md'})",
-        { role: ROLE, file: { type: "string", description: "The form file name (required)." } },
-        "form",
-      )
-
-      add(
-        "fix",
-        "The one-line fix for a finding code. With no code, returns every fix. " +
-          "Example: tools.swarm.fix({code:'fit-missing'})",
-        {
-          code: { type: "string", description: "One finding code." },
-          codes: { type: "array", items: { type: "string" }, description: "Several finding codes." },
-        },
-        "fix",
       )
 
       // ---- record lint and decisions --------------------------------------- //
@@ -274,12 +245,15 @@ export default Plugin.define({
 
       add(
         "initWork",
-        "Write a role's empty forms to a NEW subsystem's record directory. Refuses when the record exists unless force:true. " +
-          "Example: tools.swarm.initWork({role:'architect',subsystem:'clip'})",
+        "Write a role's empty flat record file: requirements.md, architecture.md, review.md, or modules/<module>.md. " +
+          "Refuses when the file exists unless force:true. " +
+          "Example: tools.swarm.initWork({role:'architect',subsystem:'clip',flat:true})",
         {
           role: ROLE,
           subsystem: SUBSYSTEM,
           work: { type: "string", description: "Override the work directory." },
+          module: { type: "string", description: "Module id for a designer record." },
+          flat: { type: "boolean", description: "Write the lean flat file (default false)." },
           force: { type: "boolean", description: "Reset an existing record to empty forms (destructive)." },
         },
         "init_work",
@@ -410,54 +384,12 @@ export default Plugin.define({
       // ---- uml ------------------------------------------------------------- //
 
       add(
-        "umlRender",
-        "Render model.json to a standalone model.html. Returns {model,exit,stdout}. " +
-          "Example: tools.swarm.umlRender({model:'model.json',subsystem:'clip',check:true})",
-        {
-          model: { type: "string", description: "The model.json path, or its name under the subsystem record (required)." },
-          subsystem: SUBSYSTEM,
-          out: { type: "string", description: "Output HTML path." },
-          check: { type: "boolean", description: "Flag model errors." },
-        },
-        "uml_render",
-      )
-
-      add(
-        "umlSync",
-        "Overlay the real signatures and CRAP onto the model. Returns {model,exit,stdout}. " +
-          "Example: tools.swarm.umlSync({model:'model.json',subsystem:'clip',crap:'dump/crap.txt'})",
-        {
-          model: { type: "string", description: "The model.json path, or its name under the subsystem record (required)." },
-          subsystem: SUBSYSTEM,
-          source: { type: "string", description: "Source root to scan. Default: the first configured source root." },
-          crap: { type: "string", description: "A crapper text report to read metrics from." },
-          out: { type: "string", description: "Output path." },
-        },
-        "uml_sync",
-      )
-
-      add(
-        "umlScan",
-        "Scan a Python source root into a model.json. Returns {root,exit,stdout}. " +
-          "Example: tools.swarm.umlScan({root:'<source_root>'})",
-        {
-          root: { type: "string", description: "The source root to scan (required)." },
-          prefix: { type: "string", description: "Only include classes under this prefix." },
-          out: { type: "string", description: "Output path." },
-          title: { type: "string", description: "Model title." },
-        },
-        "uml_scan",
-      )
-
-      add(
         "uml",
-        "Query or mutate a uml model.json: classes, packages, levels, edges, violations, and every edit. " +
-          "One op per call: pass {op, model, ...params}. Run {op:'list'} for every op with its one-line purpose; " +
-          "swarm.help({tool:'uml'}) gives every op, its params, an example, and the invariants. " +
-          "Any other key is an op param. A query returns {ok,changed,exit,stdout} plus rows. " +
-          "A mutate op loads, validates, applies the op, validates again, then writes atomically; a rejected op " +
-          "writes nothing, so the file stays byte-identical. dryRun:true prints the diff and writes nothing. " +
-          "Example: tools.swarm.uml({op:'violations',model:'design/subsystems/safety-rule-engine/model.json'})",
+        "Query, mutate, render, sync, or scan a model.json. One op per call: pass {op, model, ...params}. " +
+          "Run {op:'list'} for every model op. render writes model.html; sync overlays real signatures and CRAP; " +
+          "scan builds a model from a source root. " +
+          "A mutate op loads, validates, applies, validates again, then writes atomically; a rejected op writes nothing. " +
+          "Example: tools.swarm.uml({op:'violations',model:'model.json',subsystem:'clip'})",
         {
           op: {
             type: "string",
@@ -475,16 +407,18 @@ export default Plugin.define({
 
       add(
         "gate",
-        "The terminal gate in one call: dry + ruff + pytest + acceptance. Returns one compact verdict for each, plus pass. " +
-          "checks defaults to all four. Example: tools.swarm.gate({subsystem:'clip',feature:'clip_recording'})",
+        "The terminal gate in one call: dry + ruff + format + pytest + acceptance (+ crap when crap:true). " +
+          "Returns one verdict with an explicit ok for each check, plus pass. " +
+          "Example: tools.swarm.gate({subsystem:'clip',feature:'clip_recording',crap:true})",
         {
           subsystem: SUBSYSTEM,
           feature: { type: "string", description: "The acceptance feature stem, or '*' for all." },
-          checks: { type: "array", items: { type: "string" }, description: "Subset of ['dry','ruff','pytest','acceptance']." },
+          checks: { type: "array", items: { type: "string" }, description: "Subset of ['dry','ruff','format','pytest','acceptance','crap']." },
+          crap: { type: "boolean", description: "Add the CRAP check." },
           k: { type: "string", description: "A pytest -k expression." },
           paths: { type: "array", items: { type: "string" }, description: "Pytest paths." },
           scope: { type: "string", enum: ["scoped", "full"], description: "full runs the whole pytest suite." },
-          reuseFresh: { type: "boolean", description: "Reuse a fresh coverage report for dry/crap." },
+          reuseFresh: { type: "boolean", description: "Reuse a fresh coverage report for crap." },
         },
         "gate",
       )
@@ -503,22 +437,10 @@ export default Plugin.define({
       )
 
       add(
-        "triage",
-        "A fast read-only snapshot: status + ruff + decisions. checks may add 'pytest' or 'check'. " +
-          "Example: tools.swarm.triage({subsystem:'clip'})",
-        {
-          subsystem: SUBSYSTEM,
-          role: { type: "string", description: "The role for the decisions check (default interrogator)." },
-          checks: { type: "array", items: { type: "string" }, description: "Subset of ['status','ruff','decisions','pytest','check']." },
-        },
-        "triage",
-      )
-
-      add(
         "genRecord",
-        "Generate design/subsystems/<subsystem>/COUNTS.md and CONTRACTS.md from model.json, and " +
-          "project design/subsystems/<subsystem>/SKELETON.md from the module skeletons. " +
-          "No role keeps a hand count or a hand copy. Example: tools.swarm.genRecord({subsystem:'clip'})",
+        "Project design/subsystems/<subsystem>/SKELETON.md from modules/*.md and architecture.md, " +
+          "and return counts read from model.json. Counts are data, not a second document. " +
+          "Example: tools.swarm.genRecord({subsystem:'clip'})",
         { subsystem: SUBSYSTEM },
         "genRecord",
       )

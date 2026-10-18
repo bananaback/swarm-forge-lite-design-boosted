@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import os
 import re
-import shutil
 import sys
 from pathlib import Path
 
@@ -23,6 +22,7 @@ from swarm_support import (
 )
 
 _WORKSPACE = PACK.parent
+
 
 def cmd_status(args: dict) -> dict:
     """Resolve every root and the active lane. Compact: a map plus the missing."""
@@ -61,11 +61,12 @@ def cmd_envelope(args: dict) -> dict:
     subsystem = args.get("subsystem") or "<subsystem>"
     module = args.get("module")
     paths = _paths()
+    root = PACK / "design" / "subsystems" / subsystem
     if module:
-        work = PACK / "design" / "subsystems" / subsystem / "modules" / str(module)
+        work = root / "modules" / f"{module}.md"
         lane = f"{subsystem}.{module}"
     else:
-        work = PACK / "design" / "subsystems" / subsystem / questions.work_dir_for(role)
+        work = root / questions.work_dir_for(role, root)
         lane = subsystem
     specs = paths.specs()
     fields = {
@@ -79,10 +80,12 @@ def cmd_envelope(args: dict) -> dict:
     # `WORK` is the design record's role directory. Only the roles the layout gives one
     # have it; the other build roles write to the source and test roots, so name their
     # reports root instead. One rule, shared with `guide`.
+    fields["RECORD"] = str(root) + "/"
     if module or questions.has_work_dir(role):
-        fields["WORK"] = str(work) + "/"
+        fields["WORK"] = str(work) + ("" if module else "/")
     else:
         fields["ARTIFACTS"] = str(paths.artifacts_root()) + "/"
+    fields["TOOLS"] = questions.ROLE_TOOLS.get(role, "")
     template = PACK / "design" / "templates" / role
     if template.is_dir():
         fields["TEMPLATES"] = str(template) + "/"
@@ -153,6 +156,25 @@ def cmd_guide(args: dict) -> dict:
     role = args["role"]
     subsystem = args.get("subsystem") or "<subsystem>"
     lane = (os.environ.get("SWARM_LANE") or "").strip() or None
+    root = PACK / "design" / "subsystems" / subsystem
+    flat = (root / "requirements.md").is_file() or (root / "architecture.md").is_file()
+    if flat and subsystem != "<subsystem>":
+        if role == "designer":
+            files = sorted((root / "modules").glob("*.md"))
+            work = root / "modules"
+        else:
+            name = questions.FLAT_FILES.get(role)
+            files = [root / name] if name and (root / name).is_file() else []
+            work = root
+        return {
+            "role": role,
+            "lane": lane,
+            "subsystem": subsystem,
+            "forms": [{"file": path.name, "title": "flat record"} for path in files],
+            "stop_test": questions.STOP_TESTS.get(role),
+            "next": "edit the flat file directly; run swarm.check after the edit",
+            "work": str(work) + "/",
+        }
     spec = questions.SPECS.get(role)
     forms: list[dict] = []
     if spec is not None:
@@ -177,7 +199,7 @@ def cmd_guide(args: dict) -> dict:
         "subsystem": subsystem,
         "forms": forms,
         "stop_test": questions.STOP_TESTS.get(role),
-        "next": "swarm.form({role, file}) for one form's items; swarm.fix({code}) for a finding fix",
+        "next": "swarm.guide({role,items:true}) for every instrument and rule",
     }
     # Same rule as `envelope`: a role with no directory in the record gets the reports
     # root, not a path the layout does not define.
@@ -195,79 +217,6 @@ def cmd_guide(args: dict) -> dict:
     else:
         result["artifacts"] = str(_paths().artifacts_root()) + "/"
     return result
-
-
-def cmd_forms(args: dict) -> dict:
-    """Just the section file names and titles of a role. The smallest method map."""
-    role = args["role"]
-    spec = questions.SPECS.get(role)
-    if spec is not None:
-        forms = [
-            {"file": s.file, "title": s.title}
-            for s in sorted(spec.sections, key=lambda s: s.order)
-        ]
-    else:
-        forms = []
-        template = PACK / "design" / "templates" / role
-        if template.is_dir():
-            forms = [
-                {"file": p.name}
-                for p in sorted(template.glob("*.md"))
-                if p.name != "index.md"
-            ]
-    return {"role": role, "forms": forms, "stop_test": questions.STOP_TESTS.get(role)}
-
-
-def cmd_form(args: dict) -> dict:
-    """One form, with the instrument and rule of each item.
-
-    The interrogator's forms are built from `questions`. Every other role's form is
-    the template file under `design/templates/<role>/`, so the same call works for
-    every role that names it.
-    """
-    role = args["role"]
-    want = args.get("file") or args.get("form")
-    index = _form_index(role)
-    if index:
-        section = index.get(want) if want else None
-        if section is None:
-            raise SwarmError(
-                f"no form {want!r} for role {role}; known: {sorted(index)}"
-            )
-        return {
-            "role": role,
-            "file": section.file,
-            "title": section.title,
-            "items": _form_items(section),
-        }
-    template = PACK / "design" / "templates" / role
-    if not template.is_dir():
-        raise SwarmError(f"no form directory for role {role}")
-    known = sorted(p.name for p in template.glob("*.md") if p.name != "index.md")
-    if want is None:
-        raise SwarmError(f"pass file=; {role} forms: {known}")
-    path = template / want
-    if not path.is_file():
-        raise SwarmError(f"no form {want!r} for role {role}; known: {known}")
-    return {
-        "role": role,
-        "file": want,
-        "path": _short(path),
-        "text": path.read_text(encoding="utf-8"),
-    }
-
-
-def cmd_fix(args: dict) -> dict:
-    """The one-line fix for a finding code (or every code when none is given)."""
-    if args.get("codes"):
-        return {
-            "fixes": [{"code": c, "fix": record.HINTS.get(c)} for c in args["codes"]]
-        }
-    if args.get("code"):
-        return {"code": args["code"], "fix": record.HINTS.get(args["code"])}
-    return {
-        "fixes": [{"code": c, "fix": record.HINTS[c]} for c in sorted(record.HINTS)]
-    }
 
 
 def _report_summary(report: record.Report) -> dict:
@@ -307,18 +256,21 @@ def cmd_check(args: dict) -> dict:
     subsystem = args.get("subsystem")
     work = args.get("work")
     paths = _paths()
-    workdir = (
-        Path(work).expanduser().resolve()
-        if work
-        else PACK / "design" / "subsystems" / subsystem / questions.work_dir_for(role)
-    )
-    if not workdir.is_dir():
-        raise SwarmError(f"no work directory: {workdir} — run init-work {role} first")
+    if work:
+        workdir = Path(work).expanduser().resolve()
+    elif subsystem:
+        root = PACK / "design" / "subsystems" / subsystem
+        workdir = root / questions.work_dir_for(role, root)
+    else:
+        raise SwarmError("pass subsystem or work")
+    if not workdir.exists():
+        raise SwarmError(f"no work path: {workdir} — run init-work {role} first")
     specs_root = paths.specs()
     specs = specs_root.require() if specs_root.is_configured() else None
-    report = record.lint_task(workdir, specs)
-    if role == "interrogator":
-        harness._write_stop_test(workdir, report)
+    if workdir.is_file():
+        report = record.lint_documents({workdir.name: record.Document.read(workdir)})
+    else:
+        report = record.lint_record_tree(workdir, specs)
     out = {"role": role, "subsystem": subsystem, "work": _short(workdir)}
     out.update(_report_summary(report))
     out["stop_test"] = questions.render_stop_test(report)
@@ -347,7 +299,7 @@ def cmd_lint_record(args: dict) -> dict:
         if args.get("specs")
         else (specs_root.require() if specs_root.is_configured() else None)
     )
-    report = record.lint_task(target, specs)
+    report = record.lint_record_tree(target, specs)
     out = {"subsystem": subsystem, "record": _short(target)}
     out.update(_report_summary(report))
     if args.get("view") in ("rows", "full"):
@@ -392,15 +344,11 @@ def cmd_decisions(args: dict) -> dict:
     work = args.get("work")
     if not work and not subsystem:
         raise SwarmError("pass subsystem or work")
-    workdir = (
-        Path(work).expanduser().resolve()
-        if work
-        else PACK
-        / "design"
-        / "subsystems"
-        / str(subsystem)
-        / questions.work_dir_for(role)
-    )
+    if work:
+        workdir = Path(work).expanduser().resolve()
+    else:
+        root = PACK / "design" / "subsystems" / str(subsystem)
+        workdir = root / questions.work_dir_for(role, root)
     if not workdir.is_dir():
         raise SwarmError(f"no work directory: {workdir} — run init-work {role} first")
     rows, open_count, found = harness.read_decision_rows(workdir)
@@ -417,34 +365,34 @@ def cmd_decisions(args: dict) -> dict:
 
 
 def cmd_init_work(args: dict) -> dict:
-    """Write a role's empty forms to a NEW subsystem's record directory."""
+    """Write a role's empty flat record file in a NEW subsystem."""
     role = args["role"]
     subsystem = args.get("subsystem")
     work = args.get("work")
     force = bool(args.get("force"))
-    workdir = (
-        Path(work).expanduser().resolve()
-        if work
-        else PACK / "design" / "subsystems" / subsystem / questions.work_dir_for(role)
-    )
-    if workdir.is_dir() and any(workdir.glob("*.md")) and not force:
+    if work:
+        workdir = Path(work).expanduser().resolve()
+    elif subsystem:
+        workdir = PACK / "design" / "subsystems" / subsystem
+    else:
+        raise SwarmError("pass subsystem or work")
+    if role == "designer":
+        target = workdir / "modules" / f"{args.get('module') or 'module'}.md"
+    else:
+        target = workdir / questions.FLAT_FILES.get(role, "")
+    if target.is_file() and not force:
         raise SwarmError(
             f"the record already exists: {_short(workdir)} — edit it in place, "
             f"or pass force=true to reset it to empty forms"
         )
-    spec = questions.SPECS.get(role)
-    if spec is not None:
-        written = questions.emit_templates(spec, workdir)
-        return {
-            "role": role,
-            "work": _short(workdir),
-            "written": [p.name for p in written],
-        }
-    template = PACK / "design" / "templates" / role
-    if not template.is_dir():
-        raise SwarmError(f"no template directory for role {role}: {template}")
-    shutil.copytree(template, workdir, dirs_exist_ok=True)
-    return {"role": role, "work": _short(workdir), "copied": True}
+    written = questions.emit_flat(role, workdir, args.get("module"))
+    if not written:
+        raise SwarmError(f"role {role} has no flat record file")
+    return {
+        "role": role,
+        "work": _short(workdir),
+        "files": [_short(path) for path in written],
+    }
 
 
 def cmd_clean(args: dict) -> dict:
@@ -534,5 +482,3 @@ def cmd_vocab_rename(args: dict) -> dict:
 
 
 FINDING_COLS = ["severity", "code", "file", "line", "message", "fix"]
-
-

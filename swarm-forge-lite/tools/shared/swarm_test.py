@@ -54,36 +54,39 @@ def cmd_pytest(args: dict) -> dict:
     roots = paths.persistent_roots()
     if not roots:
         raise SwarmError("no persistent test root configured")
-    persist = roots[0].path
-    argv = [
-        sys.executable,
-        "-m",
-        "pytest",
-        "-q",
-        "-rf",
-        "--tb=line",
-    ]
-    if args.get("k"):
-        argv += ["-k", str(args["k"])]
     selected = args.get("paths") or []
-    full = args.get("scope") == "full"
-    for raw in selected:
-        candidate = Path(raw)
-        argv.append(str(candidate if candidate.is_absolute() else persist / raw))
-    if not selected and not full and not args.get("k"):
-        full = True
-    code, out, _err = _run(argv, cwd=persist, env=_tool_env(paths))
-    parsed = _pytest_summary(out)
+    full = args.get("scope") == "full" or (not selected and not args.get("k"))
+    # A full run covers every configured root. A path-scoped run names paths in
+    # one root, so it stays in the first root.
+    runs = roots if not selected else roots[:1]
+    tallies = {"passed": 0, "failed": 0, "errors": 0, "skipped": 0}
+    failures = []
+    summaries = []
+    exits = []
+    for entry in runs:
+        persist = entry.path
+        argv = [sys.executable, "-m", "pytest", "-q", "-rf", "--tb=line"]
+        if args.get("k"):
+            argv += ["-k", str(args["k"])]
+        for raw in selected:
+            candidate = Path(raw)
+            argv.append(str(candidate if candidate.is_absolute() else persist / raw))
+        code, out, _err = _run(argv, cwd=persist, env=_tool_env(paths))
+        parsed = _pytest_summary(out)
+        for key in tallies:
+            tallies[key] += parsed["tallies"].get(key, 0)
+        failures += parsed["failures"]
+        if parsed["summary"]:
+            summaries.append(parsed["summary"])
+        exits.append(code)
     return {
         "tool": "pytest",
         "scope": "full" if full else "scoped",
-        "passed": parsed["tallies"].get("passed", 0),
-        "failed": parsed["tallies"].get("failed", 0),
-        "errors": parsed["tallies"].get("errors", 0),
-        "skipped": parsed["tallies"].get("skipped", 0),
-        "failures": parsed["failures"],
-        "summary": parsed["summary"],
-        "exit": code,
+        "roots": len(runs),
+        **tallies,
+        "failures": failures,
+        "summary": "; ".join(summaries) or None,
+        "exit": max(exits) if exits else 0,
     }
 
 
@@ -93,24 +96,39 @@ def cmd_acceptance(args: dict) -> dict:
     roots = paths.persistent_roots()
     if not roots:
         raise SwarmError("no persistent test root configured")
-    tests_dir = roots[0].path
-    runner = tests_dir / "acceptance" / "run_acceptance.py"
-    if not runner.exists():
-        raise SwarmError(f"no acceptance runner: {_short(runner)}")
-    argv = [sys.executable, str(runner)]
-    if args.get("feature") and args["feature"] != "*":
-        argv.append(str(args["feature"]))
-    code, out, _err = _run(argv, cwd=tests_dir, env=_tool_env(paths))
-    stems = re.findall(r"^=== (\S+): parse ===$", out, re.MULTILINE)
-    parsed = _pytest_summary(out)
+    runs = [
+        entry.path
+        for entry in roots
+        if (entry.path / "acceptance" / "run_acceptance.py").is_file()
+    ]
+    if not runs:
+        raise SwarmError("no acceptance runner under the configured persistent roots")
+    stems = []
+    failures = []
+    tallies = {"passed": 0, "failed": 0}
+    summaries = []
+    exits = []
+    for tests_dir in runs:
+        runner = tests_dir / "acceptance" / "run_acceptance.py"
+        argv = [sys.executable, str(runner)]
+        if args.get("feature") and args["feature"] != "*":
+            argv.append(str(args["feature"]))
+        code, out, _err = _run(argv, cwd=tests_dir, env=_tool_env(paths))
+        stems += re.findall(r"^=== (\S+): parse ===$", out, re.MULTILINE)
+        parsed = _pytest_summary(out)
+        for key in tallies:
+            tallies[key] += parsed["tallies"].get(key, 0)
+        failures += parsed["failures"]
+        if parsed["summary"]:
+            summaries.append(parsed["summary"])
+        exits.append(code)
     return {
         "tool": "run_acceptance",
         "features": stems,
-        "passed": parsed["tallies"].get("passed", 0),
-        "failed": parsed["tallies"].get("failed", 0),
-        "failures": parsed["failures"],
-        "summary": parsed["summary"],
-        "exit": code,
+        **tallies,
+        "failures": failures,
+        "summary": "; ".join(summaries) or None,
+        "exit": max(exits) if exits else 0,
     }
 
 
@@ -193,5 +211,3 @@ def cmd_gherkin_dry(args: dict) -> dict:
         except (json.JSONDecodeError, OSError):
             pass
     return result
-
-

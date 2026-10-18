@@ -34,7 +34,7 @@ def _check_shape(report: Report, table: Table, label: str) -> None:
 
 def lint_requirements(document: Document, report: Report) -> dict:
     """Goal leaves -> requirements. Returns the parsed Rn set for cross-checks."""
-    table = document.table_with("rn", "statement")
+    table = document.table_with_all("rn", "statement")
     if table is None:
         if document.text.strip():
             report.warn(
@@ -102,10 +102,11 @@ def lint_requirements(document: Document, report: Report) -> dict:
         report.error("rn-duplicate", table.path, 0, f"{rn} appears more than once")
 
     # acceptance criteria table (same file, or the AC section)
-    ac_table = document.table_with("acn", "check") or document.table_with("acn")
+    ac_table = document.table_with_all("acn", "check") or document.table_with_all("acn")
     acns: list[str] = []
     ac_to_rn: dict[str, str] = {}
     if ac_table is not None:
+        _check_shape(report, ac_table, "acceptance criteria")
         for row, line in ac_table.rows_with_lines():
             acn = number_key(ac_table.value(row, "acn"))
             if not acn:
@@ -188,7 +189,7 @@ def lint_goal_tree(document: Document, report: Report) -> dict:
 
 
 def lint_constraints(document: Document, report: Report) -> set:
-    table = document.table_with("cn", "sentence") or document.table_with("cn")
+    table = document.table_with_all("cn")
     if table is None:
         return set()
     _check_shape(report, table, "constraints")
@@ -221,7 +222,7 @@ def lint_constraints(document: Document, report: Report) -> set:
 
 
 def lint_exclusions(document: Document, report: Report) -> set:
-    table = document.table_with("xn", "excluded") or document.table_with("xn")
+    table = document.table_with_all("xn")
     if table is None:
         return set()
     _check_shape(report, table, "exclusions")
@@ -244,7 +245,9 @@ def lint_exclusions(document: Document, report: Report) -> set:
 
 
 def lint_traceability(document: Document, report: Report, rn_set: set) -> None:
-    table = document.table_with("rn", "scenario") or document.table_with("rn", "test")
+    table = document.table_with_all("rn", "test") or document.table_with_all(
+        "rn", "scenario"
+    )
     if table is None:
         return
     _check_shape(report, table, "traceability")

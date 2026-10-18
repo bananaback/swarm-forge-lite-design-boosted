@@ -72,5 +72,3 @@ def _with_uml_help(tool: dict) -> dict:
         tool["ops"] = entry["ops"]
         tool["invariants"] = entry["invariants"]
     return tool
-
-

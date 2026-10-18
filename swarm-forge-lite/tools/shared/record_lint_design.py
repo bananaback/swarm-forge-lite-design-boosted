@@ -369,17 +369,19 @@ def lint_documents(documents: dict[str, Document]) -> Report:
     constraints = lint_constraints(
         documents.get("8-constraints.md", _empty("8-constraints.md")), report
     )
-    for key in ("constraints.md",):
+    for key in ("constraints.md", "requirements.md"):
         if key in documents:
             constraints |= lint_constraints(documents[key], report)
     exclusions = lint_exclusions(
         documents.get("9-exclusions.md", _empty("9-exclusions.md")), report
     )
-    if "exclusions.md" in documents:
-        exclusions |= lint_exclusions(documents["exclusions.md"], report)
+    for key in ("exclusions.md", "requirements.md"):
+        if key in documents:
+            exclusions |= lint_exclusions(documents[key], report)
 
-    if "11-traceability.md" in documents:
-        lint_traceability(documents["11-traceability.md"], report, requirements["rn"])
+    for key in ("11-traceability.md", "requirements.md"):
+        if key in documents:
+            lint_traceability(documents[key], report, requirements["rn"])
     if "4-mode-transition.md" in documents:
         lint_matrix(
             documents["4-mode-transition.md"], report, "mode", "Modes", "Events"
@@ -393,17 +395,18 @@ def lint_documents(documents: dict[str, Document]) -> Report:
     if "10-obstacles-misuse-unknowns.md" in documents:
         _boundary_values(documents["10-obstacles-misuse-unknowns.md"], report)
         lint_obstacles(documents["10-obstacles-misuse-unknowns.md"], report)
-    if "decisions.md" in documents:
-        lint_decisions(documents["decisions.md"], report)
+    for key in ("decisions.md", "requirements.md", "review.md"):
+        if key in documents:
+            lint_decisions(documents[key], report)
     contracts_docs = [
         documents[key] for key in ("1-contracts.md", "contracts.md") if key in documents
     ]
-    # The module contract home. A module skeleton lives under modules/<module>/.
-    # The generated union SKELETON.md at the subsystem root is not a module home,
-    # so it is never linted here: its concatenated tables would false-positive.
-    module_skeleton = documents.get("SKELETON.md")
-    if module_skeleton is not None and "modules" in module_skeleton.path.parts:
-        contracts_docs.append(module_skeleton)
+    # The module contract home is one file under modules/. The generated union
+    # SKELETON.md at the subsystem root is not a module home, so it is never
+    # linted here: its concatenated tables would false-positive.
+    for document in documents.values():
+        if "modules" in document.path.parts:
+            contracts_docs.append(document)
     for document in contracts_docs:
         lint_contracts(document, report)
     for key in ("2-crc-cards.md", "crc_cards.md"):

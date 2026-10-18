@@ -15,25 +15,6 @@ from record_parse import (
     number_key,
 )
 
-SECTION_FILES = (
-    "00-header.md",
-    "0A-spec.md",
-    "0-frame.md",
-    "1-goal.md",
-    "2-goal-tree.md",
-    "3-variables.md",
-    "4-mode-transition.md",
-    "5-event.md",
-    "6-condition.md",
-    "7-requirements.md",
-    "8-constraints.md",
-    "9-exclusions.md",
-    "10-obstacles-misuse-unknowns.md",
-    "11-traceability.md",
-    "12-stop-test.md",
-    "decisions.md",
-)
-
 
 def _empty(name: str) -> Document:
     return Document(Path(name), "", (), ())
@@ -61,6 +42,24 @@ def lint_task(record_dir: Path, specs_dir: Path | None = None) -> Report:
 REQ_LINE = re.compile(r"^\s*[-*]\s*\**\s*R(\d+)\b\s*[—:-]", re.MULTILINE)
 
 AC_LINE = re.compile(r"^\s*[-*]\s*\**\s*AC(\d+)\b\s*[—:-]", re.MULTILINE)
+
+
+def lint_record_tree(record_dir: Path, specs_dir: Path | None = None) -> Report:
+    """Lint a whole subsystem: flat files at the root and nested legacy files.
+
+    A flat record keeps its facts in requirements.md, architecture.md, review.md
+    and modules/*.md. A legacy record keeps them in role directories. Both are
+    read here, so a new record never needs the old ceremony and an old record
+    keeps working.
+    """
+    report = lint_task(record_dir, specs_dir)
+    if not record_dir.is_dir():
+        return report
+    modules = record_dir / "modules"
+    if modules.is_dir():
+        for path in sorted(modules.rglob("*.md")):
+            report.extend(lint_documents({path.name: Document.read(path)}).findings)
+    return report
 
 
 def _subsystem_of(record_dir: Path) -> str:
@@ -145,6 +144,14 @@ def _lint_specs(specs_dir: Path, record_dir: Path) -> Report:
                     path,
                     0,
                     f"{label} number(s) repeated: {doubled}",
+                )
+            gaps = sorted(set(range(1, max(numbers) + 1)) - set(numbers))
+            if gaps:
+                report.warn(
+                    "spec-number-gap",
+                    path,
+                    0,
+                    f"{label} number(s) missing from the sequence: {gaps}",
                 )
     return report
 
@@ -285,7 +292,3 @@ def render_document(record_dir: Path, specs_dir: Path, grow: bool = False) -> di
         "absent": absent,
         "stale": [],
     }
-
-
-def resolve_record(pack_root: Path, task: str) -> Path:
-    return pack_root / "design" / "subsystems" / task

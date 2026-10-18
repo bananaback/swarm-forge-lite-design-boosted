@@ -429,8 +429,8 @@ def test_traceability_orphan_and_missing(tmp_path):
     assert "trace-missing" in codes
 
 
-def test_spec_number_duplicate_is_a_warning_and_a_gap_is_not(tmp_path):
-    """The document takes its ids from the record, so a gap in the sequence is fine."""
+def test_spec_number_duplicate_and_gap_are_warnings(tmp_path):
+    """A repeated number and a hole in the sequence are both reported."""
     specs = tmp_path / "specs"
     specs.mkdir()
     _write(specs, "04-x.md", "- R1 — a\n- R1 — b\n")
@@ -438,7 +438,7 @@ def test_spec_number_duplicate_is_a_warning_and_a_gap_is_not(tmp_path):
     assert any(f.code == "spec-number-duplicate" for f in report.warnings)
     _write(specs, "05-y.md", "- R1 — a\n- R3 — c\n")
     report = record.lint_task(tmp_path / "subsystems" / "y", specs)
-    assert not any(f.code == "spec-number-gap" for f in report.warnings)
+    assert any(f.code == "spec-number-gap" for f in report.warnings)
 
 
 def test_record_requirements_file_is_linted(tmp_path):

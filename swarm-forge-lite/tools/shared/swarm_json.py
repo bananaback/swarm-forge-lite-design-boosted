@@ -47,9 +47,6 @@ from swarm_core import (  # noqa: F401
     cmd_clean,
     cmd_decisions,
     cmd_envelope,
-    cmd_fix,
-    cmd_form,
-    cmd_forms,
     cmd_gen_doc,
     cmd_guide,
     cmd_init_work,
@@ -65,7 +62,6 @@ from swarm_gate import (  # noqa: F401
     cmd_gen_record,
     cmd_ready,
     cmd_report,
-    cmd_triage,
 )
 from swarm_help import (  # noqa: F401
     _GROUPS,
@@ -165,9 +161,7 @@ COMMANDS = {
     "goal": cmd_goal,
     "envelope": cmd_envelope,
     "guide": cmd_guide,
-    "forms": cmd_forms,
-    "form": cmd_form,
-    "fix": cmd_fix,
+
     "check": cmd_check,
     "lint_record": cmd_lint_record,
     "decisions": cmd_decisions,
@@ -189,7 +183,6 @@ COMMANDS = {
     "page": cmd_page,
     "gate": cmd_gate,
     "ready": cmd_ready,
-    "triage": cmd_triage,
     "genRecord": cmd_gen_record,
     "genDoc": cmd_gen_doc,
     "report": cmd_report,

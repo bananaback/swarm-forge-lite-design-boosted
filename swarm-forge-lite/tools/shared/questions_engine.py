@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -35,10 +34,6 @@ class Field:
     template: str = ""
     rule: str = ""
 
-    def is_filled(self, answers: dict) -> bool:
-        value = answers.get(self.item_id)
-        return bool(value and str(value).strip())
-
 
 @dataclass(frozen=True)
 class Table:
@@ -51,18 +46,6 @@ class Table:
     min_rows: int = 1
     repeatable: bool = True
     rule: str = ""
-
-    @property
-    def key_column(self) -> str:
-        """The first column is the row's natural key (upsert target)."""
-        return self.columns[0].key if self.columns else ""
-
-    def rows(self, answers: dict) -> list[dict]:
-        value = answers.get(self.item_id) or []
-        return list(value)
-
-    def is_filled(self, answers: dict) -> bool:
-        return len(self.rows(answers)) >= self.min_rows
 
 
 @dataclass(frozen=True)
@@ -77,30 +60,6 @@ class Matrix:
     column_prompt: str = ""
     min_rows: int = 1
     rule: str = ""
-
-    @property
-    def key_column(self) -> str:
-        return self.row_label.lower().replace(" ", "_")
-
-    def rows(self, answers: dict) -> list[dict]:
-        return list(answers.get(self.item_id) or [])
-
-    def is_filled(self, answers: dict) -> bool:
-        return len(self.rows(answers)) >= self.min_rows
-
-    def column_keys(self, answers: dict) -> list[str]:
-        raw = answers.get(self.columns_from) or []
-        if isinstance(raw, str):
-            raw = re.split(r"[;\n]", raw)
-        keys: list[str] = []
-        for entry in raw:
-            entry = str(entry).strip()
-            if not entry:
-                continue
-            keys.append(
-                entry.split()[0] if re.match(r"^[A-Za-z]+[0-9]", entry) else entry
-            )
-        return keys
 
 
 @dataclass(frozen=True)

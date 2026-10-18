@@ -20,6 +20,7 @@ from swarm_support import (
 
 _WORKSPACE = PACK.parent
 
+
 def _resolve_model(raw: str, subsystem: str | None) -> Path:
     path = Path(raw)
     if path.is_absolute():
@@ -31,7 +32,7 @@ def _resolve_model(raw: str, subsystem: str | None) -> Path:
 
 def cmd_uml_render(args: dict) -> dict:
     """Render model.json to a standalone model.html."""
-    model = _resolve_model(args["model"], args.get("subsystem"))
+    model = _resolve_model(args.get("model") or "model.json", args.get("subsystem"))
     argv = [
         sys.executable,
         str(PACK / "tools" / "shared" / "umlview" / "render.py"),
@@ -53,7 +54,7 @@ def cmd_uml_render(args: dict) -> dict:
 
 def cmd_uml_sync(args: dict) -> dict:
     """Overlay the real signatures and CRAP metrics onto the model."""
-    model = _resolve_model(args["model"], args.get("subsystem"))
+    model = _resolve_model(args.get("model") or "model.json", args.get("subsystem"))
     paths = _paths()
     argv = [
         sys.executable,
@@ -68,8 +69,9 @@ def cmd_uml_sync(args: dict) -> dict:
     ]
     if args.get("crap"):
         argv += ["--crap", str(_resolve_any(args["crap"], paths))]
-    if args.get("out"):
-        argv += ["--out", str(_out_path(args["out"]))]
+    # Overlay model.json itself. One topology, one review page. No model.live copy.
+    out_path = _out_path(args["out"]) if args.get("out") else model
+    argv += ["--out", str(out_path)]
     code, out, err = _run(argv)
     return {
         "tool": "umlview-sync",
@@ -136,6 +138,12 @@ def cmd_uml(args: dict) -> dict:
     op = args.get("op")
     if not op:
         raise SwarmError("pass op; run op:'list' for every op")
+    if op == "render":
+        return cmd_uml_render(args)
+    if op == "sync":
+        return cmd_uml_sync(args)
+    if op == "scan":
+        return cmd_uml_scan(args)
     argv = [
         sys.executable,
         str(PACK / "tools" / "shared" / "umlmodel"),
@@ -195,5 +203,3 @@ def cmd_page(args: dict) -> dict:
         "next": offset + len(page) if offset + len(page) < total else None,
         "items": page,
     }
-
-

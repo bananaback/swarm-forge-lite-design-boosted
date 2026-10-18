@@ -19,7 +19,7 @@ part that pays off in a text-only agent workflow.
 | `template.html` | the page: Tailwind utility classes + jQuery, dagre layout + inline SVG, panels |
 | `vendor/dagre.min.js` | the layout engine, bundled so the HTML works offline (no CDN at view time) |
 | `scan_python.py` | optional: Python source → model.json (a starting point) |
-| `sync_python.py` | design model.json + real source (+ crapper report) → `model.live.json` |
+| `sync_python.py` | design model.json + real source (+ crapper report) → model.json overlay |
 | `example.model.json` | a clean design (evidence recorder) |
 | `example.violation.model.json` | deliberate violations, to see the red |
 
@@ -74,15 +74,15 @@ render a live view. The accepted `model.json` is never modified.
 PYTHONPATH=swarm-forge-lite/tools/refactorer python3 -m crapper \
   --root <task subtree> --source-root <task subtree> --use-existing-coverage > dump/crap.txt
 
-# 2. overlay the real source: signatures + metrics -> model.live.json
+# 2. overlay the real source in place: signatures + metrics -> model.json
 python3 sync_python.py design/subsystems/<subsystem>/model.json \
-  --source <task subtree> --crap dump/crap.txt
+  --source <task subtree> --crap dump/crap.txt --out design/subsystems/<subsystem>/model.json
 
-# 3. render the live overlay over the diagram, then reload model.html
-python3 render.py design/subsystems/<subsystem>/model.live.json --out design/subsystems/<subsystem>/model.html
+# 3. render the page, then reload model.html
+python3 render.py design/subsystems/<subsystem>/model.json --out design/subsystems/<subsystem>/model.html
 ```
 
-The live page shows a **LIVE** badge and prints each method's CRAP. The right panel is a
+The page prints each method's CRAP. The right panel is a
 signature/CRAP table; click a method row to expand its source. A method added after the
 skeleton reads `+ new in implementation`; a skeleton method the code does not contain reads
 `- not in implementation`. Point `--source` at the task's own subtree so a class name shared

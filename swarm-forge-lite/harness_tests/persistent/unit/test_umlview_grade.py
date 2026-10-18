@@ -24,6 +24,11 @@ if str(UMLVIEW) not in sys.path:
 
 import render
 
+# The real design model: the no-op classes in it are the case the rule protects.
+_SAFETY_MODEL = (
+    PACK_ROOT / "design" / "subsystems" / "safety-rule-engine" / "model.json"
+)
+
 # --------------------------------------------------------------------------- #
 # crap-band and crap-risk
 # --------------------------------------------------------------------------- #
@@ -169,6 +174,31 @@ def test_a_rolled_summary_wins_over_the_modules_own_ops():
 
 def test_a_module_with_no_ops_and_no_crap_pools_to_nothing():
     assert render.pool_crap([{}]) is None
+
+
+def test_a_no_op_class_leaves_its_package_pool_unchanged():
+    """`contract.Verdict` and `contract.View` carry no functions. The real model
+    pins the rule those classes protect: they never enter the package pool and
+    they never grade the package red.
+
+    The count is read from the model, not pinned: a class that gains or loses a
+    function must move the pool, and only a class with no functions may not.
+    """
+    if not _SAFETY_MODEL.is_file():
+        pytest.skip("no project safety model in this pack")
+    raw = json.loads(_SAFETY_MODEL.read_text())
+    doc, _errors = render.apply_policy(raw)
+    components = render.display_components(doc)
+    render.stamp_grades(components)
+    contract = next(
+        component for component in components if component["id"] == "contract"
+    )
+
+    no_ops = [cls for cls in contract["classes"] if not cls.get("ops")]
+    counted = sum(len(cls.get("ops", [])) for cls in contract["classes"])
+    assert no_ops, "the fixture must hold a class with no functions"
+    assert contract["crap"]["n"] == counted
+    assert contract["band"] in render.CRAP_THRESHOLDS
 
 
 def test_pool_crap_skips_a_foreign_oval():

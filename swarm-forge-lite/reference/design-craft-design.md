@@ -3,8 +3,8 @@
 Read on demand. Each technique states how to apply it and the failure that it prevents. Use the named concept when a decision is unclear. The front-end techniques are in `design-craft-front.md`.
 
 ## The record boundary - where a machine name may live
-- The requirement record (`01-interrogator/`) and the spec document (`docs/specs/NN-<subsystem>.md`) state the business only. A class name, a method name, a path, a file name, a config key and a library call do not appear there. `record.py` reports each one as a `machine-noun` finding.
-- The design record (`02-architect/`, `modules/`, `04-critic/`) is the one place that names the machine. Name the classes, the modules, the paths and the interfaces there, with no restraint.
+- The requirement record (`requirements.md`) and the spec document (`docs/specs/NN-<subsystem>.md`) state the business only. A class name, a method name, a path, a file name, a config key and a library call do not appear there. `record.py` reports each one as a `machine-noun` finding.
+- The design record (`architecture.md` and `modules/<module>.md`) is the one place that names the machine. Name the classes, the modules, the paths and the interfaces there, with no restraint.
 - Failure prevented: a design decision that the spec freezes as a requirement, so a later rename costs a spec change and a requirement change across eight documents.
 
 ## Parnas - information hiding / secrets (1972)

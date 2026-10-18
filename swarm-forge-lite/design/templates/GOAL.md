@@ -7,10 +7,10 @@ lane: <subsystem>
 ## Pipeline
 | step | role | state | artifact |
 |---|---|---|---|
-| 1 | interrogator | | design/subsystems/<subsystem>/01-interrogator/ |
+| 1 | interrogator | | design/subsystems/<subsystem>/requirements.md |
 | 2 | specifier | | |
-| 3 | architect | | design/subsystems/<subsystem>/02-architect/ARCHITECTURE.md |
-| 4 | designers | | design/subsystems/<subsystem>/modules/ |
+| 3 | architect | | design/subsystems/<subsystem>/architecture.md |
+| 4 | designers | | design/subsystems/<subsystem>/modules/<module>.md |
 | 5 | critic | | design/subsystems/<subsystem>/SKELETON.md |
 | 6 | coder | | |
 | 7 | test-reviewer | | |

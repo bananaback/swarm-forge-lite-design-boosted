@@ -3,7 +3,6 @@
 import json
 import os
 import re
-import shutil
 import sys
 from pathlib import Path
 
@@ -40,6 +39,10 @@ def cmd_clean(
 
     Run it inside a lane (`tools/shared/lane <subsystem> harness.py clean`) so it
     touches only that subsystem's disposable roots."""
+    if target_name == "all" and not os.environ.get("SWARM_LANE"):
+        raise HarnessError(
+            "clean all needs a lane: run it through tools/shared/lane <subsystem>"
+        )
     target = CleanTarget.parse(target_name)
     for label, root in target.roots(paths):
         removed = tree.count_entries(root)
@@ -102,7 +105,7 @@ def cmd_lint_record(args, paths: PathSet) -> None:
     else:
         specs_root = paths.specs()
         specs = specs_root.require() if specs_root.is_configured() else None
-    report = record.lint_task(record_dir, specs)
+    report = record.lint_record_tree(record_dir, specs)
     for line in report.render_lines():
         print(line)
     print(
@@ -126,17 +129,8 @@ def _work_dir_for(
         return Path(override).expanduser().resolve()
     if not subsystem:
         raise HarnessError("no subsystem: pass --subsystem or run inside a lane")
-    return _pack_design(paths, subsystem) / questions.work_dir_for(role)
-
-
-def _write_stop_test(work: Path, report: record.Report) -> None:
-    if work.is_dir():
-        (work / "12-stop-test.md").write_text(
-            "## 12. STOP TEST — every count must be zero\n\n"
-            + questions.render_stop_test(report)
-            + "\n",
-            encoding="utf-8",
-        )
+    root = _pack_design(paths, subsystem)
+    return root / questions.work_dir_for(role, root)
 
 
 def cmd_check(args, paths: PathSet) -> None:
@@ -148,15 +142,14 @@ def cmd_check(args, paths: PathSet) -> None:
     """
     subsystem = _subsystem_name(args)
     work = _work_dir_for(paths, args.role, subsystem, args.work)
-    if not work.is_dir():
-        raise HarnessError(
-            f"no work directory: {work} — run `init-work {args.role}` first"
-        )
+    if not work.exists():
+        raise HarnessError(f"no work path: {work} — run `init-work {args.role}` first")
     specs_root = paths.specs()
     specs = specs_root.require() if specs_root.is_configured() else None
-    report = record.lint_task(work, specs)
-    if args.role == "interrogator":
-        _write_stop_test(work, report)
+    if work.is_file():
+        report = record.lint_documents({work.name: record.Document.read(work)})
+    else:
+        report = record.lint_record_tree(work, specs)
     for line in report.render_lines():
         print(line)
     print(f"SUBSYSTEM: {work}")
@@ -178,24 +171,25 @@ def cmd_init_work(args, paths: PathSet) -> None:
     the delta. So this refuses when the role's section files already exist — use
     `--force` only to reset a record to empty forms (destructive).
     """
-    subsystem = _subsystem_name(args)
-    work = _work_dir_for(paths, args.role, subsystem, args.work)
-    if work.is_dir() and any(work.glob("*.md")) and not args.force:
+    work = (
+        Path(args.work).expanduser().resolve()
+        if args.work
+        else _pack_design(paths, _subsystem(args))
+    )
+    if args.role == "designer":
+        target = work / "modules" / f"{getattr(args, 'module', None) or 'module'}.md"
+    else:
+        target = work / questions.FLAT_FILES.get(args.role, "")
+    if target.is_file() and not args.force:
         raise HarnessError(
             f"the record already exists: {work} — the subsystem record is edited in "
-            f"place. Read the section files and add only what the change needs. "
+            f"place. Read the file and add only what the change needs. "
             f"Use --force only to reset it to empty forms."
         )
-    spec = questions.SPECS.get(args.role)
-    if spec is not None:
-        written = questions.emit_templates(spec, work)
-        print(f"INIT {args.role}: wrote {len(written)} forms -> {work}")
-        return
-    template = paths.pack_root() / "design" / "templates" / args.role
-    if not template.is_dir():
-        raise HarnessError(f"no template directory for role {args.role}: {template}")
-    shutil.copytree(template, work, dirs_exist_ok=True)
-    print(f"INIT {args.role}: copied the forms -> {work}")
+    written = questions.emit_flat(args.role, work, getattr(args, "module", None))
+    if not written:
+        raise HarnessError(f"role {args.role} has no flat record file")
+    print(f"INIT {args.role}: wrote {len(written)} flat file(s) -> {work}")
 
 
 def cmd_vocab_rename(args, paths: PathSet) -> None:
@@ -266,17 +260,12 @@ def cmd_envelope(args, paths: PathSet) -> None:
     )
     module = getattr(args, "module", None)
     pack = paths.pack_root()
+    root = pack / "design" / "subsystems" / subsystem
     if module:
-        work = pack / "design" / "subsystems" / subsystem / "modules" / str(module)
+        work = root / "modules" / f"{module}.md"
         lane = f"{subsystem}.{module}"
     else:
-        work = (
-            pack
-            / "design"
-            / "subsystems"
-            / subsystem
-            / questions.work_dir_for(args.role)
-        )
+        work = root / questions.work_dir_for(args.role, root)
         lane = subsystem
     specs_root = paths.specs()
     lines = [
@@ -284,7 +273,9 @@ def cmd_envelope(args, paths: PathSet) -> None:
         f"#ROLE      {args.role}",
         f"#SUBSYSTEM    {subsystem}",
         f"#LANE      {lane}",
-        f"#WORK      {work}/",
+        f"#RECORD    {root}/",
+        f"#WORK      {work}{'' if module else '/'}",
+        f"#TOOLS     {questions.ROLE_TOOLS.get(args.role, '')}",
         f"#SPECS     {specs_root.text() if specs_root else '(none)'}",
         f"#HARNESS   {pack / 'tools' / 'shared' / 'harness.py'}",
     ]
@@ -320,10 +311,10 @@ def cmd_guide(args, paths: PathSet) -> None:
     lane = (os.environ.get("SWARM_LANE") or "").strip()
     subsystem = args.subsystem or lane or "<subsystem>"
     role = args.role
-    spec = questions.SPECS.get(role)
     prefix = f"{pack}/tools/shared/lane {subsystem} python3 {harness}"
+    target = questions.FLAT_FILES.get(role, "modules/<module>.md")
     lines = [
-        f"GUIDE: {role} — the forms and the method",
+        f"GUIDE: {role} — one flat record file",
         f"PACK:    {pack}",
         f"HARNESS: {harness}",
         f"LANE:    {lane or '(none — pass --subsystem on every command)'}",
@@ -331,52 +322,26 @@ def cmd_guide(args, paths: PathSet) -> None:
         "Every command is run as:",
         f"  {prefix} <command>",
         "",
-        "HOW YOU WORK  (you write the files; the tool only guides and lints)",
-        f"  1. init-work {role}              copy the empty forms to WORK",
-        "  2. fill each section file with your normal edit/write tools. The form carries its",
-        "     instrument and its rule; the method is in reference/design-craft-front.md and",
-        "     reference/design-quality.md. Write the files directly — there is no cell driver.",
-        f"  3. check {role}                   lint what you wrote; it writes §12 (the stop test)",
-        f"  4. lint-record --subsystem {subsystem}   lint the subsystem record",
-        "  5. author the requirement document docs/specs/NN-<subsystem>.md",
-        "  6. end with the protocol/<role>.md block, exactly",
+        "HOW YOU WORK",
+        f"  1. init-work {role} --subsystem {subsystem} --flat",
+        f"  2. write {target} directly with your edit/write tools",
+        f"  3. check {role} --subsystem {subsystem}",
+        f"  4. lint-record --subsystem {subsystem}",
+        f"  5. gen-doc --subsystem {subsystem}",
+        f"  6. end with protocol/{role}.md, exactly",
         "",
-        "THE FORMS (in WORK, one file per section)",
-    ]
-    if spec:
-        for section in sorted(spec.sections, key=lambda s: s.order):
-            lines.append(f"  {section.file:<40} {section.title}")
-    else:
-        template = pack / "design" / "templates" / role
-        if template.is_dir():
-            for path in sorted(template.glob("*.md")):
-                if path.name != "index.md":
-                    lines.append(f"  {path.name:<40} (fill this section)")
-    stop = questions.STOP_TESTS.get(role)
-    if stop:
-        lines += [
-            "",
-            "STOP TEST (pass line)",
-            f"  {stop}",
-            "  (full definition: reference/design-quality.md)",
-        ]
-    lines += [
+        f"THE FILE: {target}",
+        "  requirements.md    frame, goal, Rn/ACn, Cn, Xn, traceability, DECISIONs",
+        "  architecture.md    module map, shared files, ## Interface sections",
+        "  modules/<m>.md     contract, design, decisions",
+        "  review.md          critic review",
+        "  GOAL.md            orchestrator state",
         "",
-        "WHAT `check` ENFORCES  (a finding is one line: [E] code: file:line: message — fix)",
-    ]
-    for code in sorted(record.HINTS):
-        lines.append(f"  {code:<26} {record.HINTS[code]}")
-    lines += [
+        "STOP TEST",
+        f"  {questions.STOP_TESTS.get(role, '')}",
         "",
-        "WHERE IT LANDS",
-        "  init-work ->  <WORK>/*.md  (the empty forms)",
-        "  you write ->  <WORK>/*.md  (filled). The section files are the record.",
-        "  check     ->  <WORK>/12-stop-test.md  +  finding codes on stdout",
-        "  the doc   ->  docs/specs/NN-<subsystem>.md  (in the repo)",
-        "",
-        "THE HABIT",
-        "  Write the files directly; a hole you cannot fill is a DECISION row, not an invented",
-        "  value. Run `check` and fix every finding, then end with the protocol block.",
+        "A hole you cannot fill is a DECISION row, not an invented value.",
+        "Run check and fix every finding, then end with the protocol block.",
     ]
     print("\n".join(lines))
 
@@ -390,9 +355,17 @@ def read_decision_rows(work: Path) -> tuple[list[dict], int, bool]:
     rows: list[dict] = []
     open_count = 0
     found = False
-    for path in sorted(work.glob("*decisions*.md")):
+    if work.is_file():
+        candidates = [work]
+    else:
+        candidates = sorted(
+            set(work.glob("*decisions*.md"))
+            | {work / "requirements.md", work / "review.md"}
+            | set((work / "modules").glob("*.md"))
+        )
+    for path in [item for item in candidates if item.is_file()]:
         document = record.Document.read(path)
-        table = document.table_with("dn", "instrument") or document.table_with("dn")
+        table = document.table_with_all("dn")
         if table is None:
             continue
         found = True
@@ -487,5 +460,3 @@ def cmd_check_envelope(args, paths: PathSet) -> None:
             f"hint: {len(long_lines)} long line(s) and no `path:line` cite; cite the path, do not paste"
         )
     raise SystemExit(0)
-
-

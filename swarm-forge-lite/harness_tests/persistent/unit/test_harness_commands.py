@@ -47,14 +47,17 @@ def test_envelope_carries_the_stop_test_and_the_env(capsys):
     out = capsys.readouterr().out
     assert "#ROLE" in out and "architect" in out
     assert (
-        "#SUBSYSTEM" in out and "t" in out and "#WORK" in out and "02-architect/" in out
+        "#SUBSYSTEM" in out
+        and "t" in out
+        and "#WORK" in out
+        and "design/subsystems/t/" in out
     )
     assert "#ENV" in out
     assert "#STOP TEST" in out
-    assert "one secret per card" in out
+    assert "one secret per module" in out
 
 
-def test_envelope_uses_the_numbered_work_directory(capsys):
+def test_envelope_uses_the_flat_module_file(capsys):
     harness.cmd_envelope(
         harness.argparse.Namespace(
             role="designer", subsystem="t", module="engine-state"
@@ -62,7 +65,7 @@ def test_envelope_uses_the_numbered_work_directory(capsys):
         FakePaths(),
     )
     out = capsys.readouterr().out
-    assert "design/subsystems/t/modules/engine-state/" in out
+    assert "design/subsystems/t/modules/engine-state.md" in out
 
 
 def test_check_envelope_passes_a_small_dispatch(tmp_path, capsys):
@@ -138,10 +141,10 @@ def test_gen_record_writes_counts_from_the_model(tmp_path, monkeypatch):
     assert result["commands"] == 1
     assert result["queries"] == 1
     assert result["edges"] == 3
-    text = (root / "COUNTS.md").read_text(encoding="utf-8")
-    assert "| ops | 2 |" in text and "Do not hand-edit" in text
-    contracts = (root / "CONTRACTS.md").read_text(encoding="utf-8")
-    assert "| method | CQS |" in contracts and "Do not hand-edit" in contracts
+    # Counts are data, not a second document. No COUNTS.md / CONTRACTS.md.
+    assert not (root / "COUNTS.md").exists()
+    assert not (root / "CONTRACTS.md").exists()
+    assert result["skeleton"] is None
 
 
 def test_gen_record_projects_the_union_skeleton_from_the_modules(tmp_path, monkeypatch):
@@ -230,30 +233,17 @@ def test_guide_lists_a_design_role_form_and_stop_test(capsys):
     out = capsys.readouterr().out
     assert "HOW YOU WORK" in out
     assert "init-work critic" in out
-    assert "STOP TEST (pass line)" in out
+    assert "STOP TEST" in out
 
 
-def test_form_serves_a_template_role_and_the_interrogator(monkeypatch, tmp_path):
-    """`swarm.form` must work for every role that names it, not only the interrogator."""
+def test_guide_serves_the_interrogator_items():
+    """`swarm.guide(items:true)` is the one method map; form/forms are gone."""
     import swarm_json
 
-    templates = tmp_path / "design" / "templates" / "architect"
-    templates.mkdir(parents=True)
-    (templates / "3-structure.md").write_text("## 3. STRUCTURE\n", encoding="utf-8")
-    (templates / "index.md").write_text("map\n", encoding="utf-8")
-    monkeypatch.setattr(swarm_json, "PACK", tmp_path)
-
-    out = swarm_json.cmd_form({"role": "architect", "file": "3-structure.md"})
-    assert out["file"] == "3-structure.md"
-    assert out["text"].startswith("## 3. STRUCTURE")
-
-    with pytest.raises(swarm_json.SwarmError) as err:
-        swarm_json.cmd_form({"role": "architect", "file": "nope.md"})
-    assert "3-structure.md" in str(err.value)
-
-    items = swarm_json.cmd_form({"role": "interrogator", "file": "8-constraints.md"})
-    assert items["title"].startswith("8. CONSTRAINTS")
-    assert items["items"]
+    out = swarm_json.cmd_guide({"role": "interrogator", "items": True})
+    assert out["forms"]
+    assert any(form.get("items") for form in out["forms"])
+    assert out["stop_test"]
 
 
 class _Paths:
@@ -294,13 +284,10 @@ def test_envelope_and_guide_agree_on_which_roles_have_a_work_directory():
             in swarm_json.cmd_envelope({"role": role, "subsystem": "clip"})["fields"]
         )
 
-    for role in ("interrogator", "architect", "critic"):
+    for role in ("interrogator", "architect", "designer", "critic"):
         assert has_work(role), role
-    for role in ("test-reviewer", "refactorer", "hotfixer"):
+    for role in ("specifier", "coder", "test-reviewer", "refactorer", "hotfixer"):
         assert not has_work(role), role
-    # the two note dirs the layout defines
-    for role in ("specifier", "coder"):
-        assert has_work(role), role
 
 
 def test_a_missing_record_and_a_missing_subsystem_raise_a_clean_error():

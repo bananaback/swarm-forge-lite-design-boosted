@@ -14,12 +14,12 @@ tools/
 │   ├── swarm_json.py     # facade + CLI entry point (Code Mode backend)
 │   ├── swarm_support.py  # shared helpers (SwarmError, _paths, _run, ...)
 │   ├── swarm_catalog_*.py # tool catalog by domain (core/modules/quality/test/uml/gate)
-│   ├── swarm_core.py     # status/envelope/guide/forms/fix/check/... commands
+│   ├── swarm_core.py     # status/envelope/guide/check/... commands
 │   ├── swarm_modules.py  # modules/interface/goal commands
 │   ├── swarm_quality.py  # ruff/format/dry/crap commands
 │   ├── swarm_test.py     # pytest/acceptance/gherkin commands
-│   ├── swarm_uml.py      # uml render/sync/scan/uml commands
-│   ├── swarm_gate.py     # gate/ready/gen_record/report/triage commands
+│   ├── swarm_uml.py      # uml query/mutate/render/sync/scan commands
+│   ├── swarm_gate.py     # gate/ready/gen_record/report commands
 │   ├── swarm_help.py     # docs/help commands
 │   ├── record.py         # facade: re-exports all record names
 │   ├── record_parse.py   # Finding, Report, Table, Document, parsing, helpers

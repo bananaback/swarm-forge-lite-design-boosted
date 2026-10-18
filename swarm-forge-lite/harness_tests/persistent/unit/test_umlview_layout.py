@@ -42,6 +42,8 @@ pytestmark = pytest.mark.skipif(NODE is None, reason="node is not installed")
 
 CHAR_W = 0.6  # an SVG glyph's width as a fraction of its em size
 
+SAFETY_PAGE = PACK_ROOT / "design" / "subsystems" / "safety-rule-engine" / "model.html"
+
 
 def _svg_boxes(page_path):
     proc = subprocess.run(
@@ -219,6 +221,20 @@ def test_a_field_row_never_draws_undefined(tmp_path):
     assert [
         text["text"]
         for box in classes
+        for text in box["texts"]
+        if "undefined" in text["text"]
+    ] == []
+
+
+def test_the_checked_in_safety_page_draws_no_undefined():
+    """The real page: the live overlay writes every field as `{text}`."""
+    if not SAFETY_PAGE.is_file():
+        pytest.skip("no project safety page in this pack")
+    boxes = _svg_boxes(SAFETY_PAGE)
+
+    assert [
+        text["text"]
+        for box in boxes
         for text in box["texts"]
         if "undefined" in text["text"]
     ] == []

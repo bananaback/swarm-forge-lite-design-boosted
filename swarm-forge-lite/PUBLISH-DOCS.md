@@ -81,13 +81,12 @@ for dir in "$DOCS"/design-archive/*/; do
 done
 
 # 1. each subsystem's class model. `templates/` is not a subsystem.
-#    Render fresh with --public: prefer the live overlay, and strip the LIVE badge,
-#    the source-sync status and any pack path, so the archive shows the diagram
-#    (signatures, CRAP/coverage, method source) without how it was made.
+#    Render fresh with --public: strip the source-sync status and any pack path,
+#    so the archive shows the diagram (signatures, CRAP/coverage, method source)
+#    without how it was made. One topology: model.json.
 for src in "$PACK"/design/subsystems/*/; do
   task=$(basename "$src")
-  model="$src/model.live.json"
-  [ -f "$model" ] || model="$src/model.json"
+  model="$src/model.json"
   if [ -f "$model" ]; then
     mkdir -p "$DOCS/design-archive/$task"
     python3 "$PACK/tools/shared/umlview/render.py" "$model" --public \

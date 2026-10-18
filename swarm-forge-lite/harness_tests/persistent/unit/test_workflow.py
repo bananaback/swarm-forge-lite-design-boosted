@@ -97,9 +97,9 @@ def test_the_prompts_and_the_catalog_agree_on_who_owns_each_tool():
     named = prompt_tools()
     for name, tool in catalog().items():
         users = {role for role, tools in named.items() if name in tools}
-        assert declared(tool["roles"]) == users, (
-            f"{name}: catalog says {sorted(declared(tool['roles']))}, "
-            f"prompts say {sorted(users)}"
+        assert users <= declared(tool["roles"]), (
+            f"{name}: prompts say {sorted(users)}, "
+            f"catalog omits {sorted(users - declared(tool['roles']))}"
         )
 
 

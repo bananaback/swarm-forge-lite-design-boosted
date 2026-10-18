@@ -2,8 +2,14 @@
 # Run one command inside a lane: every disposable output is scoped to the lane,
 # so concurrent lanes share only the source tree and the authored tests.
 #
-#   <pack>/tools/shared/lane <lane> <command...>
+#   <pack>/tools/shared/lane [--config PATH] <lane> <command...>
 set -euo pipefail
+
+if [[ "${1:-}" == "--config" ]]; then
+  [[ -n "${2:-}" ]] || { echo "usage: lane --config <path> <id> <command...>" >&2; exit 2; }
+  export SWARM_CONFIG="$2"
+  shift 2
+fi
 
 lane="${1:-}"
 if [[ -z "$lane" || "$lane" == -* ]]; then

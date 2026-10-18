@@ -58,9 +58,9 @@ from record_task import (
     _lint_specs,
     _rows_from,
     _subsystem_of,
+    lint_record_tree,
     lint_task,
     render_document,
-    resolve_record,
     stale_view_rows,
 )
 
@@ -101,6 +101,7 @@ __all__ = [
     "lint_goal_tree",
     "lint_matrix",
     "lint_obstacles",
+    "lint_record_tree",
     "lint_requirements",
     "lint_task",
     "lint_traceability",
@@ -109,7 +110,6 @@ __all__ = [
     "number_key",
     "parse_tables",
     "render_document",
-    "resolve_record",
     "rn_key",
     "stale_view_rows",
     "verification_matches",

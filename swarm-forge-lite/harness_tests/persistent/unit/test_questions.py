@@ -75,7 +75,7 @@ def test_render_stop_test_reports_errors_and_warnings():
     assert questions.render_stop_test(failing).startswith("fail")
 
 
-def test_init_work_writes_the_forms(tmp_path):
+def test_init_work_writes_the_flat_record(tmp_path):
     import harness
 
     work = tmp_path / "w"
@@ -89,18 +89,18 @@ def test_init_work_writes_the_forms(tmp_path):
             str(work),
         ]
     )
-    assert (work / "7-requirements.md").exists()
-    text = (work / "7-requirements.md").read_text(encoding="utf-8")
+    assert (work / "requirements.md").is_file()
+    text = (work / "requirements.md").read_text(encoding="utf-8")
     assert "| Rn |" in text
     assert "> Rule:" not in text
 
 
-def test_check_passes_a_minimal_written_record(tmp_path):
+def test_check_passes_a_minimal_written_record(tmp_path, capsys):
     import harness
 
     work = tmp_path / "w"
     work.mkdir()
-    (work / "7-requirements.md").write_text(
+    (work / "requirements.md").write_text(
         "# REQUIREMENTS\n"
         "| Rn | EARS | Statement | Scale | Meter | Target | Verification |\n"
         "|---|---|---|---|---|---|---|\n"
@@ -120,7 +120,7 @@ def test_check_passes_a_minimal_written_record(tmp_path):
             ]
         )
     assert exit_info.value.code == 0
-    assert (work / "12-stop-test.md").exists()
+    assert "STOP TEST" in capsys.readouterr().out
 
 
 def test_check_flags_a_defect_in_the_written_record(tmp_path):
@@ -128,7 +128,7 @@ def test_check_flags_a_defect_in_the_written_record(tmp_path):
 
     work = tmp_path / "w"
     work.mkdir()
-    (work / "7-requirements.md").write_text(
+    (work / "requirements.md").write_text(
         "# REQUIREMENTS\n"
         "| Rn | EARS | Statement | Scale | Meter | Target | Verification |\n"
         "|---|---|---|---|---|---|---|\n"
@@ -164,4 +164,4 @@ def test_guide_prints_the_method_map(capsys):
     out = capsys.readouterr().out
     assert "HOW YOU WORK" in out
     assert "init-work interrogator" in out
-    assert "7-requirements.md" in out
+    assert "requirements.md" in out

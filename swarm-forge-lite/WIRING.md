@@ -18,8 +18,9 @@ sections 2 and 3. This file is the field-by-field runbook for the calibratable p
 
 ## The placeholder contract (read first)
 
-The shipped pack is **unwired**. It names no project. Every project path in
-`harness.json` is the placeholder `<PROJECT_ROOT>`.
+A **new install** starts unwired. It names no project: every project path in
+`harness.json` is the placeholder `<PROJECT_ROOT>`. The copy inside a working
+project is already wired; this page is the runbook for a new one.
 
 | Placeholder | Resolves from | Meaning |
 |---|---|---|
