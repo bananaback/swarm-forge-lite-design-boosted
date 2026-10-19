@@ -181,7 +181,11 @@ def test_every_interrogator_section_is_checked_or_exempt():
 
 def test_decisions_tables_teach_the_option_separator():
     """Every flat template carries the DECISION table, so the parser never drifts."""
-    for text in (questions.FLAT_MODULE, questions.FLAT_ARCHITECTURE, questions.FLAT_REVIEW):
+    for text in (
+        questions.FLAT_MODULE,
+        questions.FLAT_ARCHITECTURE,
+        questions.FLAT_REVIEW,
+    ):
         assert "| Dn | Question" in text
 
 
@@ -291,8 +295,12 @@ def test_file_length_convention_is_soft_and_code_only():
     import json
 
     text = _flat((CONSTITUTION / "engineering.md").read_text(encoding="utf-8"))
-    assert "soft length convention" in text, "engineering.md does not teach the convention"
-    assert "never a cap" in text, "engineering.md does not say the convention is not a cap"
+    assert "soft length convention" in text, (
+        "engineering.md does not teach the convention"
+    )
+    assert "never a cap" in text, (
+        "engineering.md does not say the convention is not a cap"
+    )
     assert "Docs, records and prompts are exempt" in text, (
         "engineering.md does not scope the convention to code files"
     )

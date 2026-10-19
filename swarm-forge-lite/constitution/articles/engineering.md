@@ -92,7 +92,8 @@ Prefer the `swarm.*` tools. The shell forms are fallback only.
 - Code files follow a soft length convention, never a cap and never a gate: 50-100
   lines is the target, under 200-250 is normal, over that is allowed when the
   subject needs it. Docs, records and prompts are exempt. No line count fails a
-  run; split by subject.
+  run; split by subject. This is the one home of the convention: PROJECT.md points
+  here rather than restating a number, so no project template can reintroduce a cap.
 - CRAP per function is at most 10. DRY threshold is 0.82.
 - Terminal gate: run `swarm.crap({subsystem,reuseFresh:true})`, then
   `swarm.gate({subsystem,checks:['dry','ruff','format','pytest','acceptance'],scope:'full'})`.

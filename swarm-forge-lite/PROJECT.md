@@ -54,16 +54,17 @@ Testing (Python), defaults - organized, not a straitjacket:
   reuse the same fakes/fixtures as the unit tests.
 - Freedom: a genuinely different pattern is allowed when the test's docstring
   justifies it; promote it into `conftest.py` once it recurs.
-- File hygiene - all files, not only tests: keep files short. Prefer several sibling files in a reasonable length. No hard limit, and never over 600 lines.
-  A file over 600 lines is a defect. Split it by behavior into sibling files, with the
-  shared helpers in a `*_support.py`. A test file named `test_<module>_<topic>.py`
-  groups one behavior. An acceptance step subsystem is a package of parts, one
-  `HANDLERS` list each, joined in its `__init__.py`. Never grow a file past the
-  limit: split it in the same change.
+- File hygiene - code files, not docs and not the record: prefer several sibling
+  files over one long file, split by behavior, with the shared helpers in a
+  `*_support.py`. A test file named `test_<module>_<topic>.py` groups one behavior.
+  An acceptance step subsystem is a package of parts, one `HANDLERS` list each,
+  joined in its `__init__.py`.
 
 Code shape (operator-owned) - the shape the code holds today, and the one to keep:
-- Length: aim near 50 lines, most files under 100, and never over 600. The 600 ceiling
-  is a defect line, not a target.
+- Length: the file-length convention is the constitution's, not this file's - see
+  `constitution/articles/engineering.md` (Quality). It is soft and code-only, with no
+  failure line; docs, records and prompts are exempt. This file deliberately restates
+  no number, so no project template can reintroduce a cap.
 - Docstrings: the norm. A module, a class and a public function carry a short docstring
   that says what and why. Do not strip them.
 - Classes per file: one is the norm. A small second class is allowed when the two serve
