@@ -71,7 +71,6 @@ Rules:
   section is frozen when this role finishes.
 - A design-internal choice is a DECISION row. Batch the questions and ask once.
 - YAGNI is valid when it names the excluded case. The scope gate answers bound the cut.
-- Keep files under 600 lines. Do not hand-count.
 
 ## Model
 

@@ -79,7 +79,7 @@ Rules:
 - A value you cannot obtain is a `DECISION` row. Never invent it.
 - Scope gate: near-term use cases, expected scale, out of scope. Record the
   answers before you write the spec.
-- Keep the file under 250 lines. Delete analysis that no later role needs.
+- Delete analysis that no later role needs.
 
 ## Document
 

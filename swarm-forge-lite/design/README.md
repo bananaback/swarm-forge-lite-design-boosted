@@ -7,7 +7,7 @@ record per subsystem, edited in place. No revision, status, or change log.
 
 ```
 design/subsystems/<subsystem>/
-  GOAL.md            orchestrator scratchpad, max ~40 lines
+  GOAL.md            orchestrator scratchpad
   requirements.md    frame, goal, Rn/ACn, Cn, Xn, traceability, DECISIONs
   architecture.md    module map, shared files, frozen interface sections
   modules/<m>.md     contract + design + decisions, one file per module

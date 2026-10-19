@@ -68,7 +68,6 @@ Rules:
 
 - Keep the tree green. Do not leave a skipped or weakened test.
 - No comment and no docstring, except a load-bearing pragma.
-- Files stay under 600 lines.
 - A new or changed requirement, scenario shape, or contract is routed to its
   owner. Do not invent design.
 - Do not dispatch a role. Do not commit or push.

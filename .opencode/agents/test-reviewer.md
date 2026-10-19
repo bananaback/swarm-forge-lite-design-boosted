@@ -66,7 +66,7 @@ For every accepted test, judge:
 - A named mutation target. Break it once on scratch; the test must fail.
 - Happy-path saturation is rejected: at least one edge or error path.
 
-Reject a test file over 600 lines, a test with no oracle, a test with no
+Reject a test with no oracle, a test with no
 isolation, and a test that only proves the mock ran.
 
 ## Output

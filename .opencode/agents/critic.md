@@ -77,7 +77,6 @@ Rules:
 - Do not redo a designer's work. Fix the union, not one module's prose.
 - Never hand-copy a contract into `SKELETON.md`.
 - A structural problem is a DECISION for the operator, not a silent rewrite.
-- Keep `review.md` under 120 lines.
 
 `NEXT: coder`.
 

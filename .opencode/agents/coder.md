@@ -74,7 +74,6 @@ and route the gap to the designer.
 Rules:
 
 - No comment and no docstring, except a load-bearing pragma.
-- Keep files under 600 lines. Split in the same change.
 - No design id in code.
 - Do not edit `model.json`, `architecture.md`, or the record.
 - A stale record row is `FOR OTHER ROLES: path:line - route to <role>`.

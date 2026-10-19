@@ -14,7 +14,7 @@ Binding rules. `<pack>` is the resolved pack root. Paths come from `harness.json
 
 ```
 design/subsystems/<subsystem>/
-  GOAL.md            orchestrator scratchpad, max ~40 lines
+  GOAL.md            orchestrator scratchpad
   requirements.md    frame, goal, Rn/ACn, Cn, Xn, traceability, DECISIONs
   architecture.md    module map, shared files, frozen interface sections
   modules/<m>.md     contract + design + decisions for one module
@@ -89,7 +89,10 @@ Prefer the `swarm.*` tools. The shell forms are fallback only.
 
 ## Quality
 
-- Files stay under 600 lines. Split in the same change.
+- Code files follow a soft length convention, never a cap and never a gate: 50-100
+  lines is the target, under 200-250 is normal, over that is allowed when the
+  subject needs it. Docs, records and prompts are exempt. No line count fails a
+  run; split by subject.
 - CRAP per function is at most 10. DRY threshold is 0.82.
 - Terminal gate: run `swarm.crap({subsystem,reuseFresh:true})`, then
   `swarm.gate({subsystem,checks:['dry','ruff','format','pytest','acceptance'],scope:'full'})`.

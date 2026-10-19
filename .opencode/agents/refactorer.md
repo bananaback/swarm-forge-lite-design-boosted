@@ -60,7 +60,6 @@ run the terminal gate.
 - CRAP per function is at most 10. Use `swarm.crap`.
 - Do not edit `model.json` by hand. Use `swarm.uml` for topology changes.
 - No comment and no docstring, except a load-bearing pragma.
-- Files stay under 600 lines.
 - Behavior-preserving only. A needed behavior change routes back to the coder.
 
 ## Terminal gate

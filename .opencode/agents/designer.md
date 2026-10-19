@@ -73,7 +73,6 @@ Rules:
 - No interface method is unused by every client. No duplicated policy.
 - Honor every frozen interface. Never edit `architecture.md` or `model.json`.
 - If the interface is wrong, stop with `STATUS: blocked` and one `CONFLICT` line.
-- Keep the module file under 300 lines.
 
 ## Finish
 

@@ -279,13 +279,28 @@ def test_scope_gate_and_economy_are_taught():
         assert "scope" in _agent(role).lower(), f"{role} does not name the scope gate"
 
 
-def test_project_files_stay_under_the_line_ceiling():
-    """The file-hygiene reference: keep files short, and never over 600 lines."""
+def test_file_length_convention_is_soft_and_code_only():
+    """The length convention is taught, scoped to code files, and never a cap.
+
+    The oracle is the constitution, which the pack ships. This test deliberately
+    does not read PROJECT.md: that file is project-owned and never travels, so a
+    pack test may not depend on its wording. The scan at the end only reports which
+    band the code files fall in, so a long file stays visible without ever becoming
+    a defect.
+    """
     import json
+
+    text = _flat((CONSTITUTION / "engineering.md").read_text(encoding="utf-8"))
+    assert "soft length convention" in text, "engineering.md does not teach the convention"
+    assert "never a cap" in text, "engineering.md does not say the convention is not a cap"
+    assert "Docs, records and prompts are exempt" in text, (
+        "engineering.md does not scope the convention to code files"
+    )
 
     config = json.loads((PACK / "harness.json").read_text(encoding="utf-8"))
     roots = [PACK / entry["root"] for entry in config.get("persistent_tests", [])]
-    offenders = []
+    bands = {"target <=100": 0, "normal <=250": 0, "longer, allowed": 0}
+    longest = []
     for root in roots:
         if not root.exists():
             continue
@@ -296,9 +311,22 @@ def test_project_files_stay_under_the_line_ceiling():
             ):
                 continue
             lines = len(path.read_text(encoding="utf-8", errors="replace").splitlines())
-            if lines > 600:
-                offenders.append(f"{path.relative_to(PACK.parent)}: {lines}")
-    assert not offenders, "files over 600 lines: " + ", ".join(offenders)
+            if lines <= 100:
+                bands["target <=100"] += 1
+            elif lines <= 250:
+                bands["normal <=250"] += 1
+            else:
+                bands["longer, allowed"] += 1
+            longest.append((lines, str(path.relative_to(PACK.parent))))
+    longest.sort(reverse=True)
+    print(
+        "code files by band: "
+        + ", ".join(f"{name}={count}" for name, count in bands.items())
+    )
+    print(
+        "longest (reported, never a defect): "
+        + ", ".join(f"{path}:{lines}" for lines, path in longest[:5])
+    )
 
 
 def test_one_division_vocabulary():
