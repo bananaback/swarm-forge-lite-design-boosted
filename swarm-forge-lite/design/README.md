@@ -28,6 +28,10 @@ working state. Keep it short.
 
 - `TASK_BOARD.md` — one row per active unit: session, subsystem, what it is
   doing. Only the orchestrator writes it. It is a note, not a lock.
+- The orchestrator reads it at session start and before every dispatch. A row
+  written by another session is context, not a conflict.
+- A change you did not make belongs to another session. Report it as
+  `FOREIGN: path:line` and revert nothing.
 - `TODO.md` — deferred goals, operator-owned. `harness.py todo --pick` returns the
   top `Ready: yes` row; `--id T2` returns that row.
 

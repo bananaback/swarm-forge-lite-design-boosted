@@ -583,6 +583,30 @@ Acceptance:
 - The orchestrator never starts a queued task without the owner’s phrase.
 - The file stays under ~80 lines in normal use.
 
+### F1b — The foreign-change reminder (implemented)
+
+Pass 5 told a subagent that `#OTHER SESSIONS` exists. It gave the subagent no
+name for a change it did not make, and the reminder was prose the orchestrator
+had to remember to write. Two sessions then read each other's writes as
+corruption.
+
+The fix is one field and one sentence:
+
+- `#FOREIGN` carries one fixed line, defined in `protocol/dispatch.md`. The
+  orchestrator pastes it as written, so the reminder cannot drift or go missing.
+- Every role prompt carries the same rule: a change you did not make belongs to
+  another session; report `FOREIGN: path:line`; revert nothing.
+- The orchestrator reads the board at session start and before every dispatch. It
+  answers a `FOREIGN` report from the board and names the owning session.
+- The `TASK_BOARD.md` header says the same, so a session that reads only the live
+  board still knows what its neighbour is.
+
+Acceptance:
+
+- Every dispatch carries `#FOREIGN`, and every role prompt names the rule.
+- `test_a_foreign_change_is_named_and_never_reverted` fails when any of the three
+  places loses it.
+
 ### Implemented
 
 1. [x] Added `design/TASK_BOARD.md` and `design/TODO.md`, plus their

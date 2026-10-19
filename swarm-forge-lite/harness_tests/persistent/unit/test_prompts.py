@@ -347,3 +347,31 @@ def test_one_division_vocabulary():
         assert "boundar" not in text, (
             f"{path.name}: design vocabulary still says boundary"
         )
+
+
+def test_a_foreign_change_is_named_and_never_reverted():
+    """Two sessions must not read each other's writes as corruption.
+
+    The board is the only shared note. Every role prompt carries the rule, and
+    every dispatch carries the reminder line, so a role never meets a change it
+    did not make without a name for it.
+    """
+    engineering = _flat((CONSTITUTION / "engineering.md").read_text(encoding="utf-8"))
+    assert "A foreign change is a change the role did not make" in engineering
+    assert "Report it as `FOREIGN: path:line`. Never revert it." in engineering
+    communication = _flat(
+        (CONSTITUTION / "communication.md").read_text(encoding="utf-8")
+    )
+    assert "#FOREIGN" in communication
+    assert "Report a change you did not make as `FOREIGN: path:line`" in communication
+    dispatch = _flat((PROTOCOL / "dispatch.md").read_text(encoding="utf-8"))
+    assert "#FOREIGN" in dispatch
+    assert "Paste it as written" in dispatch
+    assert "A change you did not make belongs to another session." in dispatch
+    assert "#OTHER SESSIONS" in dispatch
+    for role in ("orchestrator", *WORKER_ROLES):
+        text = _flat(_agent(role))
+        assert "A change you did not make belongs to another session." in text, (
+            f"{role}: no foreign-change rule"
+        )
+        assert "`FOREIGN: path:line`" in text, f"{role}: no FOREIGN report line"

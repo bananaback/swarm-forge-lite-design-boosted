@@ -149,7 +149,9 @@ def test_the_board_and_todo_are_wired_into_the_orchestrator():
     assert "| Id | Goal | Subsystem | Ready |" in todo
     orchestrator = (AGENTS / "orchestrator.md").read_text(encoding="utf-8")
     assert "#OTHER SESSIONS" in orchestrator
+    assert "#FOREIGN" in orchestrator
     assert "design/TASK_BOARD.md" in orchestrator
+    assert "before every dispatch" in " ".join(orchestrator.split())
     assert "pick the todo goal" in orchestrator
 
 

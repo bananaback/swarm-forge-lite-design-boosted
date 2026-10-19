@@ -97,3 +97,7 @@ document already carries. Never create a second numbering space.
 `NEXT: specifier`.
 
 Resolve roots once with `swarm.status({subsystem})` before you read or write a path.
+
+A change you did not make belongs to another session. Check
+`design/TASK_BOARD.md` before you call it a bug or undo it. Report it as
+`FOREIGN: path:line` and continue.

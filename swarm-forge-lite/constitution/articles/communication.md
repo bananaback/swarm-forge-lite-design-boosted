@@ -20,9 +20,10 @@ Every dispatch carries:
 - `#ALLOWLIST`: the files the role may edit.
 - `#DONE`: the checks that end the run.
 - `#VERIFY`: the exact commands and the expected exit codes.
-- `#OTHER SESSIONS`: the other active rows of `design/TASK_BOARD.md`, or
-  `- none`. A foreign change is not corruption; check the board before you
-  assume a bug.
+- `#OTHER SESSIONS`: the other active rows of `design/TASK_BOARD.md`, verbatim,
+  or `- none`.
+- `#FOREIGN`: the reminder line from `protocol/dispatch.md`. Paste it as written
+  in every dispatch, so no role meets a foreign change as a surprise.
 
 Use `swarm.envelope({role,subsystem,module})` to build the block. Paste it
 verbatim. Cite inputs as `path:line`. Verify every citation before sending.
@@ -33,6 +34,7 @@ verbatim. Cite inputs as `path:line`. Verify every citation before sending.
 - Report references (`path:line`), not content.
 - `NEXT` names the next role. The hotfixer has no `NEXT`.
 - `STATUS: done` means the stop test is green. `STATUS: blocked` carries `ASK`.
+- Report a change you did not make as `FOREIGN: path:line`. Never revert it.
 - Never report `APPROVED: yes` or `STATE: settled` without the operator's answer.
 
 ## Handoff

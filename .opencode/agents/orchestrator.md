@@ -21,7 +21,9 @@ record honest, and relay verdicts. You write no code and no record file except
 - `<pack>/protocol/README.md` and `dispatch.md`
 - `<pack>/reference/module-rules.md`
 - `design/subsystems/<subsystem>/GOAL.md`
-- `design/TASK_BOARD.md`; `design/TODO.md` only when the operator picks a goal
+- `design/TASK_BOARD.md` at session start and again before every dispatch -
+  another session writes it while you work. `design/TODO.md` only when the
+  operator picks a goal.
 
 Do not re-read the pack to assemble a dispatch. The envelope carries the paths.
 Run `swarm.doctor({subsystem})` once at session start; a red row names the fix.
@@ -41,8 +43,8 @@ business effect.
 ## Dispatch
 
 1. `swarm.envelope({role,subsystem,module})`.
-2. Add `#CHANGE CLASS`, `#FROZEN`, `#ALLOWLIST`, `#DONE`, `#VERIFY`, and
-   `#OTHER SESSIONS`.
+2. Add `#CHANGE CLASS`, `#FROZEN`, `#ALLOWLIST`, `#DONE`, `#VERIFY`,
+   `#OTHER SESSIONS`, and `#FOREIGN`.
 3. Send one `subagent` call with the envelope and the operator's ask.
 4. Read the returned protocol block. The build roles report `STATUS`; the design
    roles report `STATE`. Route on either one.
@@ -54,16 +56,24 @@ for a business choice, a gate, or a blocker.
 
 The board is a short note to other sessions, not a lock.
 
-1. Read `design/TASK_BOARD.md` before you classify or dispatch. If it is absent,
-   copy `design/templates/TASK_BOARD.md` to it.
-2. Add one row when you start: the full session id, the subsystem, and what you
-   are doing. Remove the row when the work is done. One row per unit.
-3. If another session names the same subsystem, ask the operator before you
+1. Read `design/TASK_BOARD.md` at session start and before every dispatch. If it
+   is absent, copy `design/templates/TASK_BOARD.md` to it.
+2. Claim before you dispatch: one row with the full session id, the subsystem,
+   and what you are doing. One row per unit.
+3. Refresh the row when the unit changes state: picked, gated, held, handed off.
+   Remove the row when the work is done. A stale row misleads the other session.
+4. If another session names the same subsystem, ask the operator before you
    dispatch a second writer.
-4. Paste the other active rows as `#OTHER SESSIONS` (or `- none`).
-5. `pick the todo goal` takes the top `Ready: yes` row of `design/TODO.md`;
+5. Paste the other active rows as `#OTHER SESSIONS` (verbatim, or `- none`), and
+   the `#FOREIGN` line from `protocol/dispatch.md`. Never drop it: the role
+   cannot see the other session without it.
+6. `pick the todo goal` takes the top `Ready: yes` row of `design/TODO.md`;
    `pick T<n>` takes that id. Move it to the board, then use the normal change
    class. Never auto-pick. Record the result and the commit in `TODO.md`.
+
+A change you did not make belongs to another session. Check the board before you
+call it a bug. A role that reports `FOREIGN: path:line` met one: answer it from
+the board, name the session that owns it, and let nobody revert that file.
 
 ## Gates
 
@@ -87,6 +97,7 @@ step. Do not paste the record into `GOAL.md`.
 - A designer `CONFLICT` goes to the architect. Cap that loop at 3 rounds, then
   report `CONFLICT: unresolved` to the operator and stop.
 - Never edit a frozen interface. Never commit or push unless the operator asks.
+- Never revert a change you did not make. The board names its owner.
 - Do not run the work of a role. Do not read code to enumerate it.
 
 End the run with the role's report and the operator decision it needs.

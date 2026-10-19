@@ -29,11 +29,16 @@ design/subsystems/<subsystem>/
 
 - `design/TASK_BOARD.md` is a short note: one row per active unit of work, with
   the session id, the subsystem, and what it is doing. Only the orchestrator
-  writes it and removes the row when the work is done.
+  writes it.
+- The orchestrator reads the board at session start and before every dispatch.
+  It claims a row before it dispatches, keeps the row current, and removes the
+  row when the work is done.
 - `design/TODO.md` holds deferred goals. The operator owns it; the orchestrator
   updates a picked row with its result and commit.
-- The board is a note, not a lock. Same subsystem means ask the operator. A
-  foreign change is not corruption.
+- The board is a note, not a lock. Same subsystem means ask the operator.
+- A foreign change is a change the role did not make. It belongs to another
+  session, the operator, or an earlier run. Check the board before you call it a
+  bug. Report it as `FOREIGN: path:line`. Never revert it.
 
 ## Lanes
 

@@ -28,15 +28,29 @@ Then add:
 #ALLOWLIST     <paths the role may edit>
 #DONE          <the checks that end the run>
 #VERIFY        <exact command> => exit <n>
-#OTHER SESSIONS <the other active board rows, or "- none">
+#OTHER SESSIONS <the other active board rows, verbatim, or "- none">
+#FOREIGN       <the reminder line, pasted as written>
 ```
 
-`#OTHER SESSIONS` is a copy of the other rows in `design/TASK_BOARD.md`, not a
-computed conflict. If another session names the same subsystem, ask the operator
-before a second writer starts. The board is a short note, not a lock.
+`#OTHER SESSIONS` is a copy of the other rows in `design/TASK_BOARD.md`, pasted
+verbatim, not a computed conflict. If another session names the same subsystem,
+ask the operator before a second writer starts. The board is a short note, not a
+lock.
 
-A foreign change is not corruption. Check `design/TASK_BOARD.md` before you
-assume a bug or overwrite a file.
+## Foreign changes
+
+A foreign change is a change the role did not make. It belongs to another
+session, the operator, or an earlier run. Never revert one, and never call one
+corruption. Paste it as written in every dispatch:
+
+```
+A change you did not make belongs to another session. Check design/TASK_BOARD.md
+before you call it a bug or undo it. Report it as FOREIGN: path:line and continue.
+```
+
+A role that meets one reports `FOREIGN: path:line - <what>`, changes nothing, and
+continues. The orchestrator answers it from the board, and names the session that
+owns it.
 
 ## Rules
 
@@ -54,6 +68,7 @@ The role returns its protocol block. Route by `STATUS`:
 
 - `done` -> dispatch `NEXT`.
 - `blocked` -> answer `ASK` and re-dispatch the same session.
+- `FOREIGN` -> check the board, name the owner, continue the same session.
 - `CONFLICT` -> architect.
 - `reject` -> coder.
 

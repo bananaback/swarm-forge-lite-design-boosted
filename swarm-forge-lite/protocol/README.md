@@ -72,6 +72,17 @@ Everything else in the record is working state. Keep it short. Do not ship it.
 
 The class comes from the change. Never escalate without a business effect.
 
+## Other sessions
+
+Sessions run side by side, one subsystem each. `design/TASK_BOARD.md` is the only
+shared note: it holds one row per active unit.
+
+- Read the board before you call a change a bug. A change you did not make
+  belongs to another session.
+- Report a foreign change as `FOREIGN: path:line`. Revert nothing.
+- The orchestrator claims a row before it dispatches and removes it when the work
+  is done.
+
 ## Parallel design
 
 Designers run in parallel only when:
