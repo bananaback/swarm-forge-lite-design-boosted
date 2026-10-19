@@ -72,7 +72,7 @@ GATE_TOOLS = [
             "pass": True,
         },
         "The terminal gate in one call: dry, ruff, format, pytest, acceptance, and CRAP. checks selects a subset.",
-        "refactorer, hotfixer",
+        "orchestrator, refactorer, hotfixer",
     ),
     _tool(
         "ready",
@@ -127,7 +127,14 @@ GATE_TOOLS = [
         "record",
         "swarm_json.py report",
         "Report the session cost per role from the OpenCode database: tokens, sessions, minutes.",
-        [("db", "string", "-", "Override the database path (default OPENCODE_DB or the standard file).")],
+        [
+            (
+                "db",
+                "string",
+                "-",
+                "Override the database path (default OPENCODE_DB or the standard file).",
+            )
+        ],
         "{db, roles:{role:{out,reason,sessions,minutes}}}",
         "swarm.report()",
         {

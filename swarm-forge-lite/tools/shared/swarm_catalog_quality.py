@@ -82,6 +82,6 @@ QUALITY_TOOLS = [
         "swarm.crap({reuseFresh:true,subsystem:'clip'})",
         {"total": 53, "above": 0, "threshold": 10.0, "rows": []},
         "CRAP, worst first, from the vendored crapper at the pack's CRAP 10 threshold. A coverage run is slow, so reuseFresh:true skips it when the report is newer than every source and test.",
-        "coder, refactorer",
+        "orchestrator, coder, refactorer",
     ),
 ]
