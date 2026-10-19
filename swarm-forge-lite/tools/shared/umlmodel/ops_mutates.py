@@ -446,4 +446,3 @@ MUTATES = [
         mutate.set_direction,
     ),
 ]
-

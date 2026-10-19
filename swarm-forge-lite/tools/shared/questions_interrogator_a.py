@@ -42,7 +42,6 @@ ANTI_GOALS = Table(
 )
 
 
-
 def _interrogator_sections_a() -> tuple[Section, ...]:
     return (
         Section(

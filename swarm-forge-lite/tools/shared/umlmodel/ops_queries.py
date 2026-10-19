@@ -126,4 +126,3 @@ QUERIES = [
         query.q_check,
     ),
 ]
-

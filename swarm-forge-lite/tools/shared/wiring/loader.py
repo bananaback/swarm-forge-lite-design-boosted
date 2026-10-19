@@ -27,9 +27,7 @@ def lane_from(environ=None) -> str:
 class HarnessConfig:
     """Interpret a ConfigFile into resolved Wiring, scoped to an optional lane."""
 
-    def __init__(
-        self, file: ConfigFile, pack: Pack, lane: str = "", environ=None
-    ):
+    def __init__(self, file: ConfigFile, pack: Pack, lane: str = "", environ=None):
         self._file = file
         self._pack = pack
         self._lane = lane

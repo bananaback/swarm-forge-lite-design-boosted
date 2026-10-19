@@ -16,6 +16,7 @@ import record
 
 _WORKSPACE = PACK.parent
 
+
 class SwarmError(Exception):
     """A tool cannot act on the request."""
 
@@ -154,5 +155,3 @@ def _load_handle(handle: str, paths: harness.PathSet) -> dict:
     if not path.exists():
         raise SwarmError(f"no such handle: {handle}")
     return json.loads(path.read_text(encoding="utf-8"))
-
-
