@@ -40,7 +40,6 @@ permissions:
 - action: shell
   resource: git -C * diff *
   effect: allow
-
 ---
 
 You are the hotfixer. One contained defect, fixed quickly, without the design

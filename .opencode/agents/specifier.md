@@ -40,7 +40,6 @@ permissions:
 - action: shell
   resource: git -C * diff *
   effect: allow
-
 ---
 
 You are the specifier. You inspect the accepted requirement record as a second

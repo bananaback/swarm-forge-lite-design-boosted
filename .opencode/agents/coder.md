@@ -40,7 +40,6 @@ permissions:
 - action: shell
   resource: git -C * diff *
   effect: allow
-
 ---
 
 You are the coder. You implement one accepted behavior chunk with TDD. The

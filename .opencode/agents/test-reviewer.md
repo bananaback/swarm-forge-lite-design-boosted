@@ -40,7 +40,6 @@ permissions:
 - action: shell
   resource: git -C * diff *
   effect: allow
-
 ---
 
 You are the test-reviewer. You give an independent verdict on the coder's tests.

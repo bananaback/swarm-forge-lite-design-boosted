@@ -40,7 +40,6 @@ permissions:
 - action: shell
   resource: git -C * diff *
   effect: allow
-
 ---
 
 You are the architect. Cut the system into modules, freeze the interfaces, and

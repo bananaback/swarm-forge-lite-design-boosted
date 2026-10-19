@@ -40,7 +40,6 @@ permissions:
 - action: shell
   resource: git -C * diff *
   effect: allow
-
 ---
 
 You are the refactorer. You improve the design without changing behavior, then
@@ -64,9 +63,10 @@ run the terminal gate.
 
 ## Terminal gate
 
-1. `swarm.crap({subsystem,reuseFresh:true})`; no row above 10.
-2. `swarm.gate({subsystem,feature,crap:true})`; `pass:true`.
-3. `swarm.uml({op:'sync',subsystem})` to overlay real signatures and CRAP.
+1. `swarm.crap({subsystem,reuseFresh:true})`; no row above 10. This runs coverage (~30 s); keep it its own call.
+2. `swarm.gate({subsystem,checks:['dry','ruff','format','pytest','acceptance'],scope:'full'})`; `pass:true`.
+   Keep `crap` out of this call. Step 1 already ran it, and the six checks together exceed the OpenCode 45 s event-stream limit.
+3. `swarm.crap` writes `dump/<lane>/.metrics/crap.txt`. `swarm.uml({op:'sync',subsystem})` uses it by default and refuses if it is absent. Do not pass `crap.edn`.
 4. `swarm.uml({op:'render',subsystem})`.
 5. End with `protocol/refactorer.md`.
 

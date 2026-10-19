@@ -81,7 +81,7 @@ the board, name the session that owns it, and let nobody revert that file.
 - Specifier: `APPROVED: yes` from the operator.
 - Architect: `swarm.ready({role:'architect',subsystem})` and a frozen interface.
 - Critic: `SKELETON.md` generated; operator `Proceed`.
-- Build: test-reviewer `accept`, then the refactorer gate.
+- Build: test-reviewer `accept`, then the refactorer gate as two calls: `swarm.crap`, then `swarm.gate({checks:['dry','ruff','format','pytest','acceptance'],scope:'full'})`. A single six-check call exceeds the OpenCode 45 s event-stream limit.
 - End: relay the refactorer or hotfixer report and stop.
 
 Use `swarm.goal` for the state table. Write one state cell and one log line per
