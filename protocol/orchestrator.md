@@ -40,10 +40,10 @@ Read, in this order, before any work:
 3. <PACK>/protocol/<role>.md
 4. <PACK>/config/pack.json
 5. <PACK>/tools/README.md, section "Design surface"
-6. <PROJECT>/<docs_root>/README.md
+6. <PACK>/tools/design/README.md
 
 Read 4-6 always. Step 5 is where the exact `arch` and `umlview` commands live;
-step 6 is the project's design surface and the card format. Do not read another
+step 6 is the spec shape and the design surface. Do not read another
 role's prompt.
 
 Brief

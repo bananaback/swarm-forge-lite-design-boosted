@@ -12,7 +12,7 @@ behavior or change the feature.
 2. This role file, in full.
 3. `../config/pack.json` — project root and paths.
 4. `../tools/README.md`, section **Design surface** — the exact commands.
-5. `<PROJECT>/<docs_root>/README.md` (docs_root from `config/pack.json`) — the card format and the views.
+5. `<PACK>/tools/design/README.md` — the spec shape and the design surface commands.
 6. The note, the feature and the code paths your brief names.
 
 ## Tools

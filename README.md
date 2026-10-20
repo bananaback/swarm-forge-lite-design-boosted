@@ -19,9 +19,9 @@ If you are an agent opening this workspace for the first time:
 4. Read `config/pack.json` for the project root, paths, and thresholds.
 5. Read `tools/README.md` before running any command, including its **Design
    surface** section.
-6. If your role touches design, read `<project>/<docs_root>/README.md`, where
-   `docs_root` is the entry in `config/pack.json` (today `deepstream/docs`):
-   the spec shape, the `arch` commands and the two views.
+6. If your role touches design, read `<PACK>/tools/design/README.md`: the spec
+   shape, the `arch` commands and the two views. The specs themselves live under
+   `<project>/<docs_root>`, where `docs_root` is the entry in `config/pack.json`.
 
 Nothing outside this directory is part of the pack. Do not look for agent
 definitions in `.opencode/`; roles are the `protocol/*.md` files.

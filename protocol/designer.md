@@ -16,7 +16,7 @@ of the design, so the spec and the picture cannot drift apart.
 2. This role file, in full.
 3. `../config/pack.json` — project root and paths.
 4. `../tools/README.md`, section **Design surface** — the exact commands.
-5. `<PROJECT>/<docs_root>/README.md` (docs_root from `config/pack.json`) — the spec shape and the views.
+5. `<PACK>/tools/design/README.md` — the spec shape and the views.
 6. The authored data you may change: `<PACK>/architecture/runtime.json` (runtime
    boxes and edges) and `<PACK>/architecture/design.json` (class overlay).
 7. The spec, the feature and the code paths your brief names.
@@ -35,7 +35,7 @@ A view is generated, never hand-edited. A query scans the code, so it cannot dis
 
 A living engineering spec per subsystem: `<project>/<docs_root>/specs/NN-<subsystem>.md`.
 Update the existing one in place; do not open a new number for a change. The shape
-and the rules are in `<project>/<docs_root>/README.md`.
+and the rules are in `<PACK>/tools/design/README.md`.
 
 The `.feature` is the specifier's. You do not write it; you write the intent and
 the design it must satisfy.

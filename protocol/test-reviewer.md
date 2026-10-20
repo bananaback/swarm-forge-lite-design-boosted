@@ -15,7 +15,7 @@ the green is worth anything.
 2. This role file, in full.
 3. `../config/pack.json` — project root, test paths, artifacts root.
 4. `../tools/README.md` — the commands you may run.
-5. `<PROJECT>/<docs_root>/README.md` — the spec shape, if the change has one.
+5. `<PACK>/tools/design/README.md` — the spec shape, if the change has one.
 6. The feature, the subsystem spec, and the tests the coder changed.
 7. The coder's report: what changed, what passed, and the commands it ran.
 
