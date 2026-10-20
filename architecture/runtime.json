@@ -154,12 +154,12 @@
     },
     {
       "id": "privacy",
-      "x": 1156,
+      "x": 700,
       "y": 352,
       "w": 150,
       "h": 64,
       "label": "privacy_record",
-      "sub": "evidence clips",
+      "sub": "clips on violation",
       "note": "03",
       "tone": "pipe",
       "package": "privacy_record"
@@ -420,6 +420,16 @@
       "kind": "solid",
       "label": "read view",
       "dx": 18,
+      "dy": 0
+    },
+    {
+      "from": "engine",
+      "side": "right",
+      "to": "privacy",
+      "to_side": "bottom",
+      "kind": "solid",
+      "label": "verdicts",
+      "dx": 0,
       "dy": 0
     },
     {
