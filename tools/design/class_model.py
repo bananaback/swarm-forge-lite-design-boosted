@@ -41,6 +41,7 @@ STEREOTYPES = {
     "data": ("«data»", "#eef7ec", "#4f9d5d"),
     "exception": ("«exception»", "#fdecec", "#c05a5a"),
     "concrete": ("", "#ffffff", "#64748b"),
+    "class": ("", "#ffffff", "#64748b"),
 }
 
 PROTOCOLS = {"Protocol"}
