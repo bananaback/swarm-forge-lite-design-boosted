@@ -1,0 +1,456 @@
+{
+  "canvas": [
+    1500,
+    1040
+  ],
+  "zones": [
+    {
+      "x": 20,
+      "y": 206,
+      "w": 1460,
+      "h": 246,
+      "label": "GSTREAMER PIPELINE \u2014 COMPOSED BY pipeline.builder",
+      "tone": "pipeline",
+      "id": "pipeline"
+    },
+    {
+      "x": 200,
+      "y": 486,
+      "w": 1190,
+      "h": 502,
+      "label": "ANALYSIS AND DELIVERY \u2014 CONSTRUCTED BY app.main",
+      "tone": "analysis",
+      "id": "analysis"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "main",
+      "x": 620,
+      "y": 24,
+      "w": 240,
+      "h": 56,
+      "label": "app.main",
+      "sub": "session trace, command loop, wiring",
+      "note": null,
+      "tone": "entry"
+    },
+    {
+      "id": "builder",
+      "x": 620,
+      "y": 116,
+      "w": 240,
+      "h": 56,
+      "label": "pipeline.builder",
+      "sub": "composes the GStreamer pipeline",
+      "note": null,
+      "tone": "entry"
+    },
+    {
+      "id": "config",
+      "x": 910,
+      "y": 116,
+      "w": 170,
+      "h": 56,
+      "label": "config",
+      "sub": "PipelineConfig, constants",
+      "note": null,
+      "tone": "entry"
+    },
+    {
+      "id": "codec",
+      "x": 380,
+      "y": 116,
+      "w": 170,
+      "h": 56,
+      "label": "codec_tables",
+      "sub": "encoder knobs",
+      "note": null,
+      "tone": "entry"
+    },
+    {
+      "id": "source",
+      "x": 50,
+      "y": 252,
+      "w": 140,
+      "h": 64,
+      "label": "source",
+      "sub": "RTSP / v4l2",
+      "note": null,
+      "tone": "pipe",
+      "package": "source"
+    },
+    {
+      "id": "mux",
+      "x": 204,
+      "y": 252,
+      "w": 140,
+      "h": 64,
+      "label": "stream_mux",
+      "sub": "one NV12 pad",
+      "note": null,
+      "tone": "pipe",
+      "package": "stream_mux"
+    },
+    {
+      "id": "detector",
+      "x": 358,
+      "y": 252,
+      "w": 140,
+      "h": 64,
+      "label": "detector",
+      "sub": "nvinfer, registry",
+      "note": "01",
+      "tone": "pipe",
+      "package": "detector"
+    },
+    {
+      "id": "tracker",
+      "x": 512,
+      "y": 252,
+      "w": 140,
+      "h": 64,
+      "label": "tracker",
+      "sub": "NvDCF",
+      "note": null,
+      "tone": "pipe",
+      "package": "tracker"
+    },
+    {
+      "id": "osd",
+      "x": 666,
+      "y": 252,
+      "w": 140,
+      "h": 64,
+      "label": "osd",
+      "sub": "blur, draw",
+      "note": null,
+      "tone": "pipe",
+      "package": "osd"
+    },
+    {
+      "id": "tee",
+      "x": 820,
+      "y": 252,
+      "w": 140,
+      "h": 64,
+      "label": "tee",
+      "sub": "three branches",
+      "note": null,
+      "tone": "pipe",
+      "package": "tee"
+    },
+    {
+      "id": "rtsp",
+      "x": 1000,
+      "y": 352,
+      "w": 140,
+      "h": 64,
+      "label": "rtsp_output",
+      "sub": "live view",
+      "note": null,
+      "tone": "pipe",
+      "package": "rtsp_output"
+    },
+    {
+      "id": "privacy",
+      "x": 1156,
+      "y": 352,
+      "w": 150,
+      "h": 64,
+      "label": "privacy_record",
+      "sub": "evidence clips",
+      "note": "03",
+      "tone": "pipe",
+      "package": "privacy_record"
+    },
+    {
+      "id": "metadata",
+      "x": 1322,
+      "y": 352,
+      "w": 146,
+      "h": 64,
+      "label": "metadata_broker",
+      "sub": "nvmsgconv",
+      "note": null,
+      "tone": "pipe",
+      "package": "metadata_broker"
+    },
+    {
+      "id": "extraction",
+      "x": 460,
+      "y": 520,
+      "w": 190,
+      "h": 64,
+      "label": "detection_extraction",
+      "sub": "one copy per tracked frame",
+      "note": "05",
+      "tone": "analysis",
+      "package": "detection_extraction"
+    },
+    {
+      "id": "engine",
+      "x": 460,
+      "y": 660,
+      "w": 190,
+      "h": 64,
+      "label": "safety_rule_engine",
+      "sub": "11 checks, 8 views",
+      "note": "04",
+      "tone": "analysis",
+      "package": "safety_rule_engine"
+    },
+    {
+      "id": "latency",
+      "x": 900,
+      "y": 520,
+      "w": 190,
+      "h": 64,
+      "label": "latency_monitoring",
+      "sub": "probes every stage",
+      "note": "10",
+      "tone": "analysis",
+      "package": "latency_monitoring"
+    },
+    {
+      "id": "message",
+      "x": 1170,
+      "y": 660,
+      "w": 190,
+      "h": 64,
+      "label": "message_publish",
+      "sub": "one publisher seam",
+      "note": "09",
+      "tone": "analysis",
+      "package": "message_publish"
+    },
+    {
+      "id": "speaker",
+      "x": 240,
+      "y": 790,
+      "w": 190,
+      "h": 64,
+      "label": "speaker_alerts",
+      "sub": "quiet per channel",
+      "note": "07",
+      "tone": "output",
+      "package": "audio"
+    },
+    {
+      "id": "debug",
+      "x": 700,
+      "y": 790,
+      "w": 190,
+      "h": 64,
+      "label": "rule_check_osd",
+      "sub": "read view, draws on osd",
+      "note": "06",
+      "tone": "output",
+      "package": "rule_check_osd"
+    },
+    {
+      "id": "audio",
+      "x": 240,
+      "y": 920,
+      "w": 190,
+      "h": 64,
+      "label": "audio_output",
+      "sub": "one held output",
+      "note": "08",
+      "tone": "output",
+      "package": "audio"
+    }
+  ],
+  "edges": [
+    {
+      "from": "main",
+      "side": "bottom",
+      "to": "builder",
+      "to_side": "top",
+      "kind": "solid",
+      "label": null,
+      "dx": 0,
+      "dy": 0
+    },
+    {
+      "from": "builder",
+      "side": "left",
+      "to": "codec",
+      "to_side": "right",
+      "kind": "dash",
+      "label": null,
+      "dx": 0,
+      "dy": 0
+    },
+    {
+      "from": "builder",
+      "side": "right",
+      "to": "config",
+      "to_side": "left",
+      "kind": "dash",
+      "label": null,
+      "dx": 0,
+      "dy": 0
+    },
+    {
+      "from": "builder",
+      "side": "bottom",
+      "to": "pipeline",
+      "to_side": "top",
+      "kind": "dash",
+      "label": null,
+      "dx": 0,
+      "dy": 0
+    },
+    {
+      "from": "source",
+      "side": "right",
+      "to": "mux",
+      "to_side": "left",
+      "kind": "solid",
+      "label": null,
+      "dx": 0,
+      "dy": 0
+    },
+    {
+      "from": "mux",
+      "side": "right",
+      "to": "detector",
+      "to_side": "left",
+      "kind": "solid",
+      "label": null,
+      "dx": 0,
+      "dy": 0
+    },
+    {
+      "from": "detector",
+      "side": "right",
+      "to": "tracker",
+      "to_side": "left",
+      "kind": "solid",
+      "label": null,
+      "dx": 0,
+      "dy": 0
+    },
+    {
+      "from": "tracker",
+      "side": "right",
+      "to": "osd",
+      "to_side": "left",
+      "kind": "solid",
+      "label": null,
+      "dx": 0,
+      "dy": 0
+    },
+    {
+      "from": "osd",
+      "side": "right",
+      "to": "tee",
+      "to_side": "left",
+      "kind": "solid",
+      "label": null,
+      "dx": 0,
+      "dy": 0
+    },
+    {
+      "from": "tee",
+      "side": "bottom",
+      "to": "rtsp",
+      "to_side": "top",
+      "kind": "solid",
+      "label": null,
+      "dx": 0,
+      "dy": 0
+    },
+    {
+      "from": "tee",
+      "side": "bottom",
+      "to": "privacy",
+      "to_side": "top",
+      "kind": "solid",
+      "label": null,
+      "dx": 0,
+      "dy": 0
+    },
+    {
+      "from": "tee",
+      "side": "bottom",
+      "to": "metadata",
+      "to_side": "top",
+      "kind": "solid",
+      "label": null,
+      "dx": 0,
+      "dy": 0
+    },
+    {
+      "from": "tracker",
+      "side": "bottom",
+      "to": "extraction",
+      "to_side": "top",
+      "kind": "solid",
+      "label": "probe",
+      "dx": 10,
+      "dy": 0
+    },
+    {
+      "from": "extraction",
+      "side": "bottom",
+      "to": "engine",
+      "to_side": "top",
+      "kind": "solid",
+      "label": "frame copy",
+      "dx": 0,
+      "dy": 0
+    },
+    {
+      "from": "engine",
+      "side": "bottom",
+      "to": "speaker",
+      "to_side": "top",
+      "kind": "solid",
+      "label": "effects",
+      "dx": -22,
+      "dy": 0
+    },
+    {
+      "from": "engine",
+      "side": "bottom",
+      "to": "debug",
+      "to_side": "top",
+      "kind": "solid",
+      "label": "read view",
+      "dx": 18,
+      "dy": 0
+    },
+    {
+      "from": "speaker",
+      "side": "bottom",
+      "to": "audio",
+      "to_side": "top",
+      "kind": "solid",
+      "label": null,
+      "dx": 0,
+      "dy": 0
+    },
+    {
+      "from": "latency",
+      "side": "bottom",
+      "to": "message",
+      "to_side": "top",
+      "kind": "solid",
+      "label": "windows",
+      "dx": 0,
+      "dy": 0
+    },
+    {
+      "from": "latency",
+      "side": "top",
+      "to": "analysis",
+      "to_side": "bottom",
+      "kind": "dash",
+      "label": "probes",
+      "dx": 36,
+      "dy": 10
+    }
+  ]
+}

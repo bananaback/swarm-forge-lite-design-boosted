@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>UML</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 13px/1.4 ui-sans-serif, system-ui, sans-serif;
+         background: #14161a; color: #d7dce3; display: flex; height: 100vh; }
+  header { position: fixed; top: 0; left: 0; right: 0; height: 48px; display: flex;
+           align-items: center; gap: 14px; padding: 0 14px; background: #1b1e24;
+           border-bottom: 1px solid #2a2f38; z-index: 3; }
+  header h1 { font-size: 14px; margin: 0; font-weight: 600; }
+  main { flex: 1; overflow: auto; padding: 60px 14px 20px; }
+  section.diagram { margin-bottom: 22px; border: 1px solid #222833; border-radius: 10px;
+                    background: #171a20; overflow: hidden; }
+  section.diagram > .bar { display: flex; align-items: center; gap: 10px;
+                           padding: 8px 12px; border-bottom: 1px solid #222833; }
+  section.diagram h2 { font-size: 13px; margin: 0; font-weight: 600; }
+  section.diagram .crumbs { color: #7f8a99; }
+  section.diagram .crumb { cursor: pointer; }
+  section.diagram .crumb:hover { color: #d7dce3; }
+  section.diagram .status { margin-left: auto; font-size: 11px; }
+  section.diagram .violations { color: #ef6b6b; font-weight: 600; }
+  section.diagram .ok { color: #5fb87a; }
+  section.diagram select { background: #262b33; color: #d7dce3; border: 1px solid #333a45;
+                           border-radius: 6px; padding: 2px 6px; font-size: 11px; }
+  section.diagram svg { width: 100%; height: 460px; display: block; cursor: grab; }
+  section.diagram svg.dragging { cursor: grabbing; }
+  .box text { pointer-events: none; }
+  .label { font-size: 13px; font-weight: 600; fill: #0d0f12; }
+  .sub { font-size: 10px; fill: #0d0f12; opacity: .75; }
+  .edge { fill: none; stroke: #5a6472; stroke-width: 1.2; }
+  .edge.violating { stroke: #ef6b6b; stroke-width: 2; stroke-dasharray: 5 3; }
+  section.diagram svg.show-edges .edge { opacity: .45; }
+  .edge { opacity: .10; transition: opacity .12s; }
+  .edge.hot { opacity: 1; stroke-width: 2.4; }
+  .edge.violating { opacity: .60; }
+  .box.dim { opacity: .18; }
+  header input[type=search] { background: #262b33; color: #d7dce3; border: 1px solid #333a45;
+    border-radius: 6px; padding: 4px 8px; font-size: 12px; width: 190px; }
+  .legend { display: flex; gap: 6px; align-items: center; font-size: 10px; color: #7f8a99; }
+  .legend input { margin: 0 3px 0 0; }
+  .chip { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  aside { width: 340px; background: #1b1e24; border-left: 1px solid #2a2f38;
+          padding: 62px 14px 14px; overflow: auto; display: none; }
+  aside.open { display: block; }
+  aside h2 { font-size: 14px; margin: 0 0 4px; }
+  aside .ns { color: #7f8a99; font-size: 11px; word-break: break-all; margin-bottom: 10px; }
+  aside .fields { color: #9aa4b2; font-size: 11px; margin-bottom: 10px; }
+  aside table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  aside th, aside td { text-align: right; padding: 3px 4px; border-bottom: 1px solid #262b33; }
+  aside th:first-child, aside td:first-child { text-align: left; }
+  aside .close { float: right; cursor: pointer; color: #7f8a99; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title"></h1>
+  <input id="search" type="search" placeholder="filter boxes…">
+  <label class="legend"><input type="checkbox" id="edges-toggle"> all edges</label>
+  <label class="legend"><input type="checkbox" id="foreign-toggle"> foreign</label>
+  <span class="legend">
+    <span class="chip" style="background:hsl(120,62%,58%)"></span>best
+    <span class="chip" style="background:hsl(66,62%,58%)"></span>mid
+    <span class="chip" style="background:hsl(12,62%,58%)"></span>red
+    <span class="chip" style="background:#8a94a3;border-radius:50%"></span>foreign
+  </span>
+</header>
+<main id="diagrams"></main>
+<aside id="card"></aside>
+<script>
+const DOC = /*__MODEL__*/;
+const card = document.getElementById('card');
+const search = document.getElementById('search');
+const edgeToggle = document.getElementById('edges-toggle');
+const svgs = [];
+const redraws = [];
+const foreignToggle = document.getElementById('foreign-toggle');
+let showForeign = false;
+function markMatches(svg) {
+  const query = search.value.trim().toLowerCase();
+  svg.querySelectorAll('.box').forEach(group => {
+    group.classList.toggle('dim', Boolean(query) && !group.dataset.name.toLowerCase().includes(query));
+  });
+}
+search.oninput = () => svgs.forEach(markMatches);
+edgeToggle.onchange = () => svgs.forEach(svg => svg.classList.toggle('show-edges', edgeToggle.checked));
+foreignToggle.onchange = () => { showForeign = foreignToggle.checked; redraws.forEach(redraw => redraw()); };
+
+function esc(text) {
+  return String(text).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+function title(segment) {
+  return String(segment).replace(/(^|-)([a-z])/g, (_, dash, ch) => (dash ? ' ' : '') + ch.toUpperCase());
+}
+function color(grade) { return `hsl(${Math.round(grade * 12)}, 62%, 58%)`; }
+function along(x, x0, x1, x2, y0, y1, y2) {
+  if (x <= x0) return y0;
+  if (x <= x1) return x1 === x0 ? y0 : y0 + (x - x0) / (x1 - x0) * (y1 - y0);
+  if (x <= x2) return x2 === x1 ? y1 : y1 + (x - x1) / (x2 - x1) * (y2 - y1);
+  return y2;
+}
+function crapGrade(score) {
+  if (score === null || score === undefined) return 1;
+  return along(score, 8, 12, 20, 10, 5.5, 1);
+}
+function mutationGrade(score) {
+  if (score === null || score === undefined) return 1;
+  return along(score, 0.80, 0.90, 1.00, 1, 5.5, 10);
+}
+
+function mount(diagram, index) {
+  const section = document.createElement('section');
+  section.className = 'diagram';
+  section.innerHTML = `<div class="bar">
+      <h2>${esc(diagram.title || 'diagram')}</h2>
+      <span class="crumbs"></span>
+      <span class="status"></span>
+      ${diagram.proposals && diagram.proposals.length ? '<span class="legend">view</span><select class="context" title="Namespace tree: the real code. Proposal: a named what-if grouping that does not exist in source."></select>' : ''}
+    </div>`;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.innerHTML = `<defs>
+      <marker id="arrow-${index}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4"
+              markerHeight="4" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#5a6472"/></marker>
+      <marker id="arrow-bad-${index}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4"
+              markerHeight="4" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef6b6b"/></marker>
+    </defs><g class="viewport"></g>`;
+  section.appendChild(svg);
+  document.getElementById('diagrams').appendChild(section);
+
+  const viewport = svg.querySelector('.viewport');
+  const crumbs = section.querySelector('.crumbs');
+  const status = section.querySelector('.status');
+  const context = section.querySelector('.context');
+  const all = diagram.nodes
+    .concat((diagram.packages || []).flatMap(p => p.classes))
+    .concat(diagram.foreign_classes || []);
+  const byId = new Map(all.map(n => [n.id, n]));
+  const foreignById = new Map((diagram.foreign_classes || []).map(n => [n.id, n]));
+  let ovalSet = new Set();
+  const PACKAGE_MODE = diagram.mode === 'packages';
+  const state = { path: [], view: { x: -30, y: -30, w: 1280, h: 860 }, proposal: null, fit: true };
+  let levels = diagram.levels;
+
+  function projectNodes() {
+    return all.filter(n => !foreignById.has(n.id));
+  }
+  function nodesUnder(nses) {
+    return projectNodes().filter(n => nses.some(s => n.id === s || n.id.startsWith(s + '.')));
+  }
+  function omittedByProposal(id) {
+    const omit = (state.proposal && state.proposal.omit) || [];
+    return omit.some(o => id === o || id.startsWith(o + '.'));
+  }
+  function pooled(id) {
+    let n = 0, weighted = 0, squares = 0;
+    let killed = 0, survived = 0, gap = 0;
+    for (const node of all) {
+      if (node.id !== id && !node.id.startsWith(id + '.')) continue;
+      killed += node.killed || 0; survived += node.survived || 0; gap += node.gap || 0;
+      const s = node.summary;
+      if (!s) continue;
+      n += s.n; weighted += s.n * s.mu; squares += s.n * (s.sigma * s.sigma + s.mu * s.mu);
+    }
+    if (!n) return { grade: 1, risk: null, crap: 1, mutation: null };
+    const mu = weighted / n;
+    const sigma = Math.sqrt(Math.max(0, squares / n - mu * mu));
+    const crap = crapGrade(mu + sigma);
+    const trials = killed + survived + gap;
+    const mutation = trials > 0 ? mutationGrade(killed / trials) : null;
+    const grade = diagram.mutation_present ? (crap + (mutation ?? 1)) / 2 : crap;
+    return { grade, risk: mu + sigma, crap, mutation };
+  }
+  function levelOf(id) {
+    const parts = id.split('.');
+    for (let depth = parts.length; depth > 0; depth--) {
+      const name = parts.slice(0, depth).join('.');
+      const found = levels.findIndex(layer => layer.includes(name));
+      if (found >= 0) return found;
+    }
+    return null;
+  }
+  function isViolating(edge) {
+    if (edge.kind !== 'dependency') return false;
+    const from = levelOf(edge.from), to = levelOf(edge.to);
+    return from !== null && to !== null && from < to;
+  }
+  function packageOf(id) {
+    return (diagram.packages || []).find(p => p.classes.some(c => c.id === id));
+  }
+  function visibleNodes() {
+    if (!state.proposal || !state.path.length) return projectNodes();
+    const layer = state.proposal.layers.find(l => l.id === state.path[0]);
+    return layer ? nodesUnder(layer.nses) : [];
+  }
+  function childrenOf(prefix) {
+    const children = new Map();
+    for (const node of visibleNodes()) {
+      if (prefix && !node.id.startsWith(prefix + '.')) continue;
+      const rest = prefix ? node.id.slice(prefix.length + 1) : node.id;
+      const head = rest.split('.')[0];
+      if (!children.has(head)) children.set(head, []);
+      children.get(head).push(node.id);
+    }
+    return [...children.keys()].sort((a, b) => {
+      const ia = diagram.order.indexOf(a), ib = diagram.order.indexOf(b);
+      return (ia < 0 ? 1e9 : ia) - (ib < 0 ? 1e9 : ib) || a.localeCompare(b);
+    }).map(name => ({ name, ids: children.get(name) }));
+  }
+  function boxOf(id) {
+    if (foreignById.has(id)) return ovalSet.has(id) ? id : null;
+    if (PACKAGE_MODE) {
+      if (!state.path.length) { const pkg = packageOf(id); return pkg ? pkg.id : null; }
+      return id;
+    }
+    if (state.proposal && !state.path.length) {
+      const layer = state.proposal.layers.find(l => l.nses.some(s => id === s || id.startsWith(s + '.')));
+      return layer ? layer.id : null;
+    }
+    // Box names are segments, not ids: the map is keyed by the rendered name.
+    const nsPath = (state.proposal && state.path.length) ? state.path.slice(1) : state.path;
+    if (!nsPath.length) return id.split('.')[0];
+    if (id === nsPath.join('.')) return nsPath[nsPath.length - 1];
+    const prefix = nsPath.join('.') + '.';
+    return id.startsWith(prefix) ? id.slice(prefix.length).split('.')[0] : null;
+  }
+  function layout(entries) {
+    const cols = Math.min(4, Math.max(1, Math.ceil(Math.sqrt(entries.length))));
+    const gx = 60, gy = 54, stepX = 290, stepY = 124;
+    return entries.map((entry, at) => {
+      const w = entry.oval ? 170 : 230;
+      const h = entry.oval ? 48 : 70;
+      return { ...entry, w, h,
+        x: (at % cols) * stepX + (entry.oval ? 30 : 0),
+        y: Math.floor(at / cols) * stepY };
+    });
+  }
+  function edgePath(a, b) {
+    const x1 = a.x + a.w, y1 = a.y + a.h / 2;
+    if (b.x >= x1 + 12) {
+      const x2 = b.x, y2 = b.y + b.h / 2, mid = (x1 + x2) / 2;
+      return `M ${x1} ${y1} C ${mid} ${y1}, ${mid} ${y2}, ${x2} ${y2}`;
+    }
+    // Backward or same-column: leave right, loop below, return to the right edge.
+    const x2 = b.x + b.w, y2 = b.y + b.h / 2;
+    const drop = Math.max(a.y + a.h, b.y + b.h) + 46;
+    const lane = Math.max(x1, x2) + 70;
+    return `M ${x1} ${y1} C ${lane} ${y1}, ${lane} ${drop}, ${(x1 + x2) / 2} ${drop}`
+      + ` S ${x2 + 70} ${y2}, ${x2} ${y2}`;
+  }
+  function applyView() {
+    svg.setAttribute('viewBox', `${state.view.x} ${state.view.y} ${state.view.w} ${state.view.h}`);
+  }
+
+  function fit(boxes) {
+    const maxX = Math.max(640, ...boxes.map(box => box.x + box.w));
+    const maxY = Math.max(360, ...boxes.map(box => box.y + box.h));
+    state.view = { x: -30, y: -30, w: maxX + 70, h: maxY + 80 };
+  }
+
+  function entries() {
+    const atLayers = state.proposal !== null && state.path.length === 0;
+    const prefix = state.path.slice(atLayers || PACKAGE_MODE ? 1 : 0).join('.');
+    let raw;
+    if (PACKAGE_MODE) {
+      raw = state.path.length
+        ? (diagram.packages.find(p => p.id === state.path[0]) || { classes: [] }).classes
+            .filter(c => !omittedByProposal(c.id))
+            .map(c => ({ name: c.id, label: c.name, ids: [c.id] }))
+        : (diagram.packages || []).map(p => ({ name: p.id, label: p.label,
+            ids: p.classes.map(c => c.id), layer: true }));
+    } else if (atLayers) {
+      raw = state.proposal.layers.map(layer => ({ name: layer.id, label: layer.label || layer.id,
+        ids: nodesUnder(layer.nses).map(n => n.id), layer: true }));
+    } else {
+      raw = childrenOf(prefix);
+    }
+    return raw.map(entry => {
+      const leaf = PACKAGE_MODE
+        ? !entry.layer && entry.ids.length === 1
+        : !entry.layer && entry.ids.length === 1 &&
+          entry.ids[0] === (prefix ? prefix + '.' + entry.name : entry.name);
+      const id = prefix ? prefix + '.' + entry.name : entry.name;
+      const graded = pooled(leaf ? entry.ids[0] : id);
+      return { ...entry, leaf, grade: graded.grade, risk: graded.risk, crap: graded.crap, mutation: graded.mutation, count: entry.ids.length };
+    });
+  }
+
+  function render() {
+    const base = entries();
+    ovalSet = new Set();
+    for (const edge of (showForeign ? diagram.edges : [])) {
+      if (foreignById.has(edge.to) && !foreignById.has(edge.from) && boxOf(edge.from)) {
+        ovalSet.add(edge.to);
+      }
+    }
+    const ovals = [...ovalSet].sort().map(id => ({
+      name: id, label: id, ids: [id], oval: true, leaf: true, grade: 5, risk: null, count: 0
+    }));
+    const boxes = layout([...base, ...ovals]);
+    if (state.fit) { fit(boxes); state.fit = false; }
+    const byName = new Map(boxes.map(box => [box.name, box]));
+    const outgoing = new Map(), incoming = new Map();
+    for (const edge of diagram.edges) {
+      if (foreignById.has(edge.from) || foreignById.has(edge.to)) continue;
+      const from = boxOf(edge.from), to = boxOf(edge.to);
+      if (from && byName.has(from) && !to) outgoing.set(from, (outgoing.get(from) || 0) + 1);
+      if (to && byName.has(to) && !from) incoming.set(to, (incoming.get(to) || 0) + 1);
+    }
+    const grouped = new Map();
+    for (const edge of diagram.edges) {
+      const from = boxOf(edge.from), to = boxOf(edge.to);
+      if (!from || !to || from === to) continue;
+      const key = from + '->' + to;
+      const previous = grouped.get(key) || { from, to, violating: false };
+      previous.violating = previous.violating || isViolating(edge);
+      grouped.set(key, previous);
+    }
+    let out = '';
+    for (const link of grouped.values()) {
+      const a = byName.get(link.from), b = byName.get(link.to);
+      if (!a || !b) continue;
+      out += `<path class="edge${link.violating ? ' violating' : ''}" data-from="${esc(link.from)}"
+        data-to="${esc(link.to)}" d="${edgePath(a, b)}"
+        marker-end="url(#${link.violating ? 'arrow-bad-' + index : 'arrow-' + index})"/>`;
+    }
+    for (const box of boxes) {
+      if (box.oval) {
+        out += `<g class="box" data-name="${esc(box.name)}" data-leaf="true"
+            transform="translate(${box.x},${box.y})">
+          <ellipse cx="${box.w / 2}" cy="${box.h / 2}" rx="${box.w / 2}" ry="${box.h / 2 - 6}"
+            fill="#8a94a3" stroke="#0d0f12"/>
+          <text class="label" x="${box.w / 2}" y="${box.h / 2 + 4}" text-anchor="middle">${esc(box.label)}</text>
+        </g>`;
+        continue;
+      }
+      const fill = color(box.grade);
+      const sub = box.leaf
+        ? (box.risk === null ? 'no metrics'
+            : diagram.mutation_present
+              ? `C ${box.crap.toFixed(1)} · M ${(box.mutation ?? 1).toFixed(1)} · grade ${box.grade.toFixed(1)}`
+              : `crap ${box.risk.toFixed(1)} · grade ${box.grade.toFixed(1)}`)
+        : `${box.count} modules · grade ${box.grade.toFixed(1)}`;
+      const outCount = outgoing.get(box.name) || 0, inCount = incoming.get(box.name) || 0;
+      const external = (outCount || inCount)
+        ? `  ·  ${outCount ? '↗' + outCount : ''}${inCount ? ' ↙' + inCount : ''}` : '';
+      const label = sub + external;
+      out += `<g class="box" data-name="${esc(box.name)}" data-leaf="${box.leaf}"
+          transform="translate(${box.x},${box.y})">
+        <rect width="${box.w}" height="${box.h}" rx="8" fill="${fill}"/>
+        <text class="label" x="12" y="28">${esc(box.label || title(box.name))}</text>
+        <text class="sub" x="12" y="48">${esc(label)}</text></g>`;
+    }
+    viewport.innerHTML = out;
+    viewport.querySelectorAll('.box').forEach(group => {
+      group.addEventListener('mouseenter', () => {
+        const name = group.dataset.name;
+        viewport.querySelectorAll('.edge').forEach(path => {
+          path.classList.toggle('hot', path.dataset.from === name || path.dataset.to === name);
+        });
+      });
+      group.addEventListener('mouseleave', () => {
+        viewport.querySelectorAll('.edge.hot').forEach(path => path.classList.remove('hot'));
+      });
+    });
+    const violations = diagram.edges.filter(isViolating).length;
+    status.innerHTML = violations
+      ? `<span class="violations">${violations} violation${violations === 1 ? '' : 's'}</span>`
+      : '<span class="ok">dependency rule clean</span>';
+    const rootLabel = state.proposal ? state.proposal.name : 'root';
+    crumbs.innerHTML = [`<span class="crumb" data-depth="0">${esc(rootLabel)}</span>`]
+      .concat(state.path.map((segment, at) => {
+        const layer = state.proposal && at === 0
+          ? state.proposal.layers.find(l => l.id === segment) : null;
+        const label = layer ? (layer.label || layer.id) : title(segment);
+        return `<span class="crumb" data-depth="${at + 1}">/ ${esc(label)}</span>`;
+      })).join(' ');
+    applyView();
+    markMatches(svg);
+  }
+
+  svg.addEventListener('click', event => {
+    const group = event.target.closest('.box');
+    if (!group) return;
+    const name = group.dataset.name;
+    if (group.dataset.leaf === 'true') {
+      if (foreignById.has(name)) { showCard(foreignById.get(name)); return; }
+      const prefix = (state.proposal || PACKAGE_MODE)
+        ? state.path.slice(1).join('.') : state.path.join('.');
+      const id = (prefix ? prefix + '.' + name : name);
+      showCard(byId.get(id));
+      return;
+    }
+    state.path = [...state.path, name];
+    state.fit = true;
+    render();
+  });
+  crumbs.addEventListener('click', event => {
+    const depth = event.target.dataset.depth;
+    if (depth === undefined) return;
+    state.path = state.path.slice(0, Number(depth));
+    state.fit = true;
+    render();
+  });
+  svg.addEventListener('wheel', event => {
+    event.preventDefault();
+    const scale = event.deltaY > 0 ? 1.1 : 0.9;
+    state.view.w *= scale; state.view.h *= scale;
+    applyView();
+  }, { passive: false });
+  let drag = null;
+  svg.addEventListener('pointerdown', event => {
+    drag = { x: event.clientX, y: event.clientY, vx: state.view.x, vy: state.view.y };
+    svg.classList.add('dragging');
+  });
+  window.addEventListener('pointerup', () => { drag = null; svg.classList.remove('dragging'); });
+  window.addEventListener('pointermove', event => {
+    if (!drag) return;
+    state.view.x = drag.vx - (event.clientX - drag.x) * state.view.w / svg.clientWidth;
+    state.view.y = drag.vy - (event.clientY - drag.y) * state.view.h / svg.clientHeight;
+    applyView();
+  });
+
+  if (context) {
+    context.innerHTML = '<option value="">Real diagram</option>' +
+      diagram.proposals.map(p => `<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('');
+    context.onchange = () => {
+      state.proposal = diagram.proposals.find(p => p.name === context.value) || null;
+      levels = state.proposal ? state.proposal.layers.map(l => l.nses) : diagram.levels;
+      state.path = [];
+      state.fit = true;
+      render();
+    };
+  }
+  svg.addEventListener('dblclick', () => { state.fit = true; render(); });
+  svgs.push(svg);
+  redraws.push(() => { state.fit = true; render(); });
+  render();
+}
+
+function showCard(node) {
+  if (!node) return;
+  const rows = node.ops.map(op => `<tr><td>${esc(op.name)}</td>
+    <td>${op.cc ?? ''}</td><td>${op.coverage === null ? '' : Math.round(op.coverage * 100) + '%'}</td>
+    <td>${op.crap === null ? '' : op.crap.toFixed(1)}</td></tr>`).join('');
+  const fields = (node.fields || []).length
+    ? `<div class="fields">${node.fields.map(esc).join(' · ')}</div>` : '';
+  card.innerHTML = `<span class="close" id="close">✕</span>
+    <h2>${esc(title(node.name))}</h2>
+    <div class="ns">${esc(node.ns)}</div>${fields}
+    <table><thead><tr><th>function</th><th>cc</th><th>cov</th><th>crap</th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="4">no functions</td></tr>'}</tbody></table>`;
+  card.classList.add('open');
+  document.getElementById('close').onclick = () => card.classList.remove('open');
+}
+
+document.getElementById('title').textContent = DOC.title || 'UML';
+DOC.diagrams.forEach(mount);
+</script>
+</body>
+</html>

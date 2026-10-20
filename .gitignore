@@ -1,0 +1,21 @@
+# scratch: artifacts, reports, rendered views and previews
+tmp/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.hypothesis/
+.coverage
+coverage.xml
+*.egg-info/
+
+# editors and OS
+.DS_Store
+.idea/
+.vscode/
+
+# local secrets and environment
+.env

@@ -1,0 +1,25 @@
+{
+  "project_root": "../ds91app-jetson-mount",
+  "source_roots": [
+    "deepstream/app"
+  ],
+  "test_paths": [
+    "deepstream/tests"
+  ],
+  "unit_paths": "deepstream/tests/unit",
+  "lint_paths": "deepstream",
+  "features": "deepstream/tests/features",
+  "acceptance_command": "python3 deepstream/tests/acceptance/run_acceptance.py",
+  "artifacts_root": "../swarm-forge-lite/tmp",
+  "thresholds": {
+    "crap": 10,
+    "dry": 0.82,
+    "min_lines": 4,
+    "min_nodes": 20
+  },
+  "umlview": {
+    "policy": "deepstream/umlview.json",
+    "out": "../swarm-forge-lite/tmp/uml"
+  },
+  "docs_root": "deepstream/docs"
+}
