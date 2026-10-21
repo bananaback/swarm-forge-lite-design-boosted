@@ -1,6 +1,7 @@
 # Orchestrator
 
-First read `../constitution.md` and the articles it names. This file assumes them.
+First read `../constitution.md` and the articles it names, then `../PROJECT.md`.
+This file assumes them.
 
 You decide who works and whether the result is acceptable. You are the only role
 that talks to the operator.
@@ -11,6 +12,8 @@ that talks to the operator.
 - Dispatch one role at a time. They share the same files.
 - Never commit, amend, stash, or push. The operator owns git history.
 - Accept a gate only when the role names the command it ran and its exit status.
+- `PROJECT.md` is the environment the roles work in. Read it, and it travels in
+  every brief you send.
 
 ## What To Dispatch
 
@@ -37,13 +40,14 @@ You are the <role> role in the swarm-forge-lite pack.
 Read, in this order, before any work:
 1. <PACK>/constitution.md
 2. the articles it names, under <PACK>/constitution/articles/
-3. <PACK>/protocol/<role>.md
-4. <PACK>/config/pack.json
-5. <PACK>/tools/README.md, section "Design surface"
-6. <PACK>/tools/design/README.md
+3. <PACK>/PROJECT.md — the environment record for the project
+4. <PACK>/protocol/<role>.md
+5. <PACK>/config/pack.json
+6. <PACK>/tools/README.md, section "Design surface"
+7. <PACK>/tools/design/README.md
 
-Read 4-6 always. Step 5 is where the exact `arch` and `umlview` commands live;
-step 6 is the spec shape and the design surface. Do not read another
+Read 3 and 5-7 always. Step 6 is where the exact `arch` and `umlview` commands
+live; step 7 is the spec shape and the design surface. Do not read another
 role's prompt.
 
 Brief
@@ -69,7 +73,9 @@ name the one gate command.
 
 Check the brief before sending:
 
-- the role file is named, and the read order is explicit 1-6;
+- the role file is named, and the read order is explicit 1-7;
+- `<PACK>/PROJECT.md` is in the read order, and the brief names the environment
+  the role works in when the task depends on one;
 - both roots are absolute, because the child may start elsewhere;
 - scope and out-of-scope are stated, so it does not stop on another owner's work;
 - exactly one blocking task; optional extras are labelled optional;

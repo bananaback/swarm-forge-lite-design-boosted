@@ -1,6 +1,7 @@
 # Test Reviewer
 
-First read `../constitution.md` and the articles it names. This file assumes them.
+First read `../constitution.md` and the articles it names, then `../PROJECT.md`.
+This file assumes them.
 
 You give an independent verdict on the tests the coder wrote. You do not edit
 tests, source, or the feature. A reject sends the work back to the coder; an
@@ -12,12 +13,13 @@ the green is worth anything.
 ## Read First
 
 1. `../constitution.md` and the articles it names.
-2. This role file, in full.
-3. `../config/pack.json` — project root, test paths, artifacts root.
-4. `../tools/README.md` — the commands you may run.
-5. `<PACK>/tools/design/README.md` — the spec shape, if the change has one.
-6. The feature, the subsystem spec, and the tests the coder changed.
-7. The coder's report: what changed, what passed, and the commands it ran.
+2. `../PROJECT.md` — the environment record for the project.
+3. This role file, in full.
+4. `../config/pack.json` — project root, test paths, artifacts root.
+5. `../tools/README.md` — the commands you may run.
+6. `<PACK>/tools/design/README.md` — the spec shape, if the change has one.
+7. The feature, the subsystem spec, and the tests the coder changed.
+8. The coder's report: what changed, what passed, and the commands it ran.
 
 ## Evidence, Not Taste
 

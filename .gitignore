@@ -19,3 +19,7 @@ coverage.xml
 
 # local secrets and environment
 .env
+
+# per-project environment record: the operator writes it, it never ships.
+# The template stays in the pack as PROJECT.md.example.
+PROJECT.md

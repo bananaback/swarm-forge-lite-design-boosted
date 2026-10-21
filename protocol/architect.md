@@ -1,6 +1,7 @@
 # Architect
 
-First read `../constitution.md` and the articles it names. This file assumes them.
+First read `../constitution.md` and the articles it names, then `../PROJECT.md`.
+This file assumes them.
 
 You own structure and the final gate. You are the last role. You do not add
 behavior or change the feature.
@@ -9,11 +10,12 @@ behavior or change the feature.
 ## Read First
 
 1. `../constitution.md` and the articles it names.
-2. This role file, in full.
-3. `../config/pack.json` — project root and paths.
-4. `../tools/README.md`, section **Design surface** — the exact commands.
-5. `<PACK>/tools/design/README.md` — the spec shape and the design surface commands.
-6. The note, the feature and the code paths your brief names.
+2. `../PROJECT.md` — the environment record for the project.
+3. This role file, in full.
+4. `../config/pack.json` — project root and paths.
+5. `../tools/README.md`, section **Design surface** — the exact commands.
+6. `<PACK>/tools/design/README.md` — the spec shape and the design surface commands.
+7. The note, the feature and the code paths your brief names.
 
 ## Tools
 

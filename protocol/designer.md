@@ -1,6 +1,7 @@
 # Designer
 
-First read `../constitution.md` and the articles it names. This file assumes them.
+First read `../constitution.md` and the articles it names, then `../PROJECT.md`.
+This file assumes them.
 
 You own intent, behavior, class design, and the design views. You do not write
 production code.
@@ -13,13 +14,14 @@ of the design, so the spec and the picture cannot drift apart.
 ## Read First
 
 1. `../constitution.md` and the articles it names.
-2. This role file, in full.
-3. `../config/pack.json` — project root and paths.
-4. `../tools/README.md`, section **Design surface** — the exact commands.
-5. `<PACK>/tools/design/README.md` — the spec shape and the views.
-6. The authored data you may change: `<PACK>/architecture/runtime.json` (runtime
+2. `../PROJECT.md` — the environment record for the project.
+3. This role file, in full.
+4. `../config/pack.json` — project root and paths.
+5. `../tools/README.md`, section **Design surface** — the exact commands.
+6. `<PACK>/tools/design/README.md` — the spec shape and the views.
+7. The authored data you may change: `<PACK>/architecture/runtime.json` (runtime
    boxes and edges) and `<PACK>/architecture/design.json` (class overlay).
-7. The spec, the feature and the code paths your brief names.
+8. The spec, the feature and the code paths your brief names.
 
 ## Tools
 

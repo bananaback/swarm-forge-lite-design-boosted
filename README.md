@@ -12,14 +12,18 @@ operator → orchestrator → designer → specifier → coder → test-reviewer
 If you are an agent opening this workspace for the first time:
 
 1. Read `constitution.md`, then the three articles it names.
-2. Read `protocol/README.md`: the pipeline, the order rule, and the role list.
-3. Read `protocol/orchestrator.md` to coordinate, or `protocol/<your-role>.md` if
+2. Read `PROJECT.md`: the environment record for the project this pack is wired
+   to — the machine, the mount, the Jetson, the app container, and the rules for
+   working in it. It is gitignored, so copy `PROJECT.md.example` first if it is
+   not there.
+3. Read `protocol/README.md`: the pipeline, the order rule, and the role list.
+4. Read `protocol/orchestrator.md` to coordinate, or `protocol/<your-role>.md` if
    you were dispatched as a role. The roles are: orchestrator, designer,
    specifier, coder, test-reviewer, refactorer, architect.
-4. Read `config/pack.json` for the project root, paths, and thresholds.
-5. Read `tools/README.md` before running any command, including its **Design
+5. Read `config/pack.json` for the project root, paths, and thresholds.
+6. Read `tools/README.md` before running any command, including its **Design
    surface** section.
-6. If your role touches design, read `<PACK>/tools/design/README.md`: the spec
+7. If your role touches design, read `<PACK>/tools/design/README.md`: the spec
    shape, the `arch` commands and the two views. The specs themselves live under
    `<project>/<docs_root>`, where `docs_root` is the entry in `config/pack.json`.
 
@@ -63,6 +67,7 @@ same files.
 ```text
 constitution.md              entry point
 constitution/articles/       engineering, workflow, communication
+PROJECT.md.example           the template for the environment record (local PROJECT.md is gitignored)
 protocol/README.md           pipeline, order rule, gates
 protocol/<role>.md           orchestrator, designer, specifier, coder, test-reviewer, refactorer, architect
 config/pack.json             project root, paths, thresholds
@@ -76,7 +81,10 @@ tools/refactorer/crapper/
 
 1. Edit `config/pack.json`: `project_root` relative to this directory, then the
    source roots, test paths, features directory, and acceptance command.
-2. Requirements: `ruff`, `pytest`, `coverage`, `bb` (Babashka) on `PATH`, and
+2. Copy `PROJECT.md.example` to `PROJECT.md` and fill it in: the environment
+   record every role reads first. `PROJECT.md` is gitignored: it is per-project
+   state and never ships.
+3. Requirements: `ruff`, `pytest`, `coverage`, `bb` (Babashka) on `PATH`, and
    `tree-sitter` + `tree-sitter-language-pack` for dryer and crapper.
 
 ## Run
