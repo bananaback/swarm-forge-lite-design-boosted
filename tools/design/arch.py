@@ -61,12 +61,12 @@ def _code_edges() -> list[tuple[str, str, str]]:
     return edges
 
 
-def _classes() -> dict[str, class_map.ClassInfo]:
-    return {cid: info for cid, (_sub, info) in class_map.all_classes(PIPELINE, _overlay()).items()}
-
-
 def _labelled() -> dict[str, tuple[str, class_map.ClassInfo]]:
     return class_map.all_classes(PIPELINE, _overlay())
+
+
+def _classes(labelled: dict[str, tuple[str, class_map.ClassInfo]]) -> dict[str, class_map.ClassInfo]:
+    return {cid: info for cid, (_sub, info) in labelled.items()}
 
 
 def _edge_map() -> dict[str, list]:
@@ -107,7 +107,8 @@ def cmd_classes_ls(args) -> int:
 
 
 def cmd_classes_show(args) -> int:
-    classes = _classes()
+    labelled = _labelled()
+    classes = _classes(labelled)
     info = _lookup(classes, args.id)
     if info is None:
         matches = [cid for cid, inf in classes.items() if inf.name == args.id]
@@ -129,7 +130,8 @@ def cmd_classes_show(args) -> int:
 
 
 def cmd_classes_deps(args) -> int:
-    classes = _classes()
+    labelled = _labelled()
+    classes = _classes(labelled)
     info = _lookup(classes, args.id)
     if info is None:
         matches = [cid for cid, inf in classes.items() if inf.name == args.id]
@@ -140,8 +142,8 @@ def cmd_classes_deps(args) -> int:
         else:
             print(f"arch: no class {args.id!r}", file=sys.stderr)
         return 1
-    labelled = _labelled()
-    subsystem = next((sub for cid, (sub, inf) in labelled.items() if inf is info), None)
+    cid = _cid(info)
+    subsystem = labelled[cid][0]
     edges = _edge_map().get(subsystem, [])
     seen = {info.name}
     frontier = [info.name]
@@ -149,14 +151,14 @@ def cmd_classes_deps(args) -> int:
     while frontier:
         current = frontier.pop(0)
         for src, dst, kind in edges:
-            if src == current and dst not in seen:
-                seen.add(dst)
-                rows.append((dst, kind, current))
-                frontier.append(dst)
+            if dst == current and src not in seen:
+                seen.add(src)
+                rows.append((src, kind, current))
+                frontier.append(src)
         if not args.transitive:
             break
-    for dst, kind, via in rows:
-        print(f"{dst:44} {kind:12} via {via}")
+    for dependent, kind, via in rows:
+        print(f"{dependent:44} {kind:12} via {via}")
     if not rows:
         print("(no dependents)")
     return 0

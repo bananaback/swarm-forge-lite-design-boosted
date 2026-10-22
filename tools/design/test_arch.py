@@ -49,6 +49,65 @@ def _sample_tree(tmp_path: Path) -> Path:
     return tmp_path
 
 
+FAKE = {
+    "rule_check_osd/legend.py": """
+class ClassPair:
+    def of(self, left, right):
+        return self
+
+class ClassLegend:
+    def of(self, pair: ClassPair) -> None:
+        self.pair = pair
+
+    def empty(self):
+        return ClassLegend()
+""",
+    "rule_check_osd/shell/overlay.py": """
+class DebugOverlay:
+    def on_frame(self, frame) -> None:
+        legend = ClassLegend.empty()
+        self.legend = legend
+""",
+    "rule_check_osd/shell/draw.py": """
+class OsdDraw:
+    def draw(self) -> None:
+        print(ClassLegend.empty())
+""",
+    "rule_check_osd/shell/hud.py": """
+class Hud:
+    def paint(self) -> None:
+        overlay = DebugOverlay()
+        self.overlay = overlay
+""",
+}
+
+
+def _fake_project(tmp_path: Path, monkeypatch) -> None:
+    for name, body in FAKE.items():
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(body, encoding="utf-8")
+    monkeypatch.setattr(arch, "PIPELINE", tmp_path)
+    monkeypatch.setattr(arch.paths, "DESIGN", tmp_path / "design.json")
+
+
+def _printed_names(output: str) -> list[str]:
+    names = []
+    for line in output.splitlines():
+        if not line.strip() or line.startswith("("):
+            continue
+        names.append(line.split()[0])
+    return names
+
+
+def _incoming_names(output: str) -> list[str]:
+    names = []
+    for line in output.splitlines():
+        if "in:" in line:
+            names.append(line.split("in:", 1)[1].split("(")[0].strip())
+    return names
+
+
 def test_scan_reads_stereotypes(tmp_path):
     classes = class_model.scan(_sample_tree(tmp_path), ("pkg",))
     assert classes["Port"].stereotype == "interface"
@@ -114,3 +173,42 @@ def test_runtime_validation_rejects_dangling_edge(tmp_path):
 def test_cli_validates_the_real_project():
     assert arch.main(["classes", "validate"]) == 0
     assert arch.main(["runtime", "validate"]) == 0
+
+
+def test_classes_deps_names_the_classes_that_depend_on_it(tmp_path, monkeypatch, capsys):
+    _fake_project(tmp_path, monkeypatch)
+    assert arch.main(["classes", "deps", "rule_check_osd.legend.ClassLegend"]) == 0
+    names = _printed_names(capsys.readouterr().out)
+    assert sorted(names) == ["DebugOverlay", "OsdDraw"]
+
+
+def test_classes_deps_accepts_a_unique_class_name(tmp_path, monkeypatch, capsys):
+    _fake_project(tmp_path, monkeypatch)
+    assert arch.main(["classes", "deps", "ClassLegend"]) == 0
+    names = _printed_names(capsys.readouterr().out)
+    assert sorted(names) == ["DebugOverlay", "OsdDraw"]
+
+
+def test_classes_deps_transitive_names_the_indirect_dependents(tmp_path, monkeypatch, capsys):
+    _fake_project(tmp_path, monkeypatch)
+    assert arch.main(["classes", "deps", "rule_check_osd.legend.ClassLegend", "--transitive"]) == 0
+    names = _printed_names(capsys.readouterr().out)
+    assert sorted(names) == ["DebugOverlay", "Hud", "OsdDraw"]
+
+
+def test_classes_deps_rejects_an_ambiguous_class_name(tmp_path, monkeypatch, capsys):
+    _fake_project(tmp_path, monkeypatch)
+    duplicate = tmp_path / "detector" / "legend.py"
+    duplicate.parent.mkdir(parents=True, exist_ok=True)
+    duplicate.write_text("class ClassLegend:\n    pass\n", encoding="utf-8")
+    assert arch.main(["classes", "deps", "ClassLegend"]) == 1
+    assert "ambiguous" in capsys.readouterr().err
+
+
+def test_classes_deps_agrees_with_classes_show_on_the_real_project(capsys):
+    assert arch.main(["classes", "show", "rule_check_osd.legend.ClassLegend"]) == 0
+    dependents = _incoming_names(capsys.readouterr().out)
+    assert dependents
+    assert arch.main(["classes", "deps", "rule_check_osd.legend.ClassLegend"]) == 0
+    named = _printed_names(capsys.readouterr().out)
+    assert set(dependents) <= set(named)
