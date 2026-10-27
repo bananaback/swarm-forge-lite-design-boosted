@@ -117,17 +117,15 @@ A view-only task is the narrowest dispatch:
 It runs the designer alone: no note, no feature, no coder. The designer edits the
 runtime model, renders, and reports; the orchestrator returns the picture path.
 
-## Sizing A Dispatch
+## When A Child Stops Early
 
-A feature larger than one file is several dispatches of one role, in order:
-settings, the pure rule, the adapter and the loop, HTTP, then the acceptance
-handlers. Each brief names the one slice that child owns, what is already green,
-and the exact API of what it may rely on. Tell the child to write its files before
-it explains them.
+"Ran out of room" is a per-request limit, not an exhausted context window. The
+child keeps everything it has read. Re-dispatch the same child with one word —
+`Continue` — and it resumes where it stopped. Do not restate the brief, do not
+re-send the read order, and do not narrow the scope because of that message.
 
-If a child exhausts its context, do not resume it: dispatch a fresh child with a
-narrower scope and the state it must assume. A saturated context cannot be talked
-back into room.
+Narrow the scope only when a resumed child twice returns without writing the files
+it was given.
 
 ## Parallelism
 
