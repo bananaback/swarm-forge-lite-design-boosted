@@ -70,7 +70,11 @@ Brief
 
 Rules
   - Prefix `PACK_PROJECT=<project>` on every command in the brief, the gate
-    included. An unset selector falls back to `default_project` and silently
+    included.
+  - Report anything in the pack's tooling that behaved unlike its documentation:
+    the command, the arguments, what happened, what you expected. A tool defect
+    that is worked around silently is a defect every later role pays for again.
+    Do not fix pack tooling; report it. An unset selector falls back to `default_project` and silently
     reads another project's tree.
   - Start with `arch.py env` and keep its output in the report: it proves which
     project and which paths every later command used.
@@ -130,6 +134,18 @@ Roles run one at a time inside a project: they share files, the `artifacts_root`
 and the gates, and `run_acceptance` rewrites the IR and generated module in place.
 Two projects may run at once — different trees, different architecture models,
 different scratch — and that is the only parallelism this pack allows.
+
+## Judging A Tooling Report
+
+A role that reports a tool defect gets it checked, not believed. Run the command
+itself. Sort it three ways:
+
+- **real**: the tool contradicts its own docs or its own error message — fix the
+  tool, then push it and tell the operator;
+- **misuse**: the role called it with the wrong arguments or scope — fix the brief,
+  and say so rather than changing the tool;
+- **unclear**: reproduce it with the smallest input that shows it, and report what
+  you saw.
 
 ## While It Runs
 
