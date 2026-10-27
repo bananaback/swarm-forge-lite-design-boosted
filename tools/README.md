@@ -100,6 +100,13 @@ Run them from the project root, with no flags. Ruff reads the project's own
 no options of its own. Clean means exit 0: a finding is a report, not a verdict
 to negotiate.
 
+Run the project's ruff, not whichever `ruff` is first on PATH. Two interpreters can
+carry two versions with different default rules, so the same tree can pass under one
+and fail under the other — and a checkout root that holds several projects will lint
+all of them under one project's configuration. Lint one project at a time, from that
+project, with that project's toolchain (`uv run ruff check .` where the project uses
+uv). A finding from another project's files is not this project's gate.
+
 ## Unit and property tests
 
 ```sh
