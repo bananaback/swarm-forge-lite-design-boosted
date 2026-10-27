@@ -217,7 +217,11 @@ python3 "$PACK/tools/design/arch.py" render [classes|runtime|all]
 can never claim a gate it ran against another project.
 
 `docs validate` checks the subsystem specs against the model: every class has a
-row, the six sections exist, and no spec mentions a test or acceptance id. The
+row, the six sections exist, no spec mentions a test or acceptance id, and every
+module path a spec names in backticks exists under the app root (either spelling,
+`workers/loop.py` or `app/workers/loop.py`). That last check exists because a spec
+naming a module that does not exist sends the next reader to a file they cannot
+open, and the class check cannot see placement. The
 `specs` and `subsystems` keys of the selected project are the designer's: `specs`
 names each spec file, `subsystems` declares the packages and their layer.
 Specs and the generated views live under `<PROJECT>/<docs_root>`, where

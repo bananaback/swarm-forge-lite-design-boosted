@@ -311,6 +311,20 @@ def docs_problems(spec_dir: Path, labelled: dict[str, tuple[str, object]]) -> li
         body = re.sub(r"^Behavior:.*$", "", text, flags=re.M)
         if re.search(r"tests/|\btest_[a-z]|\bAC\d|\bR\d+\b", body):
             problems.append(f"{filename}: mentions tests, acceptance or requirement ids")
+        for module_path in sorted(set(re.findall(r"`([a-z_/]+\.py)`", text))):
+            # A spec that names a module which does not exist sends the next reader
+            # to a file they cannot open, and the class check cannot see placement.
+            # Specs write module paths relative to either their subsystem package or
+            # the app root, so both spellings are accepted; only a path that exists
+            # nowhere under the app root is a defect.
+            wanted = module_path.split("/")
+            if not any(
+                found.parts[-len(wanted):] == tuple(wanted)
+                for found in paths.APP.rglob(Path(module_path).name)
+            ):
+                problems.append(
+                    f"{filename}: names a module that does not exist: {module_path}"
+                )
         covered.setdefault(subsystem, (set(), text))[0].update(
             re.findall(r"`([A-Z][A-Za-z0-9]+)`", text)
         )
