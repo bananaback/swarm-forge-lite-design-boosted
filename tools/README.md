@@ -17,7 +17,9 @@ each entry carries its own `project_root`, `source_roots`, `class_root`,
 `acceptance_command`, `artifacts_root` and `umlview` policy. Every path in this
 file resolves through the selection, so no prompt or role hardcodes a layout.
 
-`PACK_PROJECT` selects the project; when it is unset, `default_project` applies.
+`PACK_PROJECT` selects the project; when it is unset, `default_project` applies
+silently. Every command a brief or a snippet shows therefore carries
+`PACK_PROJECT=<project>` explicitly.
 
 ```sh
 export PACK_PROJECT=<project>             # e.g. one key of config/pack.json
@@ -115,7 +117,11 @@ A generated acceptance runner reads the same contract. It must:
 - derive `tests_root` = `project_root/test_paths[0]`;
 - put IR, dry reports, and any scratch under `project_root/artifacts_root`, and
   generated acceptance tests under `project_root/artifacts_root/acceptance`;
-- invoke the pipeline exactly as above.
+- invoke the pipeline exactly as above;
+- require the selector: when `projects` holds more than one entry and
+  `PACK_PROJECT` is unset, exit non-zero naming the declared projects. A runner
+  that falls back to `default_project` analyzes another project's features and
+  still exits 0.
 
 There is no `wiring` module in this pack. A runner that imports one was written
 for the retired pack; change the runner, do not resurrect the module. A

@@ -69,7 +69,9 @@ Brief
   deliverable:  <what to return, or "your Report section">
 
 Rules
-  - Export the project for every command: `export PACK_PROJECT=<project>`.
+  - Prefix `PACK_PROJECT=<project>` on every command in the brief, the gate
+    included. An unset selector falls back to `default_project` and silently
+    reads another project's tree.
   - Start with `arch.py env` and keep its output in the report: it proves which
     project and which paths every later command used.
   - Locate code with `codegraph explore` or a path-scoped search; never a broad
@@ -115,6 +117,25 @@ A view-only task is the narrowest dispatch:
 It runs the designer alone: no note, no feature, no coder. The designer edits the
 runtime model, renders, and reports; the orchestrator returns the picture path.
 
+## Sizing A Dispatch
+
+A feature larger than one file is several dispatches of one role, in order:
+settings, the pure rule, the adapter and the loop, HTTP, then the acceptance
+handlers. Each brief names the one slice that child owns, what is already green,
+and the exact API of what it may rely on. Tell the child to write its files before
+it explains them.
+
+If a child exhausts its context, do not resume it: dispatch a fresh child with a
+narrower scope and the state it must assume. A saturated context cannot be talked
+back into room.
+
+## Parallelism
+
+Roles run one at a time inside a project: they share files, the `artifacts_root`
+and the gates, and `run_acceptance` rewrites the IR and generated module in place.
+Two projects may run at once — different trees, different architecture models,
+different scratch — and that is the only parallelism this pack allows.
+
 ## While It Runs
 
 A done report is acceptable when the commands named are the gate commands, they
@@ -125,6 +146,14 @@ new task. After three rejects, escalate the pattern to the operator.
 
 A blocked report is one decision: resolve it with the operator, or re-dispatch
 once with the concrete failure. Two failures on one role go to the operator.
+
+## Reconcile Before The Architect
+
+The designer prunes the overlay once, after the last implementation dispatch and
+before the architect. `arch classes diff` lists every node and edge that code has
+caught up with, and the designer removes them. Until that pass,
+`arch classes validate` exits 1 on "now exists in code" — expected, not a defect,
+and never a reason to re-dispatch the coder.
 
 ## Finish
 

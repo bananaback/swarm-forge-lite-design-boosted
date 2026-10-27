@@ -95,7 +95,7 @@
           ]
         }
       ],
-      "acceptance_command": "python3 deepstream/tests/acceptance/run_acceptance.py",
+      "acceptance_command": "PACK_PROJECT=deepstream python3 deepstream/tests/acceptance/run_acceptance.py",
       "artifacts_root": "../swarm-forge-lite/tmp/deepstream",
       "umlview": {
         "policy": "deepstream/umlview.json",
@@ -114,7 +114,12 @@
       "lint_paths": "control-server",
       "features": "control-server/tests/features",
       "docs_root": "control-server/docs",
-      "specs": {},
+      "specs": {
+        "01-http.md": "http",
+        "02-domain.md": "domain",
+        "03-adapters.md": "adapters",
+        "04-workers.md": "workers"
+      },
       "subsystems": [
         {
           "number": "01",
@@ -149,7 +154,7 @@
           "layer": "shell"
         }
       ],
-      "acceptance_command": "python3 control-server/tests/acceptance/run_acceptance.py",
+      "acceptance_command": "PACK_PROJECT=control-server python3 control-server/tests/acceptance/run_acceptance.py",
       "artifacts_root": "../swarm-forge-lite/tmp/control-server",
       "umlview": {
         "policy": "control-server/umlview.json",

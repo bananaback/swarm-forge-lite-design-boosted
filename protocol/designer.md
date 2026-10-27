@@ -154,6 +154,10 @@ questions about them.
   `omit`, `proposals`.
 - **Own the loop**: after any source or policy change, refresh metrics, `scan`,
   then `render`.
+- **Reconcile the overlay once**, after the last implementation dispatch and
+  before the architect: `arch classes diff` names what code caught up with, and
+  `arch classes remove node|edge` prunes it. A "now exists in code" violation
+  before that pass is expected, not a defect.
 - **Read the picture back**: what is red, what violates the dependency rule, what
   changed since the last look.
 - **Answer "show me another way"**: propose a grouping, validate it, render it.
