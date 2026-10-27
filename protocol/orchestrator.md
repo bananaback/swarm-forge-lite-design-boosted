@@ -14,6 +14,12 @@ that talks to the operator.
 - Accept a gate only when the role names the command it ran and its exit status.
 - `PROJECT.md` is the environment the roles work in. Read it, and it travels in
   every brief you send.
+- One pack serves every project in `config/pack.json`. The project is chosen by
+  the `PACK_PROJECT` environment variable, or by `default_project` when it is
+  unset. Never write a project path into a brief: the project name is enough,
+  and `arch.py env` resolves the rest.
+- If the task does not name its project, and the project is not unmistakable from
+  the request, ask which one. Never dispatch against a guessed project.
 
 ## What To Dispatch
 
@@ -52,6 +58,7 @@ role's prompt.
 
 Brief
   pack root:    <PACK>
+  project:      <key in config/pack.json "projects"; sets PACK_PROJECT>
   project root: <PROJECT>
   task:         <one sentence>
   scope:        <files or paths this role may change>
@@ -62,6 +69,9 @@ Brief
   deliverable:  <what to return, or "your Report section">
 
 Rules
+  - Export the project for every command: `export PACK_PROJECT=<project>`.
+  - Start with `arch.py env` and keep its output in the report: it proves which
+    project and which paths every later command used.
   - Locate code with `codegraph explore` or a path-scoped search; never a broad
     recursive grep.
   - Do not commit; the operator owns git.
@@ -78,6 +88,7 @@ Check the brief before sending:
 - the role file is named, and the read order is explicit 1-7;
 - `<PACK>/PROJECT.md` is in the read order, and the brief names the environment
   the role works in when the task depends on one;
+- the project is named and is a key in `config/pack.json` → `projects`;
 - both roots are absolute, because the child may start elsewhere;
 - scope and out-of-scope are stated, so it does not stop on another owner's work;
 - exactly one blocking task; optional extras are labelled optional;
@@ -86,14 +97,15 @@ Check the brief before sending:
   `spec`); when it is not `none` the gate is `arch classes validate`,
   `arch runtime validate`, or `arch docs validate` for a spec change;
 - when design views is not `none`, scope names the spec and/or
-  `<PACK>/architecture/{runtime,design}.json` the role may change;
+  `<PACK>/architecture/<project>/{runtime,design}.json` the role may change;
 - the deliverable is the role's Report section, not "do your best".
 
 A view-only task is the narrowest dispatch:
 
 ```text
   task:         add the new subsystem to the runtime view
-  scope:        <PACK>/architecture/runtime.json,
+  project:      <project>
+  scope:        <PACK>/architecture/<project>/runtime.json,
                 <PROJECT>/<docs_root>/ARCHITECTURE.html
   design views: runtime
   gate:         python3 <PACK>/tools/design/arch.py runtime validate

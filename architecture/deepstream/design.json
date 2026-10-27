@@ -1,0 +1,15 @@
+{
+  "nodes": [],
+  "edges": [],
+  "annotations": {
+    "rule_check_osd.legend.ClassLegend": {
+      "note": "the 16 px gap belongs between two pairs on one line, never in front of the first pair"
+    },
+    "privacy_record.core.clip_path.ClipPath": {
+      "note": "derives a staging file's final name from its own suffix; the suffixes have one owner"
+    },
+    "privacy_record.shell.clip_recorder.ClipRecorder": {
+      "note": "hands the claimed session to ClipFinalizer; it never renames itself"
+    }
+  }
+}

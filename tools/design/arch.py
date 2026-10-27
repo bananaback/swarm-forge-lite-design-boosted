@@ -7,6 +7,10 @@ runtime model, so a query can never disagree with the source:
     arch classes ls|show|deps [--transitive]|validate|render
     arch runtime ls|show|validate|render
     arch render [classes|runtime|all]
+    arch env
+
+The project is chosen by the `PACK_PROJECT` environment variable, or by the
+config's `default_project` when it is unset; `arch env` prints the resolution.
 
 `umlview` stays the module-grade view and is not touched here.
 """
@@ -26,23 +30,15 @@ import overlay  # noqa: E402
 import class_model as class_map  # noqa: E402
 import runtime_view  # noqa: E402
 
+if paths.SUBSYSTEMS:
+    class_map.DIAGRAMS = paths.SUBSYSTEMS
+
 PIPELINE = paths.PIPELINE
 DOCS = paths.DOCS
 RUNTIME = paths.RUNTIME
 SPEC_DIR = paths.DOCS / "specs"
 
-SPECS = {
-    "01-model-file-registry.md": "detector",
-    "02-model-version-isolation.md": "detector",
-    "03-privacy-recording.md": "privacy_record",
-    "04-safety-rule-engine.md": "safety_rule_engine",
-    "05-detection-extraction.md": "detection_extraction",
-    "06-rule-check-osd.md": "rule_check_osd",
-    "07-speaker-alerts.md": "audio / alerts",
-    "08-audio-output.md": "audio / output",
-    "09-message-publish.md": "message_publish",
-    "10-latency-monitoring.md": "latency_monitoring",
-}
+SPECS = paths.SPECS
 SECTIONS = ("Responsibility", "Structure", "Classes", "Flow", "Design rules", "Rejected")
 
 
@@ -91,7 +87,23 @@ def _edges(_classes):
     return edges
 
 
+def _require_tree() -> bool:
+    """An absent tree, or one with no declared subsystems, must never look
+    like a clean, empty project."""
+    if not class_map.DIAGRAMS:
+        print(
+            f"no subsystems declared for project {paths.NAME!r} in config/pack.json"
+        )
+        return False
+    if PIPELINE.is_dir():
+        return True
+    print(f"no class tree for project {paths.NAME!r}: {PIPELINE}")
+    return False
+
+
 def cmd_classes_ls(args) -> int:
+    if not _require_tree():
+        return 1
     for cid, (subsystem, info) in sorted(_labelled().items()):
         if args.subsystem and subsystem != args.subsystem:
             continue
@@ -165,6 +177,8 @@ def cmd_classes_deps(args) -> int:
 
 
 def cmd_classes_validate(_args) -> int:
+    if not _require_tree():
+        return 1
     problems = []
     total_classes = total_edges = 0
     for _label, (_number, classes, edges) in class_map.merged(PIPELINE, _overlay()).items():
@@ -211,7 +225,11 @@ def cmd_classes_validate(_args) -> int:
 
 
 def cmd_classes_render(_args) -> int:
-    class_map.render(PIPELINE, DOCS / "diagrams.html", _overlay())
+    if not _require_tree():
+        return 1
+    class_map.render(
+        PIPELINE, DOCS / "diagrams.html", _overlay(), project=paths.NAME
+    )
     return 0
 
 
@@ -305,6 +323,14 @@ def docs_problems(spec_dir: Path, labelled: dict[str, tuple[str, object]]) -> li
 
 
 def cmd_docs_validate(_args) -> int:
+    if not _require_tree():
+        return 1
+    if not SPECS:
+        print(f"no specs declared for project {paths.NAME!r} in config/pack.json")
+        return 1
+    if not SPEC_DIR.is_dir():
+        print(f"no specs directory: {SPEC_DIR}")
+        return 1
     problems = docs_problems(SPEC_DIR, class_map.all_classes(PIPELINE, _overlay()))
     if problems:
         for problem in problems:
@@ -315,6 +341,8 @@ def cmd_docs_validate(_args) -> int:
 
 
 def _runtime():
+    if not RUNTIME.is_file():
+        raise SystemExit(f"no runtime model for project {paths.NAME!r}: {RUNTIME}")
     return json.loads(RUNTIME.read_text(encoding="utf-8"))
 
 
@@ -384,6 +412,25 @@ def cmd_render(args) -> int:
     return 0
 
 
+def cmd_env(_args) -> int:
+    """Print the resolved project, so a report can prove which one it ran against."""
+    runtime = "present" if RUNTIME.is_file() else "missing"
+    origin = paths.SOURCE
+    if origin == "default_project":
+        origin = f"default_project ({paths.SELECTOR_ENV} unset)"
+    print(f"project:      {paths.NAME}")
+    print(f"selected by:  {origin}")
+    print(f"project_root: {paths.PROJECT}")
+    print(f"app:          {paths.APP}")
+    print(f"class_root:   {paths.PIPELINE}")
+    print(f"docs:         {paths.DOCS}")
+    print(f"architecture: {paths.ARCHITECTURE}")
+    print(f"runtime:      {paths.RUNTIME} ({runtime})")
+    print(f"tmp:          {paths.ARTIFACTS}")
+    print(f"specs:        {len(SPECS)} declared")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="arch", description=__doc__)
     sub = parser.add_subparsers(dest="domain", required=True)
@@ -445,6 +492,8 @@ def main(argv: list[str] | None = None) -> int:
     docs = sub.add_parser("docs", help="specs vs the class model")
     dsub = docs.add_subparsers(dest="action", required=True)
     dsub.add_parser("validate").set_defaults(func=cmd_docs_validate)
+
+    sub.add_parser("env", help="resolved project and its paths").set_defaults(func=cmd_env)
 
     render = sub.add_parser("render")
     render.add_argument("view", nargs="?", default="all", choices=("classes", "runtime", "all"))

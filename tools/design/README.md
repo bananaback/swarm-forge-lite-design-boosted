@@ -9,7 +9,8 @@ coder.
 ## The spec
 
 Every `<PROJECT>/<docs_root>/specs/NN-<subsystem>.md` has the same six sections
-(`docs_root` is the entry in `config/pack.json`, today `deepstream/docs`):
+(`docs_root`, and the `specs` list that names each file, are entries in the
+selected project's block in `config/pack.json`):
 
 | Section | Holds |
 |---|---|

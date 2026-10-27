@@ -176,7 +176,9 @@ def _group_of(module: str, prefix: str) -> str:
     return rest.split("/")[0] if "/" in rest else "root"
 
 
-def scan(root: Path, packages: tuple[str, ...]) -> dict[str, ClassInfo]:
+def scan(
+    root: Path, packages: tuple[str, ...], layer: str | None = None
+) -> dict[str, ClassInfo]:
     trees: list[ast.AST] = []
     classes: dict[str, ClassInfo] = {}
     order: list[str] = []
@@ -203,6 +205,8 @@ def scan(root: Path, packages: tuple[str, ...]) -> dict[str, ClassInfo]:
                     bases=[b for b in (_name(x) for x in node.bases) if b],
                 )
                 info.stereotype = _stereotype(node, info.bases)
+                if layer:
+                    info.layer_override = layer
                 classes[node.name] = info
                 order.append(node.name)
     known = set(classes)
@@ -305,14 +309,18 @@ def _vendor_scripts() -> str:
     return "\n".join(blocks)
 
 
-def merged(root: Path, data: dict | None = None) -> dict[str, tuple[str, dict[str, ClassInfo], list]]:
+def merged(
+    root: Path, data: dict | None = None, diagrams: tuple | None = None
+) -> dict[str, tuple[str, dict[str, ClassInfo], list]]:
     """Per subsystem: number, classes and edges, with the design overlay folded in."""
     import overlay as overlay_module
 
     overlays = data if data is not None else {"nodes": [], "edges": [], "annotations": {}}
     result: dict[str, tuple[str, dict[str, ClassInfo], list]] = {}
-    for number, label, packages in DIAGRAMS:
-        classes = scan(root, packages)
+    for entry in (DIAGRAMS if diagrams is None else diagrams):
+        number, label, packages = entry[0], entry[1], entry[2]
+        layer = entry[3] if len(entry) > 3 else None
+        classes = scan(root, packages, layer)
         edges = relations(classes)
         prefix = packages[0].split("/")[0]
         if overlays["nodes"] or overlays["edges"] or overlays["annotations"]:
@@ -338,18 +346,28 @@ def class_id(info: ClassInfo) -> str:
     return info.module.replace("/", ".") + "." + info.name
 
 
-def all_classes(root: Path, data: dict | None = None) -> dict[str, tuple[str, ClassInfo]]:
+def all_classes(
+    root: Path, data: dict | None = None, diagrams: tuple | None = None
+) -> dict[str, tuple[str, ClassInfo]]:
     """Flatten the model: full class id -> (subsystem, ClassInfo)."""
     flat: dict[str, tuple[str, ClassInfo]] = {}
-    for label, (_number, classes, _edges) in merged(root, data).items():
+    for label, (_number, classes, _edges) in merged(root, data, diagrams).items():
         for info in classes.values():
             flat[class_id(info)] = (label, info)
     return flat
 
 
-def render(root: Path, out: Path, data: dict | None = None) -> None:
+def render(
+    root: Path,
+    out: Path,
+    data: dict | None = None,
+    diagrams: tuple | None = None,
+    project: str = "project",
+) -> None:
     panels, buttons, datasets = [], [], []
-    for index, (label, (number, classes, edges)) in enumerate(merged(root, data).items()):
+    for index, (label, (number, classes, edges)) in enumerate(
+        merged(root, data, diagrams).items()
+    ):
         datasets.append(_elements(classes, edges))
         active = " active" if index == 0 else ""
         buttons.append(
@@ -361,7 +379,7 @@ def render(root: Path, out: Path, data: dict | None = None) -> None:
         )
 
     page = f"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>DS91 — class diagrams</title>
+<html lang="en"><head><meta charset="utf-8"><title>{project} — class diagrams</title>
 <style>
   :root {{ color-scheme: light; }}
   * {{ box-sizing: border-box; }}
@@ -390,7 +408,7 @@ def render(root: Path, out: Path, data: dict | None = None) -> None:
   .zoom {{ margin-left: auto; color: #64748b; font-variant-numeric: tabular-nums; }}
   #fail {{ display: none; color: #b91c1c; }}
 </style></head><body>
-<h1>DS91 — class diagrams</h1>
+<h1>{project} — class diagrams</h1>
 <p class="lede">One subsystem per tab. Boxes are real classes with their UML stereotype; arrows are real references. Click a box or an arrow for details. The note says why a subsystem is shaped this way.</p>
 <nav>{''.join(buttons)}</nav>
 <div class="bar">
@@ -513,7 +531,7 @@ else {{
 </body></html>
 """
     out.write_text(page, encoding="utf-8")
-    print(f"wrote {out} ({len(page)} bytes, {len(DIAGRAMS)} diagrams)")
+    print(f"wrote {out} ({len(page)} bytes, {len(diagrams or DIAGRAMS)} diagrams)")
 
 
 def main() -> int:

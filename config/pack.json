@@ -1,25 +1,158 @@
 {
-  "project_root": "../ds91app-jetson-mount",
-  "source_roots": [
-    "deepstream/app"
-  ],
-  "test_paths": [
-    "deepstream/tests"
-  ],
-  "unit_paths": "deepstream/tests/unit",
-  "lint_paths": "deepstream",
-  "features": "deepstream/tests/features",
-  "acceptance_command": "python3 deepstream/tests/acceptance/run_acceptance.py",
-  "artifacts_root": "../swarm-forge-lite/tmp",
+  "selector_env": "PACK_PROJECT",
+  "default_project": "deepstream",
+  "projects": {
+    "deepstream": {
+      "project_root": "../ds91app-jetson-dev",
+      "source_roots": [
+        "deepstream/app"
+      ],
+      "class_root": "deepstream/app/pipeline",
+      "test_paths": [
+        "deepstream/tests"
+      ],
+      "unit_paths": "deepstream/tests/unit",
+      "lint_paths": "deepstream",
+      "features": "deepstream/tests/features",
+      "docs_root": "deepstream/docs",
+      "specs": {
+        "01-model-file-registry.md": "detector",
+        "02-model-version-isolation.md": "detector",
+        "03-privacy-recording.md": "privacy_record",
+        "04-safety-rule-engine.md": "safety_rule_engine",
+        "05-detection-extraction.md": "detection_extraction",
+        "06-rule-check-osd.md": "rule_check_osd",
+        "07-speaker-alerts.md": "audio / alerts",
+        "08-audio-output.md": "audio / output",
+        "09-message-publish.md": "message_publish",
+        "10-latency-monitoring.md": "latency_monitoring"
+      },
+      "subsystems": [
+        {
+          "number": "01 \u00b7 02",
+          "label": "detector",
+          "packages": [
+            "detector"
+          ]
+        },
+        {
+          "number": "04",
+          "label": "safety_rule_engine",
+          "packages": [
+            "safety_rule_engine"
+          ]
+        },
+        {
+          "number": "05",
+          "label": "detection_extraction",
+          "packages": [
+            "detection_extraction"
+          ]
+        },
+        {
+          "number": "06",
+          "label": "rule_check_osd",
+          "packages": [
+            "rule_check_osd"
+          ]
+        },
+        {
+          "number": "07",
+          "label": "audio / alerts",
+          "packages": [
+            "audio/alert",
+            "audio/catalog",
+            "audio/gate"
+          ]
+        },
+        {
+          "number": "08",
+          "label": "audio / output",
+          "packages": [
+            "audio/output",
+            "audio/playback"
+          ]
+        },
+        {
+          "number": "09",
+          "label": "message_publish",
+          "packages": [
+            "message_publish"
+          ]
+        },
+        {
+          "number": "10",
+          "label": "latency_monitoring",
+          "packages": [
+            "latency_monitoring"
+          ]
+        },
+        {
+          "number": "03",
+          "label": "privacy_record",
+          "packages": [
+            "privacy_record"
+          ]
+        }
+      ],
+      "acceptance_command": "python3 deepstream/tests/acceptance/run_acceptance.py",
+      "artifacts_root": "../swarm-forge-lite/tmp/deepstream",
+      "umlview": {
+        "policy": "deepstream/umlview.json",
+        "out": "../swarm-forge-lite/tmp/deepstream/uml"
+      }
+    },
+    "control-server": {
+      "project_root": "../ds91app-jetson-dev",
+      "source_roots": [
+        "control-server/app"
+      ],
+      "test_paths": [
+        "control-server/tests"
+      ],
+      "unit_paths": "control-server/tests/unit",
+      "lint_paths": "control-server",
+      "features": "control-server/tests/features",
+      "docs_root": "control-server/docs",
+      "specs": {},
+      "subsystems": [
+        {
+          "number": "01",
+          "label": "http",
+          "packages": [
+            "http"
+          ],
+          "layer": "shell"
+        },
+        {
+          "number": "02",
+          "label": "domain",
+          "packages": [
+            "domain"
+          ],
+          "layer": "core"
+        },
+        {
+          "number": "03",
+          "label": "adapters",
+          "packages": [
+            "adapters"
+          ],
+          "layer": "shell"
+        }
+      ],
+      "acceptance_command": "python3 control-server/tests/acceptance/run_acceptance.py",
+      "artifacts_root": "../swarm-forge-lite/tmp/control-server",
+      "umlview": {
+        "policy": "control-server/umlview.json",
+        "out": "../swarm-forge-lite/tmp/control-server/uml"
+      }
+    }
+  },
   "thresholds": {
     "crap": 10,
     "dry": 0.82,
     "min_lines": 4,
     "min_nodes": 20
-  },
-  "umlview": {
-    "policy": "deepstream/umlview.json",
-    "out": "../swarm-forge-lite/tmp/uml"
-  },
-  "docs_root": "deepstream/docs"
+  }
 }

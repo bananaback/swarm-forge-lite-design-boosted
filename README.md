@@ -20,7 +20,9 @@ If you are an agent opening this workspace for the first time:
 4. Read `protocol/orchestrator.md` to coordinate, or `protocol/<your-role>.md` if
    you were dispatched as a role. The roles are: orchestrator, designer,
    specifier, coder, test-reviewer, refactorer, architect.
-5. Read `config/pack.json` for the project root, paths, and thresholds.
+5. Read `config/pack.json`: the `projects` map, its `default_project`, and the
+   thresholds. A pack serves several projects; `PACK_PROJECT` selects one and
+   `arch.py env` prints what resolved.
 6. Read `tools/README.md` before running any command, including its **Design
    surface** section.
 7. If your role touches design, read `<PACK>/tools/design/README.md`: the spec
@@ -70,7 +72,8 @@ constitution/articles/       engineering, workflow, communication
 PROJECT.md.example           the template for the environment record (local PROJECT.md is gitignored)
 protocol/README.md           pipeline, order rule, gates
 protocol/<role>.md           orchestrator, designer, specifier, coder, test-reviewer, refactorer, architect
-config/pack.json             project root, paths, thresholds
+config/pack.json             projects map, per-project paths, thresholds
+architecture/<project>/      runtime.json and design.json, one set per project
 tools/README.md              exact commands
 tools/design/                the project design surface: arch, class/runtime views, tests
 tools/shared/                dryer, APS (gherkin-parser)
@@ -79,8 +82,10 @@ tools/refactorer/crapper/
 
 ## Wire It Up
 
-1. Edit `config/pack.json`: `project_root` relative to this directory, then the
-   source roots, test paths, features directory, and acceptance command.
+1. Edit `config/pack.json`: one entry under `projects` per project — its
+   `project_root` (relative to this directory), source roots, class root, test
+   paths, features directory, docs root, declared specs, acceptance command,
+   artifacts root and umlview policy — then name one as `default_project`.
 2. Copy `PROJECT.md.example` to `PROJECT.md` and fill it in: the environment
    record every role reads first. `PROJECT.md` is gitignored: it is per-project
    state and never ships.

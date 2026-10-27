@@ -2,6 +2,19 @@
 
 > Template. Copy to `PROJECT.md` and fill it in; `PROJECT.md` is gitignored.
 
+## Projects
+
+One pack serves every project in `config/pack.json`. `PACK_PROJECT` selects one;
+unset, `default_project` applies, and `arch.py env` prints which resolved.
+
+| Project | Tree | Docs | Architecture | Scratch |
+|---|---|---|---|---|
+| `<name>` (default) | `<source root>` | `<docs root>` | `architecture/<name>` | `tmp/<name>` |
+
+- Say whether the projects share one checkout and branch, or live in separate ones.
+- Say which files are shared, and which project must never edit them.
+- Say which projects are scaffolded and which are declared but still empty.
+
 ## Environment
 
 ### This host

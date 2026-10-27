@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -22,15 +23,27 @@ from model import Document, Model, grade, validate_model
 from policy import Policy
 
 
+def _project(config: dict) -> dict:
+    """Select the project exactly as tools/design/paths.py does."""
+    env = config.get("selector_env", "PACK_PROJECT")
+    projects = config.get("projects", {})
+    known = ", ".join(sorted(projects)) or "<none configured>"
+    name = os.environ.get(env, "").strip() or config.get("default_project")
+    if name not in projects:
+        raise SystemExit(f"unknown project {name!r} for this pack; known: {known}")
+    return projects[name]
+
+
 def _resolve(args) -> tuple[Path, Path, Path, Policy | None]:
     config_path = Path(args.config).expanduser().resolve()
     config = json.loads(config_path.read_text(encoding="utf-8"))
     pack = config_path.parent.parent
-    project = (pack / config["project_root"]).resolve()
-    uml = config.get("umlview", {})
+    project_conf = _project(config)
+    project = (pack / project_conf["project_root"]).resolve()
+    uml = project_conf.get("umlview", {})
     policy_path = (project / uml.get("policy", "umlview.json")).resolve()
     out_dir = (
-        project / uml.get("out", config.get("artifacts_root", "tmp") + "/uml")
+        project / uml.get("out", project_conf.get("artifacts_root", "tmp") + "/uml")
     ).resolve()
     policy = policy_module.Policy.read(policy_path) if policy_path.is_file() else None
     return project, out_dir, policy_path, policy
@@ -71,7 +84,7 @@ def _write_policy(args) -> Policy:
     """Derive and write a policy from the code. Never called over an existing one."""
     project, _, policy_path, _ = _resolve(args)
     config = json.loads(Path(args.config).read_text(encoding="utf-8"))
-    root_rel = getattr(args, "root", "") or config.get("source_roots", ["."])[0]
+    root_rel = getattr(args, "root", "") or _project(config).get("source_roots", ["."])[0]
     root = (project / root_rel).resolve()
     title = getattr(args, "title", "") or root.name
     probe = Policy(title=title, root=root_rel, prefix=getattr(args, "prefix", "") or "")
@@ -323,7 +336,8 @@ def main(argv: list[str]) -> int:
     args = parser.parse_args(argv)
     if not args.metrics:
         config = json.loads(Path(args.config).read_text(encoding="utf-8"))
-        args.metrics = config.get("artifacts_root", "tmp") + "/.metrics/crap.edn"
+        artifacts = _project(config).get("artifacts_root", "tmp")
+        args.metrics = str(artifacts).rstrip("/") + "/.metrics/crap.edn"
     return {
         "init": cmd_init,
         "load": cmd_load,

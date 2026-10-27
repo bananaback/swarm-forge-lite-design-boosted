@@ -5,17 +5,41 @@ the project root as the working directory, and every command is what a role name
 in its report.
 
 `$PACK` is the pack root: the directory holding `config/` and `constitution.md`.
-This file is `$PACK/tools/README.md`. `$PROJECT` is `project_root` from
-`config/pack.json`, resolved against `$PACK` to an absolute path. Scratch lives
-in `$PROJECT/<artifacts root>`.
+This file is `$PACK/tools/README.md`. `$PROJECT` is the `project_root` of the
+*selected* project (see **Projects** below), resolved against `$PACK` to an
+absolute path. Scratch lives in `$PROJECT/<artifacts root>`.
+
+## Projects
+
+One pack serves several projects. `config/pack.json` holds a `projects` map, and
+each entry carries its own `project_root`, `source_roots`, `class_root`,
+`test_paths`, `unit_paths`, `lint_paths`, `features`, `docs_root`, `specs`,
+`acceptance_command`, `artifacts_root` and `umlview` policy. Every path in this
+file resolves through the selection, so no prompt or role hardcodes a layout.
+
+`PACK_PROJECT` selects the project; when it is unset, `default_project` applies.
+
+```sh
+export PACK_PROJECT=<project>             # e.g. one key of config/pack.json
+python3 $PACK/tools/design/arch.py env    # what resolved, and why
+```
+
+`arch.py env` is the first command of a dispatch. It prints the project, whether
+the name came from `PACK_PROJECT` or from the default, and the resolved app,
+class root, docs, architecture and scratch directories. Keep it in the report: it
+is the proof that later commands used the intended project.
+
+A missing tree, a missing `runtime.json`, or an empty `specs` map is a failure,
+not a clean project — those commands exit non-zero and name what is missing. An
+empty `arch classes ls` or `umlview ls` is the one shape that used to look green;
+it no longer does.
+
+Each project owns its own `<PACK>/architecture/<project>/` and its own
+`<artifacts_root>`, so scratch and design models never mix across projects.
 
 `artifacts_root` resolves against the project root, so a `..` value keeps every
-report and generated test outside the repository — this project uses
-`../swarm-forge-lite/tmp`, which leaves `git status` untouched.
-
-`artifacts_root` resolves against the project root, so a `..` value keeps every
-report and generated test outside the repository — this project uses
-`../swarm-forge-lite/tmp`, which leaves `git status` untouched.
+report and generated test outside the repository — each project entry uses
+`../swarm-forge-lite/tmp/<project>`, which leaves `git status` untouched.
 
 > **Pass absolute paths to `--source-root`.** A relative path matches nothing and
 > the tool still exits 0, so DRY or CRAP appears clean without analyzing a single
@@ -136,6 +160,7 @@ The project's two design views are generated from code plus one authored runtime
 model, never hand-edited:
 
 ```sh
+python3 swarm-forge-lite/tools/design/arch.py env
 python3 swarm-forge-lite/tools/design/arch.py classes ls|show|deps|validate|render
 python3 swarm-forge-lite/tools/design/arch.py classes add|remove|annotate|diff
 python3 swarm-forge-lite/tools/design/arch.py runtime ls|show|validate|render
@@ -143,17 +168,22 @@ python3 swarm-forge-lite/tools/design/arch.py docs validate
 python3 swarm-forge-lite/tools/design/arch.py render [classes|runtime|all]
 ```
 
+`env` prints the resolved project and every path below; run it first, so a report
+can never claim a gate it ran against another project.
+
 `docs validate` checks the subsystem specs against the model: every class has a
 row, the six sections exist, and no spec mentions a test or acceptance id.
 Specs and the generated views live under `<PROJECT>/<docs_root>`, where
-`docs_root` is the entry in `config/pack.json` (today `deepstream/docs`).
+`docs_root` and the `specs` list are entries in the project's `config/pack.json`
+block. A project with no declared specs fails this gate rather than passing
+vacuously.
 
 `classes` scans the AST on every call; there is no stored model to drift.
-`runtime` reads `<PACK>/architecture/runtime.json`; `validate` fails when a
-subsystem under `app/pipeline` has no box. `classes add|remove|annotate` write
-`<PACK>/architecture/design.json` (the draft overlay); `diff` reports what the
-code has not caught up with. The pack's `umlview` remains the
-module-grade view and is not involved.
+`runtime` reads `<PACK>/architecture/<project>/runtime.json`; `validate` fails
+when a subsystem under the project's `class_root` has no box. `classes
+add|remove|annotate` write `<PACK>/architecture/<project>/design.json` (the draft
+overlay); `diff` reports what the code has not caught up with. The pack's
+`umlview` remains the module-grade view and is not involved.
 
 ## Diagram
 
@@ -271,7 +301,9 @@ modules out of the context.
 
 ### Policy
 
-The policy is `<project>/umlview.json`, named by `config/pack.json` → `umlview`.
+The policy is the project entry's `umlview.policy`, relative to the project root,
+and its output is `umlview.out`. Each project keeps its own policy, so one
+project's module tree never leaks into another's diagram.
 It contains only real namespace segments:
 
 | Key | Role |

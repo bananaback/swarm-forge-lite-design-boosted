@@ -53,7 +53,7 @@
       "w": 170,
       "h": 56,
       "label": "config",
-      "sub": "PipelineConfig, constants",
+      "sub": "RunSettings.from_environment + PipelineConfig — configuration resolution and the pipeline config dict",
       "note": null,
       "tone": "entry"
     },
@@ -207,7 +207,7 @@
       "w": 190,
       "h": 64,
       "label": "latency_monitoring",
-      "sub": "probes every stage",
+      "sub": "per-element residence, queues, integrity + health",
       "note": "10",
       "tone": "analysis",
       "package": "latency_monitoring"
@@ -421,6 +421,16 @@
       "label": "read view",
       "dx": 18,
       "dy": 0
+    },
+    {
+      "from": "speaker",
+      "side": "right",
+      "to": "debug",
+      "to_side": "left",
+      "kind": "solid",
+      "label": "transcript",
+      "dx": 0,
+      "dy": -8
     },
     {
       "from": "engine",
