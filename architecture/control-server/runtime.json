@@ -1,0 +1,151 @@
+{
+  "canvas": [
+    1360,
+    560
+  ],
+  "zones": [
+    {
+      "x": 20,
+      "y": 80,
+      "w": 960,
+      "h": 380,
+      "label": "CONTROL-SERVER PROCESS \u2014 ONE UVICORN WORKER, ONE SELECTION LOOP",
+      "tone": "pipeline",
+      "id": "process"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "http",
+      "x": 60,
+      "y": 140,
+      "w": 210,
+      "h": 66,
+      "label": "http",
+      "sub": "GET /health \u00b7 GET /selection",
+      "note": null,
+      "tone": "entry",
+      "package": "http"
+    },
+    {
+      "id": "workers",
+      "x": 340,
+      "y": 140,
+      "w": 220,
+      "h": 66,
+      "label": "workers",
+      "sub": "SelectionLoop: reconcile, tick, write",
+      "note": null,
+      "tone": "pipe",
+      "package": "workers"
+    },
+    {
+      "id": "adapters",
+      "x": 680,
+      "y": 140,
+      "w": 240,
+      "h": 66,
+      "label": "adapters",
+      "sub": "MediaApiClient \u2014 MediaMTX control API",
+      "note": null,
+      "tone": "pipe",
+      "package": "adapters"
+    },
+    {
+      "id": "domain",
+      "x": 340,
+      "y": 330,
+      "w": 440,
+      "h": 110,
+      "label": "domain",
+      "sub": "Lane \u00b7 InletState \u00b7 StreamWitness \u00b7 SelectionPolicy \u00b7 SourceStatus",
+      "note": null,
+      "tone": "analysis",
+      "package": "domain"
+    },
+    {
+      "id": "relay",
+      "x": 1030,
+      "y": 140,
+      "w": 240,
+      "h": 66,
+      "label": "relay (MediaMTX)",
+      "sub": "glasses/stream, glasses/cable \u2192 glasses/out",
+      "note": null,
+      "tone": "pipe"
+    },
+    {
+      "id": "app",
+      "x": 1030,
+      "y": 330,
+      "w": 240,
+      "h": 66,
+      "label": "DeepStream app",
+      "sub": "reads only /glasses/out, never rebuilt",
+      "note": null,
+      "tone": "output"
+    }
+  ],
+  "edges": [
+    {
+      "from": "http",
+      "side": "bottom",
+      "to": "domain",
+      "to_side": "left",
+      "kind": "solid",
+      "label": "read snapshot",
+      "dx": 0,
+      "dy": -10
+    },
+    {
+      "from": "workers",
+      "side": "bottom",
+      "to": "domain",
+      "to_side": "top",
+      "kind": "solid",
+      "label": "observe \u00b7 decide \u00b7 publish",
+      "dx": 118,
+      "dy": 0
+    },
+    {
+      "from": "workers",
+      "side": "right",
+      "to": "adapters",
+      "to_side": "left",
+      "kind": "solid",
+      "label": "one tick",
+      "dx": 0,
+      "dy": -14
+    },
+    {
+      "from": "adapters",
+      "side": "right",
+      "to": "relay",
+      "to_side": "left",
+      "kind": "solid",
+      "label": "control API",
+      "dx": 0,
+      "dy": -14
+    },
+    {
+      "from": "adapters",
+      "side": "bottom",
+      "to": "domain",
+      "to_side": "right",
+      "kind": "dash",
+      "label": "port",
+      "dx": 6,
+      "dy": -12
+    },
+    {
+      "from": "relay",
+      "side": "bottom",
+      "to": "app",
+      "to_side": "top",
+      "kind": "solid",
+      "label": "glasses/out",
+      "dx": 62,
+      "dy": 0
+    }
+  ]
+}

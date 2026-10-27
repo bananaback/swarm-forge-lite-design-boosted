@@ -184,7 +184,9 @@ def scan(
     order: list[str] = []
     prefix = packages[0].split("/")[0] if packages else ""
     for package in packages:
-        for path in sorted((root / package).rglob("*.py")):
+        target = root / package
+        paths = [target] if target.is_file() else sorted(target.rglob("*.py"))
+        for path in paths:
             tree = ast.parse(path.read_text(encoding="utf-8"))
             trees.append(tree)
             module = "/".join(

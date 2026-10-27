@@ -115,43 +115,26 @@
       "features": "control-server/tests/features",
       "docs_root": "control-server/docs",
       "specs": {
-        "01-http.md": "http",
-        "02-domain.md": "domain",
-        "03-adapters.md": "adapters",
-        "04-workers.md": "workers"
+        "01-selection.md": "selection",
+        "02-health.md": "health"
       },
       "subsystems": [
         {
           "number": "01",
-          "label": "http",
+          "label": "selection",
           "packages": [
-            "http"
-          ],
-          "layer": "shell"
+            "domain/selection",
+            "adapters/mediamtx.py",
+            "workers/selection_loop.py",
+            "http/selection.py"
+          ]
         },
         {
           "number": "02",
-          "label": "domain",
+          "label": "health",
           "packages": [
-            "domain"
-          ],
-          "layer": "core"
-        },
-        {
-          "number": "03",
-          "label": "adapters",
-          "packages": [
-            "adapters"
-          ],
-          "layer": "shell"
-        },
-        {
-          "number": "04",
-          "label": "workers",
-          "packages": [
-            "workers"
-          ],
-          "layer": "shell"
+            "http/health.py"
+          ]
         }
       ],
       "acceptance_command": "PACK_PROJECT=control-server python3 control-server/tests/acceptance/run_acceptance.py",
