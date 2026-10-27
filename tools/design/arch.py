@@ -236,7 +236,7 @@ def cmd_classes_render(_args) -> int:
 def cmd_classes_add(args) -> int:
     data = _overlay()
     if args.what == "node":
-        if args.subsystem not in {label for _n, label, _p in class_map.DIAGRAMS}:
+        if args.subsystem not in {entry[1] for entry in class_map.DIAGRAMS}:
             print(f"arch: unknown subsystem {args.subsystem!r}", file=sys.stderr)
             return 1
         node = {
