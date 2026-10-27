@@ -264,7 +264,12 @@ def _selected(options: Options, root: Path, existing: list[Path]) -> list[Path]:
     if options.changed:
         return _changed_source(root)
     if options.source_roots:
-        return iter_source_files([(root / path).resolve() for path in options.source_roots])
+        return iter_source_files(
+            [
+                (Path(path).resolve() if Path(path).is_absolute() else (root / path).resolve())
+                for path in options.source_roots
+            ]
+        )
     if existing:
         return _explicit_files(existing)
     return iter_source_files([root])
