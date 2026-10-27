@@ -124,9 +124,6 @@ child keeps everything it has read. Re-dispatch the same child with one word —
 `Continue` — and it resumes where it stopped. Do not restate the brief, do not
 re-send the read order, and do not narrow the scope because of that message.
 
-Narrow the scope only when a resumed child twice returns without writing the files
-it was given.
-
 ## Parallelism
 
 Roles run one at a time inside a project: they share files, the `artifacts_root`
