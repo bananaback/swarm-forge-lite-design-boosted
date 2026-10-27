@@ -56,6 +56,20 @@ report and generated test outside the repository — each project entry uses
 | `crapper` | `tools/refactorer/crapper` | same as dryer, `coverage` for CRAP |
 | APS | `tools/shared/aps` + `tools/shared/gherkin-parser` | Babashka (`bb`) on PATH |
 
+**Run `dryer` and `crapper` on the interpreter that carries their dependencies**,
+which is the one these commands name — not a project virtualenv. A project venv
+holds the project's dependencies and normally has no analyzer packages, so
+`crapper` under it dies with `ModuleNotFoundError: tree_sitter_language_pack` and
+analyses nothing. Check the interpreter before trusting a clean result:
+
+```sh
+python3 -c "import tree_sitter_language_pack; print('analyzers available')"
+```
+
+`coverage` is the one exception: the coverage commands run the project's tests, so
+they need the project's interpreter. Generate `lcov.info` there, then run `crapper`
+on the pack interpreter.
+
 ## Search and navigation
 
 Locate code before reading it. When a `.codegraph/` directory sits at any
