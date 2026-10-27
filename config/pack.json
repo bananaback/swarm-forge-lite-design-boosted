@@ -139,6 +139,14 @@
             "adapters"
           ],
           "layer": "shell"
+        },
+        {
+          "number": "04",
+          "label": "workers",
+          "packages": [
+            "workers"
+          ],
+          "layer": "shell"
         }
       ],
       "acceptance_command": "python3 control-server/tests/acceptance/run_acceptance.py",

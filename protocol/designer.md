@@ -42,13 +42,18 @@ and the rules are in `<PACK>/tools/design/README.md`.
 The `.feature` is the specifier's. You do not write it; you write the intent and
 the design it must satisfy.
 
-Two design artifacts, and nothing else:
+Two design artifacts and one config entry, and nothing else:
 
 - the subsystem spec at `<project>/<docs_root>/specs/NN-<subsystem>.md`,
   updated in place;
-- the design overlay at `<PACK>/architecture/design.json` — classes and edges
-  that do not exist in code yet, written with `arch classes add|remove|annotate`,
-  reconciled with `arch classes diff`.
+- the design overlay at `<PACK>/architecture/<project>/design.json` — classes and
+  edges that do not exist in code yet, written with
+  `arch classes add|remove|annotate`, reconciled with `arch classes diff`;
+- **your project's own entry** in `<PACK>/config/pack.json`: `specs` names each
+  spec file and the subsystem it describes, and `subsystems` declares the
+  packages the class view renders and their layer. Design-first means you
+  declare a subsystem before its package exists. Update those two keys for your
+  project only; never touch another project's entry.
 
 No separate design record: no `architecture.md`, no per-module document, no
 skeleton, no review file, no archive. Those were a second place to state the

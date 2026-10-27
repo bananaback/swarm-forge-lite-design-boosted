@@ -172,7 +172,9 @@ python3 swarm-forge-lite/tools/design/arch.py render [classes|runtime|all]
 can never claim a gate it ran against another project.
 
 `docs validate` checks the subsystem specs against the model: every class has a
-row, the six sections exist, and no spec mentions a test or acceptance id.
+row, the six sections exist, and no spec mentions a test or acceptance id. The
+`specs` and `subsystems` keys of the selected project are the designer's: `specs`
+names each spec file, `subsystems` declares the packages and their layer.
 Specs and the generated views live under `<PROJECT>/<docs_root>`, where
 `docs_root` and the `specs` list are entries in the project's `config/pack.json`
 block. A project with no declared specs fails this gate rather than passing
