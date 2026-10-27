@@ -62,6 +62,8 @@ Brief
   deliverable:  <what to return, or "your Report section">
 
 Rules
+  - Locate code with `codegraph explore` or a path-scoped search; never a broad
+    recursive grep.
   - Do not commit; the operator owns git.
   - Report every command you ran with its exit status.
   - If blocked, say what is missing in one sentence and stop.

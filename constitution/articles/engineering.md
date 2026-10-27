@@ -28,6 +28,12 @@
 - Gherkin acceptance mutation and language mutation are **not part of this
   pack**. Do not run them, install them, or imitate them.
 
+## Navigation
+
+- Locate code before you read it: query the index if one covers the tree,
+  otherwise search a named path. A broad recursive sweep is never the first move.
+- Widen only on a miss on the named path.
+
 ## Verification
 
 - Run every command from the project root, exactly as written in

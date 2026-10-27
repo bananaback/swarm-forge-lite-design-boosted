@@ -27,10 +27,25 @@ report and generated test outside the repository — this project uses
 | `crapper` | `tools/refactorer/crapper` | same as dryer, `coverage` for CRAP |
 | APS | `tools/shared/aps` + `tools/shared/gherkin-parser` | Babashka (`bb`) on PATH |
 
-Lint and formatting are plain `ruff`, a project dependency rather than part of
-this pack.
+## Search and navigation
+
+Locate code before reading it. When a `.codegraph/` directory sits at any
+ancestor of the project root, the tree is indexed: ask the index first.
+
+```sh
+codegraph explore "<symbols or question>"
+```
+
+One call returns the matching symbols' source and the call paths between them,
+including dispatch a grep cannot follow. Without an index, use `glob`, or `grep`
+with a path. Never open with a broad recursive search: name the file or subtree,
+skip caches and generated trees, and widen only on a miss. Indexed paths can be
+stale — resolve a hit by file name.
 
 ## Lint and format
+
+Lint and formatting are plain `ruff`, a project dependency rather than part of
+this pack.
 
 ```sh
 ruff check <files you touched>
