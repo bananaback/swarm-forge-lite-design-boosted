@@ -229,7 +229,11 @@ Specs and the generated views live under `<PROJECT>/<docs_root>`, where
 block. A project with no declared specs fails this gate rather than passing
 vacuously.
 
-`classes` scans the AST on every call; there is no stored model to drift.
+`classes` scans the AST on every call; there is no stored model to drift. It
+records edges **inside one subsystem only**, so it cannot see a dependency from one
+subsystem into another — a module in `message_publish` importing a module in `audio`
+leaves `classes validate` green. Cross-subsystem direction is `umlview validate`'s
+job, and both belong in the terminal gate for that reason.
 `runtime` reads `<PACK>/architecture/<project>/runtime.json`; `validate` fails
 when a subsystem under the project's `class_root` has no box. `classes
 add|remove|annotate` write `<PACK>/architecture/<project>/design.json` (the draft
