@@ -7,7 +7,10 @@ in its report.
 `$PACK` is the pack root: the directory holding `config/` and `constitution.md`.
 This file is `$PACK/tools/README.md`. `$PROJECT` is the `project_root` of the
 *selected* project (see **Projects** below), resolved against `$PACK` to an
-absolute path. Scratch lives in `$PROJECT/<artifacts root>`.
+absolute path. Scratch lives in `$ARTIFACTS`, the project's `artifacts_root`
+resolved against the project root — it is `../swarm-forge-lite/tmp/<project>`
+for this workspace, so it sits outside the repository and `git status` stays
+clean. Never read it as a path inside `$PROJECT`.
 
 ## Projects
 
@@ -163,15 +166,19 @@ headroom left. Report the worst score as well as the exit code. The report lands
 ## Design surface (project-local)
 
 The project's two design views are generated from code plus one authored runtime
-model, never hand-edited:
+model, never hand-edited.
+
+`$PACK` is a sibling of the project root, so these commands are written with `$PACK`
+rather than a relative path that only works from the workspace directory. Run them
+from anywhere; `arch.py` resolves the project from the config, never from the cwd.
 
 ```sh
-python3 swarm-forge-lite/tools/design/arch.py env
-python3 swarm-forge-lite/tools/design/arch.py classes ls|show|deps|validate|render
-python3 swarm-forge-lite/tools/design/arch.py classes add|remove|annotate|diff
-python3 swarm-forge-lite/tools/design/arch.py runtime ls|show|validate|render
-python3 swarm-forge-lite/tools/design/arch.py docs validate
-python3 swarm-forge-lite/tools/design/arch.py render [classes|runtime|all]
+PACK_PROJECT=<project> python3 "$PACK/tools/design/arch.py" env
+python3 "$PACK/tools/design/arch.py" classes ls|show|deps|validate|render
+python3 "$PACK/tools/design/arch.py" classes add|remove|annotate|diff
+python3 "$PACK/tools/design/arch.py" runtime ls|show|validate|render
+python3 "$PACK/tools/design/arch.py" docs validate
+python3 "$PACK/tools/design/arch.py" render [classes|runtime|all]
 ```
 
 `env` prints the resolved project and every path below; run it first, so a report
