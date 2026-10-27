@@ -86,7 +86,16 @@ Run them from the project root, with no flags. Ruff reads the project's own
 no options of its own. Clean means exit 0: a finding is a report, not a verdict
 to negotiate.
 
-## Unit tests
+## Unit and property tests
+
+```sh
+python3 -m pytest -q "$PROJECT/<unit path>"
+python3 -m pytest -q "$PROJECT/<property path>"    # where the project has one
+```
+
+A verdict needs two runs: two agreeing runs prove the suite is stable, one run
+proves only that it passed once. The reviewer runs both twice.
+
 
 ```sh
 python3 -m pytest -q "$PROJECT/<unit path>"
@@ -120,6 +129,8 @@ A generated acceptance runner reads the same contract. It must:
 - derive `tests_root` = `project_root/test_paths[0]`;
 - put IR, dry reports, and any scratch under `project_root/artifacts_root`, and
   generated acceptance tests under `project_root/artifacts_root/acceptance`;
+- delete a feature's stale IR, dry report and generated module before regenerating
+  it — a runner that leaves them can parse the previous run's output and look green;
 - invoke the pipeline exactly as above;
 - require the selector: when `projects` holds more than one entry and
   `PACK_PROJECT` is unset, exit non-zero naming the declared projects. A runner
