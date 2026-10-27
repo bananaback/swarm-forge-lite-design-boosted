@@ -12,7 +12,15 @@ from datetime import date
 from pathlib import Path
 
 VALID_KINDS = ("extends", "implements", "composition", "aggregation", "dependency")
-VALID_STEREOTYPES = ("class", "interface", "abstract", "enum", "data", "exception")
+VALID_STEREOTYPES = (
+    "concrete",
+    "class",
+    "interface",
+    "abstract",
+    "enum",
+    "data",
+    "exception",
+)
 
 
 def load(path: Path) -> dict:

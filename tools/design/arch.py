@@ -114,7 +114,8 @@ def cmd_classes_ls(args) -> int:
         if args.group and info.group != args.group:
             continue
         members = len(info.methods)
-        print(f"{cid:58} {info.stereotype:10} {info.layer:5} {members} members  {info.module}.py")
+        module = info.module if info.module.endswith(".py") else info.module + ".py"
+        print(f"{cid:58} {info.stereotype:10} {info.layer:5} {members} members  {module}")
     return 0
 
 
