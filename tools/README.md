@@ -165,9 +165,21 @@ that is what the project owns.
 
 ## Duplicate analysis
 
+`$ARTIFACTS` in these commands is the selected project's `artifacts_root` resolved to
+an absolute path, for example `"$PACK/tmp/<project>"`. Set it once:
+
+```sh
+ARTIFACTS="$PACK/tmp/<project>"
+```
+
+Both analyzers write `<--root>/.metrics/{dry,crap}.edn`, so `--root` must be the
+artifacts root itself, never the project. Quote it: an unquoted
+`$PROJECT/../swarm-forge-lite/tmp/<project>` word-splits at the `..`, and the tail
+is silently dropped, so the report lands somewhere else and looks like it vanished.
+
 ```sh
 PYTHONPATH=$PACK/tools/shared python3 -m dryer \
-  --root "$PROJECT/<artifacts root>" \
+  --root "$ARTIFACTS" \
   --source-root "$PROJECT/<source root>" \
   --threshold 0.82 --min-lines 4 --min-nodes 20
 ```
@@ -187,7 +199,7 @@ python3 -m coverage run --data-file "$PROJECT/<artifacts root>/.coverage" \
 python3 -m coverage lcov --data-file "$PROJECT/<artifacts root>/.coverage" \
   -o "$PROJECT/<artifacts root>/target/coverage/python/lcov.info"
 PYTHONPATH=$PACK/tools/refactorer python3 -m crapper \
-  --root "$PROJECT/<artifacts root>" --use-existing-coverage \
+  --root "$ARTIFACTS" --use-existing-coverage \
   --source-root "$PROJECT/<source root>" --threshold 10
 ```
 
