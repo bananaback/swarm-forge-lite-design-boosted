@@ -33,7 +33,7 @@ is not asked to approve a specification that did not change.
 | specification | specifier | `gherkin-parser` clean, `gherkin-ir-dry-checker` clean; operator approves note + feature |
 | implementation | coder | red test first, then green; unit and acceptance pass; ruff clean |
 | tests | test-reviewer | verdict accept; both runs exit 0; every changed test has an oracle and a named wrong implementation |
-| structure | refactorer | tests still pass; worst CRAP ≤ 10; duplicate report at threshold |
+| structure | refactorer | tests still pass; worst CRAP ≤ 10; `dryer` exits 0 at `--threshold` |
 | design views | designer | the changed view renders; the spec's `## Classes`/`## Flow` are current; `arch classes validate`, `arch runtime validate` or `arch docs validate` exits 0 |
 | terminal | architect | ruff, format, DRY, unit, acceptance, CRAP, `arch classes validate`, `arch runtime validate` — all pass |
 

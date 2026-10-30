@@ -61,8 +61,8 @@ trust a clean result.
 
 ## Done When
 
-Worst CRAP is 10 or below, duplicates are at or below the threshold, tests and
-acceptance still exit 0, and no behavior changed.
+Worst CRAP is 10 or below, duplicates are below the threshold (`dryer` exits 0),
+tests and acceptance still exit 0, and no behavior changed.
 
 ## Report
 

@@ -75,6 +75,10 @@ CRAP passes at exactly the threshold: `--threshold 10` exits 2 only when the
 worst score is above 10, so 10.0 is green with no headroom. Report the worst
 score, not only the exit code.
 
+DRY is stricter at its boundary: `dryer --threshold 0.82` exits 2 when at least
+one pair is at or above 0.82, and 0 when none is. A pair exactly at the threshold
+fails the gate.
+
 A read-only task ends before the fix: verify, report, change nothing.
 
 If a gate fails inside your ownership, fix it and rerun it and every later gate.
