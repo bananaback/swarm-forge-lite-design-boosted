@@ -259,6 +259,18 @@
       "note": "08",
       "tone": "output",
       "package": "audio"
+    },
+    {
+      "id": "integration",
+      "x": 1170,
+      "y": 520,
+      "w": 190,
+      "h": 64,
+      "label": "app_integration",
+      "sub": "commands, rebuild, readiness, events, report",
+      "note": "11",
+      "tone": "analysis",
+      "package": "integration"
     }
   ],
   "edges": [
@@ -453,6 +465,16 @@
       "dy": 0
     },
     {
+      "from": "speaker",
+      "side": "right",
+      "to": "message",
+      "to_side": "bottom",
+      "kind": "solid",
+      "label": "sounded alerts",
+      "dx": 0,
+      "dy": 12
+    },
+    {
       "from": "latency",
       "side": "bottom",
       "to": "message",
@@ -471,6 +493,46 @@
       "label": "probes",
       "dx": 36,
       "dy": 10
+    },
+    {
+      "from": "engine",
+      "side": "right",
+      "to": "integration",
+      "to_side": "left",
+      "kind": "solid",
+      "label": "decisions",
+      "dx": 0,
+      "dy": 0
+    },
+    {
+      "from": "integration",
+      "side": "bottom",
+      "to": "message",
+      "to_side": "top",
+      "kind": "solid",
+      "label": "status, events",
+      "dx": 0,
+      "dy": 0
+    },
+    {
+      "from": "integration",
+      "side": "top",
+      "to": "pipeline",
+      "to_side": "bottom",
+      "kind": "dash",
+      "label": "rebuild",
+      "dx": -24,
+      "dy": 0
+    },
+    {
+      "from": "integration",
+      "side": "left",
+      "to": "privacy",
+      "to_side": "right",
+      "kind": "dash",
+      "label": "evidence name",
+      "dx": 0,
+      "dy": -8
     }
   ]
 }

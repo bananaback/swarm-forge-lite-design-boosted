@@ -28,8 +28,10 @@ PYTHONPATH=<pack>/tools/shared python3 -m dryer --root <root> \
 ```
 
 `--root` is the project root: dryer writes the `.metrics/dry.edn` snapshot
-there. It prints a text report, closest match first, and exits 0 after a
-report, 1 on a usage error, and 2 on an unknown `--format`.
+there. It prints a text report, closest match first, and exits 0 after a report
+with no pair at or above `--threshold`; it exits 2 when at least one pair meets
+the threshold, matching `crapper`'s gate. A usage error exits 1, and an unknown
+`--format` also exits 2.
 
 Run it exactly as `tools/README.md` documents. This pack has no wrapper layer.
 

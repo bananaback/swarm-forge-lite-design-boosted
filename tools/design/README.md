@@ -42,10 +42,16 @@ python3 <PACK>/tools/design/arch.py render [classes|runtime|all]
 ```
 
 - `classes` scans the code on every call; there is no stored class model to drift.
+- `classes add node` stores the `--layer` it is given on the node, so the class
+  view renders it without a later `annotate`.
+- `classes add edge` accepts `--from`/`--to`; the positional id is optional and is
+  derived as `<from>-><to>` when omitted. The legacy `<id> <from> <to>` form works.
 - `runtime` reads `<PACK>/architecture/runtime.json`; `validate` fails when a
   subsystem under `app/pipeline` has no box.
 - `docs validate` checks every spec against the model: all six sections present,
-  every class described, no test or acceptance reference.
+  every class described, no test or acceptance reference, and every class named in
+  a `## Classes` table exists in the scanned code or is declared in the design
+  overlay.
 - `<PROJECT>/<docs_root>/diagrams.html` and `ARCHITECTURE.html` are generated outputs. Never edit them.
 
 `umlview` remains the module-grade view (CRAP, dependency-rule violations) and is

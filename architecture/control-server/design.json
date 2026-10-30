@@ -1,5 +1,36 @@
 {
   "nodes": [],
   "edges": [],
-  "annotations": {}
+  "annotations": {
+    "adapters.evidence_folder.EvidenceFolder": {
+      "layer": "shell"
+    },
+    "adapters.evidence_folder.EvidenceTransfer": {
+      "layer": "shell"
+    },
+    "adapters.mqtt.CommandParser": {
+      "layer": "shell"
+    },
+    "adapters.mqtt.MqttGateway": {
+      "layer": "shell"
+    },
+    "adapters.relay_probe.MediaMtxRelayProbe": {
+      "layer": "shell"
+    },
+    "adapters.report_folder.ReportFolder": {
+      "layer": "shell"
+    },
+    "http.evidence.ClipDto": {
+      "layer": "shell"
+    },
+    "http.evidence.ClipPageDto": {
+      "layer": "shell"
+    },
+    "http.health.HealthDto": {
+      "layer": "shell"
+    },
+    "workers.control_worker.ControlWorker": {
+      "layer": "shell"
+    }
+  }
 }

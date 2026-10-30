@@ -117,11 +117,6 @@ python3 -m pytest -q "$PROJECT/<property path>"    # where the project has one
 A verdict needs two runs: two agreeing runs prove the suite is stable, one run
 proves only that it passed once. The reviewer runs both twice.
 
-
-```sh
-python3 -m pytest -q "$PROJECT/<unit path>"
-```
-
 ## Acceptance
 
 ```sh
@@ -187,6 +182,11 @@ PYTHONPATH=$PACK/tools/shared python3 -m dryer \
 Pairs print worst first and the report lands in
 `$PROJECT/<artifacts root>/.metrics/dry.edn`. A `No source files to analyze.`
 line means the source root was wrong, not that the code is clean.
+
+`--threshold` is a gate, not only a reporting floor: the command exits **2** when
+at least one pair meets or exceeds it, and **0** when none does. This matches
+`crapper`'s convention, so a terminal gate can read the exit code. The pairs are
+still printed before the command exits 2.
 
 ## CRAP
 
@@ -261,7 +261,6 @@ dependency rule marks violations.
 ```sh
 python3 $PACK/tools/umlview init        # derive the policy from the code (once)
 python3 $PACK/tools/umlview load IR     # authored EDN/JSON IR -> model.json
-python3 $PACK/tools/umlview load IR     # authored EDN/JSON IR -> model.json
 python3 $PACK/tools/umlview scan        # source + policy -> model.json
 python3 $PACK/tools/umlview validate    # exit 1 on a dependency-rule violation
 python3 $PACK/tools/umlview render      # model.json -> viewer.html
@@ -275,59 +274,6 @@ python3 $PACK/tools/umlview validate --proposal NAME
 designer agent did: it derives the prefix, the segment order, and the levels
 from the observed dependency direction. Nobody hand-authors the policy; a human
 only contradicts it when the intent differs.
-
-`load` reads a hand-authored IR — EDN or JSON — and applies the same
-normalization and range checks as the original: ids lowercased, `crap` as a
-number or `{mu, max, sigma}`, coverage inside 0–1, unique class ids, and every
-edge endpoint known. A document may hold one diagram or a stack under
-`:diagrams`; the viewer renders them top to bottom, exactly as the original
-does. Commands that inspect one diagram (`validate`, `ls`, `show`) use the
-first, matching his `load-diagram`.
-
-The viewer renders a static diagram as package boxes, exactly as a generated
-hierarchical diagram renders as a namespace tree.
-
-A policy with `packages` and `diagrams` selects the packaged branch, as his
-does: each `diagrams` entry becomes one generated diagram — `{"view":
-"overview"}` for one box per policy package plus an `Unassigned` box, or
-`{"package": "<id>"}` for that package with its neighbour stubs. A policy with
-neither key is hierarchical, matching `hierarchical?`.
-
-Foreign libraries are first-class nodes with edges to the modules that import
-them, and the viewer draws them as ovals in every mode. At a drilled level,
-edges that leave the current component are counted on the box as `↗out ↙in`
-instead of disappearing.
-
-Mutation grading follows the original when snapshots exist: `.metrics/mutate/*`
-files are joined by namespace, pooled as killed / (killed + survived + gap), and
-averaged with the CRAP grade. Without snapshots the box is graded by CRAP alone —
-this pack has no Python mutation runner, so that half of his formula stays
-dormant rather than painting everything red.
-
-A policy with `packages` and `diagrams` selects the packaged branch, as his
-does: each `diagrams` entry becomes one generated diagram — `{"view":
-"overview"}` for one box per policy package plus an `Unassigned` box, or
-`{"package": "<id>"}` for that package with its neighbour stubs. A policy with
-neither key is hierarchical, matching `hierarchical?`.
-
-Foreign libraries are first-class nodes with edges to the modules that import
-them, and the viewer draws them as ovals in every mode. At a drilled level,
-edges that leave the current component are counted on the box as `↗out ↙in`
-instead of disappearing.
-
-Mutation grading follows the original when snapshots exist: `.metrics/mutate/*`
-files are joined by namespace, pooled as killed / (killed + survived + gap), and
-averaged with the CRAP grade. Without snapshots the box is graded by CRAP alone —
-this pack has no Python mutation runner, so that half of his formula stays
-dormant rather than painting everything red. At a drilled level,
-edges that leave the current component are counted on the box as `↗out ↙in`
-instead of disappearing.
-
-Mutation grading follows the original when snapshots exist: `.metrics/mutate/*`
-files are joined by namespace, pooled as killed / (killed + survived + gap), and
-averaged with the CRAP grade. Without snapshots the box is graded by CRAP alone —
-this pack has no Python mutation runner, so that half of his formula stays
-dormant rather than painting everything red.
 
 `load` reads a hand-authored IR — EDN or JSON — and applies the same
 normalization and range checks as the original: ids lowercased, `crap` as a
@@ -382,10 +328,7 @@ It contains only real namespace segments:
 | `foreign` | External libraries drawn as ovals |
 | `edge_kinds` | Override `"from->to": "association"` |
 | `omit_edges` | Drop `["from", "to"]` pairs entirely |
-| `omit_edges` | Drop `["from", "to"]` pairs entirely |
 | `omit` | Modules left off the diagram |
-| `packages` | Packaged mode: named components over explicit namespace ids |
-| `diagrams` | Packaged mode: one generated diagram per entry |
 | `packages` | Packaged mode: named components over explicit namespace ids |
 | `diagrams` | Packaged mode: one generated diagram per entry |
 

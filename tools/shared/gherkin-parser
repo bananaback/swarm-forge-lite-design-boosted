@@ -2,4 +2,7 @@
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec bb --config "$script_dir/aps/bb.edn" gherkin-parser "$@"
+# Invoke the namespace, not the task name: from a cwd that holds this wrapper,
+# `bb ... gherkin-parser` resolves the file ./gherkin-parser as Clojure and
+# fails on the bash prologue instead of running the task.
+exec bb --config "$script_dir/aps/bb.edn" -m aps.cli.gherkin-parser "$@"

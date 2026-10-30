@@ -119,8 +119,7 @@ def render(model_path: Path, out_path: Path) -> None:
 <p>One box per subsystem, solid arrows for data or calls, dashed for seams. The runtime model is authored; the page is generated. Edit it through <code>arch runtime</code>, never here.</p>
 {svg}
 <footer>
-  <p>Edges out of the app: GStreamer through <code>pyservicemaker</code>, the broker through <code>paho-mqtt</code>, sound through the held PipeWire output, clips through the filesystem.</p>
-  <p><code>app.main</code> constructs the analysis consumers and the audio output; <code>pipeline.builder</code> composes the GStreamer half.</p>
+  <p>Generated from the selected project's <code>architecture/&lt;project&gt;/runtime.json</code> — {len(boxes)} subsystems, {len(edges)} edges. Edit it through <code>arch runtime</code>; never edit this page.</p>
 </footer>
 </body></html>
 """

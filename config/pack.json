@@ -25,7 +25,8 @@
         "07-speaker-alerts.md": "audio / alerts",
         "08-audio-output.md": "audio / output",
         "09-message-publish.md": "message_publish",
-        "10-latency-monitoring.md": "latency_monitoring"
+        "10-latency-monitoring.md": "latency_monitoring",
+        "11-app-integration.md": "app_integration"
       },
       "subsystems": [
         {
@@ -93,6 +94,13 @@
           "packages": [
             "privacy_record"
           ]
+        },
+        {
+          "number": "11",
+          "label": "app_integration",
+          "packages": [
+            "integration"
+          ]
         }
       ],
       "acceptance_command": "PACK_PROJECT=deepstream python3 deepstream/tests/acceptance/run_acceptance.py",
@@ -115,25 +123,47 @@
       "features": "control-server/tests/features",
       "docs_root": "control-server/docs",
       "specs": {
-        "01-selection.md": "selection",
-        "02-health.md": "health"
+        "01-control-plane.md": "control_plane",
+        "02-health.md": "health",
+        "03-evidence.md": "evidence",
+        "04-reports.md": "reports"
       },
       "subsystems": [
         {
           "number": "01",
-          "label": "selection",
+          "label": "control_plane",
           "packages": [
-            "domain/selection",
-            "adapters/mediamtx.py",
-            "workers/selection_loop.py",
-            "http/selection.py"
+            "domain/control",
+            "domain/refused.py",
+            "adapters/mqtt.py",
+            "workers/control_worker.py"
           ]
         },
         {
           "number": "02",
           "label": "health",
           "packages": [
+            "domain/health",
+            "adapters/relay_probe.py",
             "http/health.py"
+          ]
+        },
+        {
+          "number": "03",
+          "label": "evidence",
+          "packages": [
+            "domain/evidence",
+            "adapters/evidence_folder.py",
+            "http/evidence.py"
+          ]
+        },
+        {
+          "number": "04",
+          "label": "reports",
+          "packages": [
+            "domain/reports",
+            "adapters/report_folder.py",
+            "http/reports.py"
           ]
         }
       ],

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -234,9 +235,50 @@ def cmd_classes_render(_args) -> int:
     return 0
 
 
+def _edge_arguments(args) -> tuple[str, str, str] | None:
+    """Resolve an edge from either the flag form or the legacy positional form.
+
+    Accepted shapes:
+        classes add edge <from> <to>
+        classes add edge <id> <from> <to>
+        classes add edge --from <from> --to <to>
+        classes add edge <id> --from <from> --to <to>
+    """
+    positionals = [value for value in (args.id, args.source, args.target) if value is not None]
+    if args.edge_from is not None or args.edge_to is not None:
+        if args.edge_from is None or args.edge_to is None:
+            print("arch: add edge needs both --from and --to", file=sys.stderr)
+            return None
+        if len(positionals) > 1:
+            print(
+                "arch: add edge takes at most one positional id with --from/--to",
+                file=sys.stderr,
+            )
+            return None
+        source, target = args.edge_from, args.edge_to
+        edge_id = positionals[0] if positionals else None
+    elif len(positionals) == 3:
+        edge_id, source, target = positionals
+    elif len(positionals) == 2:
+        edge_id, source, target = None, positionals[0], positionals[1]
+    else:
+        print(
+            "arch: add edge needs --from and --to, or <from> <to>, or <id> <from> <to>",
+            file=sys.stderr,
+        )
+        return None
+    return edge_id or f"{source}->{target}", source, target
+
+
 def cmd_classes_add(args) -> int:
     data = _overlay()
     if args.what == "node":
+        if not args.id:
+            print("arch: add node requires an id", file=sys.stderr)
+            return 1
+        if args.source or args.target or args.edge_from or args.edge_to:
+            print("arch: add node takes one id and no --from/--to", file=sys.stderr)
+            return 1
         if args.subsystem not in {entry[1] for entry in class_map.DIAGRAMS}:
             print(f"arch: unknown subsystem {args.subsystem!r}", file=sys.stderr)
             return 1
@@ -248,13 +290,19 @@ def cmd_classes_add(args) -> int:
             "since": overlay.today(),
         }
         overlay.add_node(data, node)
+        overlay.save(paths.DESIGN, data)
+        print(f"design: node recorded in {paths.DESIGN}")
     else:
+        resolved = _edge_arguments(args)
+        if resolved is None:
+            return 1
+        edge_id, source, target = resolved
         overlay.add_edge(data, {
-            "from": args.source, "to": args.target, "kind": args.kind,
+            "id": edge_id, "from": source, "to": target, "kind": args.kind,
             "reason": args.reason or "", "since": overlay.today(),
         })
-    overlay.save(paths.DESIGN, data)
-    print(f"design: {args.what} recorded in {paths.DESIGN}")
+        overlay.save(paths.DESIGN, data)
+        print(f"design: edge {edge_id} recorded in {paths.DESIGN}")
     return 0
 
 
@@ -293,10 +341,49 @@ def cmd_classes_diff(args) -> int:
     return 0
 
 
-def docs_problems(spec_dir: Path, labelled: dict[str, tuple[str, object]]) -> list[str]:
-    import re
+def _classes_in_tables(text: str) -> list[str]:
+    """Class names taken from the `## Classes` tables, in any column layout.
 
+    Specs place the class in the column whose header names it (`Class`); some
+    tables lead with `Package` and put the class second. Only backticked
+    CamelCase identifiers are classes: an all-caps constant written in the same
+    table is not one, and is not the inverse check's business.
+    """
+    section = re.search(r"^## Classes\s*$(.*?)(?=^## |\Z)", text, re.M | re.S)
+    if section is None:
+        return []
+    names: list[str] = []
+    column: int | None = None
+    for raw in section.group(1).splitlines():
+        line = raw.strip()
+        if not line.startswith("|"):
+            continue
+        cells = [cell.strip() for cell in line.strip("|").split("|")]
+        if column is None:
+            column = next(
+                (index for index, cell in enumerate(cells)
+                 if re.fullmatch(r"\**\s*class\s*\**", cell, re.I)),
+                None,
+            )
+            continue
+        if all(set(cell) <= set("-: ") for cell in cells):
+            continue
+        if column >= len(cells):
+            continue
+        for name in re.findall(r"`(_?[A-Z][A-Za-z0-9]*)`", cells[column]):
+            if name.isupper():
+                continue
+            names.append(name)
+    return names
+
+
+def docs_problems(
+    spec_dir: Path,
+    labelled: dict[str, tuple[str, object]],
+    declared: set[str] | None = None,
+) -> list[str]:
     problems = []
+    known = {info.name for _sub, info in labelled.values()} | set(declared or ())
     covered: dict[str, set[str]] = {}
     for filename, subsystem in SPECS.items():
         path = spec_dir / filename
@@ -325,6 +412,15 @@ def docs_problems(spec_dir: Path, labelled: dict[str, tuple[str, object]]) -> li
                 problems.append(
                     f"{filename}: names a module that does not exist: {module_path}"
                 )
+        for name in sorted(set(_classes_in_tables(text))):
+            # The forward check proves every code class is described. This is
+            # the converse: a row that names a class the code does not have and
+            # the overlay does not declare sends the reader to a class that does
+            # not exist either — the legend and the model disagree.
+            if name not in known:
+                problems.append(
+                    f"{filename}: names a class that does not exist: {name}"
+                )
         covered.setdefault(subsystem, (set(), text))[0].update(
             re.findall(r"`([A-Z][A-Za-z0-9]+)`", text)
         )
@@ -346,7 +442,11 @@ def cmd_docs_validate(_args) -> int:
     if not SPEC_DIR.is_dir():
         print(f"no specs directory: {SPEC_DIR}")
         return 1
-    problems = docs_problems(SPEC_DIR, class_map.all_classes(PIPELINE, _overlay()))
+    data = _overlay()
+    declared = {node["id"].rsplit(".", 1)[-1] for node in data.get("nodes", [])}
+    problems = docs_problems(
+        SPEC_DIR, class_map.all_classes(PIPELINE, data), declared
+    )
     if problems:
         for problem in problems:
             print("violation:", problem)
@@ -467,14 +567,31 @@ def main(argv: list[str] | None = None) -> int:
     deps.set_defaults(func=cmd_classes_deps)
     csub.add_parser("validate").set_defaults(func=cmd_classes_validate)
     csub.add_parser("render").set_defaults(func=cmd_classes_render)
-    add = csub.add_parser("add")
+    add = csub.add_parser(
+        "add",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="Record a proposed node or edge in the design overlay.",
+        epilog=(
+            "Edge forms:\n"
+            "  classes add edge --from <class> --to <class>\n"
+            "  classes add edge <from> <to>\n"
+            "  classes add edge <id> <from> <to>   (legacy)\n"
+            "\n"
+            "The edge id is derived as '<from>-><to>' when omitted."
+        ),
+    )
     add.add_argument("what", choices=("node", "edge"))
-    add.add_argument("id", nargs="?")
-    add.add_argument("source", nargs="?")
-    add.add_argument("target", nargs="?")
+    add.add_argument("id", nargs="?", help="node id; optional edge id")
+    add.add_argument("source", nargs="?", help="legacy edge source positional")
+    add.add_argument("target", nargs="?", help="legacy edge target positional")
+    add.add_argument("--from", dest="edge_from", metavar="CLASS",
+                     help="edge source class id (with --to; positional id becomes optional)")
+    add.add_argument("--to", dest="edge_to", metavar="CLASS",
+                     help="edge target class id (with --from)")
     add.add_argument("--subsystem")
     add.add_argument("--stereotype", default="class", choices=sorted(set(class_map.STEREOTYPES) | {"class"}))
-    add.add_argument("--layer", default="core", choices=("core", "shell"))
+    add.add_argument("--layer", default="core", choices=("core", "shell"),
+                     help="node layer stored on the node (default: core)")
     add.add_argument("--module")
     add.add_argument("--kind", default="dependency", choices=overlay.VALID_KINDS)
     add.add_argument("--note")

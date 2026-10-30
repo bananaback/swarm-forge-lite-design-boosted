@@ -62,9 +62,10 @@ Clojure compares every top-level form except ns. The other languages compare
 functions and methods. A form is only compared with forms in the same language.
 
 Exit codes:
-  0  the report was written
+  0  the report was written; no pair meets the threshold
   1  usage error
-  2  unknown output format
+  2  at least one pair meets or exceeds --threshold, or the output format is
+     unknown
 """
 
 
@@ -318,7 +319,7 @@ def run(argv: list[str] | None = None) -> int:
     else:
         print(format_text(candidates), end="")
     print(f"Wrote {metrics}", file=sys.stderr)
-    return 0
+    return 2 if candidates else 0
 
 
 def main(argv: list[str] | None = None) -> None:

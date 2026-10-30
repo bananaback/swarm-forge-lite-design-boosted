@@ -334,6 +334,7 @@ def merged(
                     group=_group_of(node.get("module") or "", prefix),
                     stereotype=node.get("stereotype", "class"),
                     note=node.get("note", ""),
+                    layer_override=node.get("layer"),
                 ),
             )
             for class_id, meta in overlays.get("annotations", {}).items():

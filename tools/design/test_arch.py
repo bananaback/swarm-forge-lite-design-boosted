@@ -173,6 +173,7 @@ def test_runtime_validation_rejects_dangling_edge(tmp_path):
 def test_cli_validates_the_real_project():
     assert arch.main(["classes", "validate"]) == 0
     assert arch.main(["runtime", "validate"]) == 0
+    assert arch.main(["docs", "validate"]) == 0
 
 
 def test_classes_deps_names_the_classes_that_depend_on_it(tmp_path, monkeypatch, capsys):
@@ -212,3 +213,169 @@ def test_classes_deps_agrees_with_classes_show_on_the_real_project(capsys):
     assert arch.main(["classes", "deps", "rule_check_osd.legend.ClassLegend"]) == 0
     named = _printed_names(capsys.readouterr().out)
     assert set(dependents) <= set(named)
+
+
+EDGE_FROM = "rule_check_osd.legend.ClassLegend"
+EDGE_TO = "rule_check_osd.shell.draw.OsdDraw"
+
+
+def _design(tmp_path: Path) -> dict:
+    return json.loads((tmp_path / "design.json").read_text(encoding="utf-8"))
+
+
+def test_classes_add_edge_accepts_from_and_to_flags(tmp_path, monkeypatch, capsys):
+    _fake_project(tmp_path, monkeypatch)
+    assert arch.main([
+        "classes", "add", "edge", "--from", EDGE_FROM, "--to", EDGE_TO,
+    ]) == 0
+    edge = _design(tmp_path)["edges"][0]
+    assert (edge["from"], edge["to"]) == (EDGE_FROM, EDGE_TO)
+    assert edge["id"] == f"{EDGE_FROM}->{EDGE_TO}"
+    assert f"edge {EDGE_FROM}->{EDGE_TO}" in capsys.readouterr().out
+
+
+def test_classes_add_edge_derives_the_id_from_two_positionals(tmp_path, monkeypatch):
+    _fake_project(tmp_path, monkeypatch)
+    assert arch.main(["classes", "add", "edge", EDGE_FROM, EDGE_TO]) == 0
+    edge = _design(tmp_path)["edges"][0]
+    assert (edge["from"], edge["to"]) == (EDGE_FROM, EDGE_TO)
+    assert edge["id"] == f"{EDGE_FROM}->{EDGE_TO}"
+
+
+def test_classes_add_edge_keeps_the_legacy_id_form(tmp_path, monkeypatch):
+    _fake_project(tmp_path, monkeypatch)
+    assert arch.main([
+        "classes", "add", "edge", "legacy-edge", EDGE_FROM, EDGE_TO,
+    ]) == 0
+    edge = _design(tmp_path)["edges"][0]
+    assert (edge["from"], edge["to"]) == (EDGE_FROM, EDGE_TO)
+    assert edge["id"] == "legacy-edge"
+
+
+def test_classes_add_edge_rejects_a_lone_from_flag(tmp_path, monkeypatch, capsys):
+    _fake_project(tmp_path, monkeypatch)
+    assert arch.main(["classes", "add", "edge", "--from", EDGE_FROM]) == 1
+    assert "both --from and --to" in capsys.readouterr().err
+
+
+def test_classes_add_node_honours_the_layer_it_was_given(tmp_path, monkeypatch, capsys):
+    _fake_project(tmp_path, monkeypatch)
+    node_id = "rule_check_osd.core.proposed.ProposedCheck"
+    assert arch.main([
+        "classes", "add", "node", node_id,
+        "--subsystem", "rule_check_osd",
+        "--module", "rule_check_osd/core/proposed",
+        "--layer", "shell",
+    ]) == 0
+    assert _design(tmp_path)["nodes"][0]["layer"] == "shell"
+
+    assert arch.main([
+        "classes", "ls", "--subsystem", "rule_check_osd", "--layer", "shell",
+    ]) == 0
+    assert node_id in _printed_names(capsys.readouterr().out)
+
+    assert arch.main([
+        "classes", "ls", "--subsystem", "rule_check_osd", "--layer", "core",
+    ]) == 0
+    assert node_id not in _printed_names(capsys.readouterr().out)
+
+    assert arch.main(["classes", "show", node_id]) == 0
+    assert " shell " in capsys.readouterr().out
+
+
+def _spec_with_classes(tmp_path: Path, rows: str) -> Path:
+    spec = f"""# fake
+
+## Responsibility
+x
+
+## Structure
+x
+
+## Classes
+| Class | What it does |
+|---|---|
+{rows}
+
+## Flow
+x
+
+## Design rules
+x
+
+## Rejected
+x
+"""
+    path = tmp_path / "fake.md"
+    path.write_text(spec, encoding="utf-8")
+    return tmp_path
+
+
+def _subsystem_model():
+    info = class_model.ClassInfo(name="RealOne", module="sub/core/real", group="core")
+    return {"sub.core.real.RealOne": ("sub", info)}
+
+
+def test_docs_validate_reports_a_class_that_does_not_exist(tmp_path, monkeypatch):
+    monkeypatch.setattr(arch, "SPECS", {"fake.md": "sub"})
+    spec_dir = _spec_with_classes(
+        tmp_path,
+        "| `RealOne` | exists |\n| `GhostClass` | no such class |",
+    )
+    problems = arch.docs_problems(spec_dir, _subsystem_model())
+    assert any(
+        "fake.md: names a class that does not exist: GhostClass" in problem
+        for problem in problems
+    )
+
+
+def test_docs_validate_cli_exits_1_for_a_missing_class(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(arch, "SPECS", {"fake.md": "sub"})
+    monkeypatch.setattr(arch, "SPEC_DIR", tmp_path)
+    _spec_with_classes(tmp_path, "| `GhostClass` | no such class |")
+    assert arch.main(["docs", "validate"]) == 1
+    out = capsys.readouterr().out
+    assert "violation: fake.md: names a class that does not exist: GhostClass" in out
+
+
+def test_docs_validate_cli_accepts_a_class_declared_in_the_overlay(
+    tmp_path, monkeypatch, capsys
+):
+    monkeypatch.setattr(arch, "SPECS", {"fake.md": "sub"})
+    monkeypatch.setattr(arch, "SPEC_DIR", tmp_path)
+    _spec_with_classes(tmp_path, "| `GhostClass` | declared in the overlay |")
+    design = tmp_path / "design.json"
+    design.write_text(
+        json.dumps({
+            "nodes": [{"id": "sub.core.ghost.GhostClass", "subsystem": "sub",
+                       "stereotype": "class", "layer": "core"}],
+            "edges": [],
+            "annotations": {},
+        }),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(arch.paths, "DESIGN", design)
+    assert arch.main(["docs", "validate"]) == 0
+    assert "ok: 1 specs" in capsys.readouterr().out
+
+
+def test_docs_validate_accepts_a_class_declared_in_the_overlay(tmp_path, monkeypatch):
+    monkeypatch.setattr(arch, "SPECS", {"fake.md": "sub"})
+    spec_dir = _spec_with_classes(
+        tmp_path,
+        "| `RealOne` | exists |\n| `GhostClass` | declared in the overlay |",
+    )
+    problems = arch.docs_problems(
+        spec_dir, _subsystem_model(), declared={"GhostClass"}
+    )
+    assert not any("GhostClass" in problem for problem in problems)
+
+
+def test_docs_validate_ignores_constants_in_a_classes_table(tmp_path, monkeypatch):
+    monkeypatch.setattr(arch, "SPECS", {"fake.md": "sub"})
+    spec_dir = _spec_with_classes(
+        tmp_path,
+        "| `RealOne` | exists |\n| `MQTT_ALERT_TOPIC` | a constant, not a class |",
+    )
+    problems = arch.docs_problems(spec_dir, _subsystem_model())
+    assert not any("MQTT_ALERT_TOPIC" in problem for problem in problems)
