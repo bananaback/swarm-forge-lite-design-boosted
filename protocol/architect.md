@@ -19,9 +19,9 @@ behavior or change the feature.
 
 ## Tools
 
-- `python3 swarm-forge-lite/tools/design/arch.py classes validate` — class graph and overlay.
-- `python3 swarm-forge-lite/tools/design/arch.py runtime validate` — every subsystem under `app/pipeline` has a box, every runtime edge resolves.
-- `python3 swarm-forge-lite/tools/design/arch.py render all` — refresh both views after the gate.
+- `python3 $PACK/tools/design/arch.py classes validate` — class graph and overlay.
+- `python3 $PACK/tools/design/arch.py runtime validate` — every subsystem under the project's `class_root` has a box, every runtime edge resolves.
+- `python3 $PACK/tools/design/arch.py render all` — refresh both views after the gate.
 
 ## Review
 
@@ -50,7 +50,7 @@ and DRY analyze, and `artifacts_root` holds every report they write.
 Run in this order, one at a time, and stop at the first failure:
 
 ```sh
-python3 $PACK/tools/umlview scan        # only when the project has a policy
+python3 $PACK/tools/umlview scan        # writes the policy itself when there is none
 python3 $PACK/tools/umlview validate    # dependency rule; exit 1 on a violation
 python3 $PACK/tools/umlview render
 ruff check "$PROJECT/<lint path>"
@@ -90,9 +90,9 @@ command and failure, and say whether the coder or the refactorer should take it.
 Before you report done, run:
 
 ```sh
-python3 swarm-forge-lite/tools/design/arch.py classes validate
-python3 swarm-forge-lite/tools/design/arch.py runtime validate
-python3 swarm-forge-lite/tools/design/arch.py docs validate
+python3 $PACK/tools/design/arch.py classes validate
+python3 $PACK/tools/design/arch.py runtime validate
+python3 $PACK/tools/design/arch.py docs validate
 ```
 
 All three must exit 0. A violation is a boundary defect, not a formatting nit: name

@@ -12,6 +12,7 @@ sys.path.insert(0, str(HERE))
 import arch  # noqa: E402
 import class_model  # noqa: E402
 import overlay  # noqa: E402
+import runtime_view  # noqa: E402
 
 SAMPLE = {
     "core/port.py": """
@@ -379,3 +380,105 @@ def test_docs_validate_ignores_constants_in_a_classes_table(tmp_path, monkeypatc
     )
     problems = arch.docs_problems(spec_dir, _subsystem_model())
     assert not any("MQTT_ALERT_TOPIC" in problem for problem in problems)
+
+
+def test_layer_violations_apply_the_dependency_rule_to_every_edge_kind():
+    core = class_model.ClassInfo(name="Rules", module="safety/rules", group="safety")
+    guard = class_model.ClassInfo(name="Guard", module="safety/guard", group="safety")
+    shell = class_model.ClassInfo(
+        name="Speaker", module="safety/shell/speaker", group="shell"
+    )
+    classes = {"Rules": core, "Guard": guard, "Speaker": shell}
+
+    for kind in ("dependency", "composition", "aggregation", "extends", "implements"):
+        assert arch.layer_violations(classes, [("Rules", "Speaker", kind)]) == [
+            f"core depends on shell: Rules -> Speaker ({kind})"
+        ]
+
+    assert arch.layer_violations(classes, [("Speaker", "Rules", "composition")]) == []
+    assert arch.layer_violations(classes, [("Rules", "Guard", "dependency")]) == []
+    assert arch.layer_violations(classes, [("Rules", "Ghost", "dependency")]) == []
+
+
+def test_classes_diff_reports_annotations_instead_of_an_empty_overlay(
+    tmp_path, monkeypatch, capsys
+):
+    _fake_project(tmp_path, monkeypatch)
+    (tmp_path / "design.json").write_text(
+        json.dumps(
+            {
+                "nodes": [],
+                "edges": [],
+                "annotations": {"rule_check_osd.legend.ClassLegend": {"note": "why"}},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert arch.main(["classes", "diff"]) == 0
+    output = capsys.readouterr().out
+    assert "overlay empty" not in output
+    assert "1 annotations" in output
+
+
+def test_classes_diff_flags_an_annotation_with_no_class(tmp_path, monkeypatch, capsys):
+    _fake_project(tmp_path, monkeypatch)
+    (tmp_path / "design.json").write_text(
+        json.dumps(
+            {
+                "nodes": [],
+                "edges": [],
+                "annotations": {"rule_check_osd.legend.Gone": {"note": "why"}},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert arch.main(["classes", "diff"]) == 0
+    assert "stale overlay annotation" in capsys.readouterr().out
+    assert arch.main(["classes", "diff", "--strict"]) == 1
+
+
+def test_runtime_render_uses_the_authored_title(tmp_path):
+    model = {
+        "title": "Control server — runtime architecture",
+        "canvas": [100, 100],
+        "zones": [],
+        "nodes": [
+            {
+                "id": "main",
+                "x": 10,
+                "y": 10,
+                "w": 100,
+                "h": 40,
+                "label": "app.main",
+                "sub": "wire",
+                "note": None,
+                "tone": "entry",
+            }
+        ],
+        "edges": [],
+    }
+    source = tmp_path / "runtime.json"
+    source.write_text(json.dumps(model), encoding="utf-8")
+    out = tmp_path / "architecture.html"
+
+    runtime_view.render(source, out, project="deepstream")
+
+    page = out.read_text(encoding="utf-8")
+    assert "<title>Control server — runtime architecture</title>" in page
+    assert "app.main" in page
+
+
+def test_runtime_render_falls_back_to_the_project_name(tmp_path):
+    model = {"canvas": [100, 100], "zones": [], "nodes": [], "edges": []}
+    source = tmp_path / "runtime.json"
+    source.write_text(json.dumps(model), encoding="utf-8")
+    out = tmp_path / "architecture.html"
+
+    runtime_view.render(source, out, project="control-server")
+
+    assert (
+        "<title>control-server — runtime architecture</title>"
+        in out.read_text(encoding="utf-8")
+    )

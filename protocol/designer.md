@@ -19,19 +19,20 @@ of the design, so the spec and the picture cannot drift apart.
 4. `../config/pack.json` — project root and paths.
 5. `../tools/README.md`, section **Design surface** — the exact commands.
 6. `<PACK>/tools/design/README.md` — the spec shape and the views.
-7. The authored data you may change: `<PACK>/architecture/runtime.json` (runtime
-   boxes and edges) and `<PACK>/architecture/design.json` (class overlay).
+7. The authored data you may change: `<PACK>/architecture/<project>/runtime.json`
+   (runtime boxes and edges) and `<PACK>/architecture/<project>/design.json`
+   (class overlay).
 8. The spec, the feature and the code paths your brief names.
 
 ## Tools
 
-- `python3 swarm-forge-lite/tools/design/arch.py classes ls|show|deps|validate|render`
-- `python3 swarm-forge-lite/tools/design/arch.py runtime ls|show|validate|render`
-- `python3 swarm-forge-lite/tools/design/arch.py render [classes|runtime|all]`
-- `python3 swarm-forge-lite/tools/design/arch.py classes add|remove|annotate|diff` — the design overlay: a class or edge that does not exist in code yet, or a note on an existing one.
+- `python3 $PACK/tools/design/arch.py classes ls|show|deps|validate|render`
+- `python3 $PACK/tools/design/arch.py runtime ls|show|validate|render`
+- `python3 $PACK/tools/design/arch.py render [classes|runtime|all]`
+- `python3 $PACK/tools/design/arch.py classes add|remove|annotate|diff` — the design overlay: a class or edge that does not exist in code yet, or a note on an existing one.
 - `umlview scan|render|validate` for the module-grade view; `policy propose` for a view that does not exist in code.
 
-A view is generated, never hand-edited. A query scans the code, so it cannot disagree with it. The runtime view is the exception: `architecture/runtime.json` is authored, and `arch runtime validate` fails when a code subsystem has no box.
+A view is generated, never hand-edited. A query scans the code, so it cannot disagree with it. The runtime view is the exception: `architecture/<project>/runtime.json` is authored, and `arch runtime validate` fails when a code subsystem has no box.
 
 ## Produce
 
@@ -107,7 +108,7 @@ Rules:
   added, renamed, moved or gains a collaborator. A stale row is a defect.
 - Never put a test path, test name, acceptance criterion or requirement id in a
   spec. The feature is the only behavior statement; tests are the coder's work.
-- Run `python3 swarm-forge-lite/tools/design/arch.py docs validate` before you
+- Run `python3 $PACK/tools/design/arch.py docs validate` before you
   report. It fails when a class has no row, a section is missing, or a test
   reference leaked in.
 - A contained change with no structural effect leaves the spec untouched; say so
@@ -120,7 +121,7 @@ Before you report, answer these. A "no" means fix the design, not the spec.
 - Every behavior the feature states has an owning class in the spec.
 - Every responsibility sentence has no "and".
 - Each module hides exactly one nameable secret.
-- Dependencies are acyclic, and the rules point inward; no Core → concrete Shell.
+- Dependencies are acyclic, and the rules point inward; no Core → concrete Shell — an import, a construction, an injected collaborator, a base class and a protocol all count the same.
 - Every interface method has a real client; no client knows an unused method.
 - Every method is a command or a query, never both, with a contract you can state.
 - No chain deeper than one dot past self, parameters, locals.
@@ -143,7 +144,7 @@ Before you report, answer these. A "no" means fix the design, not the spec.
 You maintain the views that let the operator see the design, and you answer
 questions about them.
 
-- **Own the class and runtime views**: `python3 swarm-forge-lite/tools/design/arch.py classes
+- **Own the class and runtime views**: `python3 $PACK/tools/design/arch.py classes
   ls|show|deps|validate|render` and `arch runtime ls|show|validate|render`.
   These are generated from the code; a query cannot disagree with it.
 - **Own the subsystem spec**: whenever a class is added, renamed, moved or given

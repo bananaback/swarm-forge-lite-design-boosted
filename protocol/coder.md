@@ -19,10 +19,10 @@ redesign the structure.
 
 ## Tools
 
-- `python3 swarm-forge-lite/tools/design/arch.py classes show <id>` — the seam, members and both edge directions.
-- `python3 swarm-forge-lite/tools/design/arch.py classes deps <id>` — who depends on this class.
-- `python3 swarm-forge-lite/tools/design/arch.py classes scan` is implicit: every query scans.
-- `python3 swarm-forge-lite/tools/design/arch.py classes validate` before handing off when your change touched structure.
+- `python3 $PACK/tools/design/arch.py classes show <id>` — the seam, members and both edge directions.
+- `python3 $PACK/tools/design/arch.py classes deps <id>` — who depends on this class.
+- `python3 $PACK/tools/design/arch.py classes scan` is implicit: every query scans.
+- `python3 $PACK/tools/design/arch.py classes validate` before handing off when your change touched structure.
 
 The test reviewer judges your tests after you report. A reject comes back to you
 with `path:line` findings; fix the tests, not the reviewer.

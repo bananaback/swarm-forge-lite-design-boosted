@@ -42,12 +42,22 @@ python3 <PACK>/tools/design/arch.py render [classes|runtime|all]
 ```
 
 - `classes` scans the code on every call; there is no stored class model to drift.
+- `classes validate` applies the Dependency Rule to the class graph: an edge from
+  a `core` class to a `shell` class is a violation whatever its kind — a plain
+  reference, a construction, an injected collaborator, a base class, a protocol.
+  Direction is what counts, and the same layer is allowed. A class that really
+  belongs to the shell is declared so with `classes annotate --layer shell`; the
+  rule is never narrowed to let one edge pass.
 - `classes add node` stores the `--layer` it is given on the node, so the class
   view renders it without a later `annotate`.
 - `classes add edge` accepts `--from`/`--to`; the positional id is optional and is
   derived as `<from>-><to>` when omitted. The legacy `<id> <from> <to>` form works.
-- `runtime` reads `<PACK>/architecture/runtime.json`; `validate` fails when a
-  subsystem under `app/pipeline` has no box.
+- `classes diff` lists what the code has not caught up with: design-only nodes
+  and edges, and any annotation whose class no longer exists. `--strict` exits 1
+  when one of them is stale.
+- `runtime` reads `<PACK>/architecture/<project>/runtime.json`; its optional
+  `title` is the page heading (the project name is the fallback), and `validate`
+  fails when a subsystem under the project's `class_root` has no box.
 - `docs validate` checks every spec against the model: all six sections present,
   every class described, no test or acceptance reference, and every class named in
   a `## Classes` table exists in the scanned code or is declared in the design

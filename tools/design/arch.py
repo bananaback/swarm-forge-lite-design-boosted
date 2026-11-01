@@ -178,6 +178,23 @@ def cmd_classes_deps(args) -> int:
     return 0
 
 
+def layer_violations(classes, edges) -> list[str]:
+    """The Dependency Rule: a core class must not name a shell class.
+
+    Every edge is a source-code dependency — importing a shell module,
+    constructing one, aggregating one, inheriting from one, implementing one — so
+    the edge kind never exempts it. A class that genuinely belongs to the shell
+    is declared so in the overlay; the rule itself is never narrowed.
+    """
+    problems = []
+    for src, dst, edge_kind in edges:
+        if src not in classes or dst not in classes:
+            continue
+        if classes[src].layer == "core" and classes[dst].layer == "shell":
+            problems.append(f"core depends on shell: {src} -> {dst} ({edge_kind})")
+    return problems
+
+
 def cmd_classes_validate(_args) -> int:
     if not _require_tree():
         return 1
@@ -186,14 +203,10 @@ def cmd_classes_validate(_args) -> int:
     for _label, (_number, classes, edges) in class_map.merged(PIPELINE, _overlay()).items():
         total_classes += len(classes)
         total_edges += len(edges)
-        for src, dst, edge_kind in edges:
+        for src, dst, _edge_kind in edges:
             if src not in classes or dst not in classes:
                 problems.append(f"dangling edge {src} -> {dst}")
-                continue
-            explicit = lambda info: {"core", "shell"} & set(info.module.split("/"))
-            if (edge_kind != "dependency" and explicit(classes[src]) and explicit(classes[dst])
-                    and classes[src].layer == "core" and classes[dst].layer == "shell"):
-                problems.append(f"core depends on shell: {src} -> {dst} ({edge_kind})")
+        problems.extend(layer_violations(classes, edges))
         outgoing: dict[str, list[str]] = {}
         for src, dst, kind in edges:
             if kind != "dependency":
@@ -330,11 +343,19 @@ def cmd_classes_annotate(args) -> int:
 
 def cmd_classes_diff(args) -> int:
     data = _overlay()
-    rows = overlay.diff(set(_code_classes()), set(_code_edges()), data)
+    code_ids = set(_code_classes())
+    rows = overlay.diff(code_ids, set(_code_edges()), data)
+    annotations = data.get("annotations", {})
+    for class_id in sorted(annotations):
+        if class_id not in code_ids:
+            rows.append(f"stale overlay annotation: {class_id} has no class in code")
     for row in rows:
         print(row)
     if not rows:
-        print("(overlay empty)")
+        if annotations:
+            print(f"(no design-only nodes or edges; {len(annotations)} annotations)")
+        else:
+            print("(overlay empty)")
     stale = any(row.startswith("stale") for row in rows)
     if args.strict and stale:
         return 1
@@ -515,7 +536,7 @@ def cmd_runtime_validate(_args) -> int:
 
 
 def cmd_runtime_render(_args) -> int:
-    runtime_view.render(RUNTIME, DOCS / "ARCHITECTURE.html")
+    runtime_view.render(RUNTIME, DOCS / "ARCHITECTURE.html", project=paths.NAME)
     return 0
 
 

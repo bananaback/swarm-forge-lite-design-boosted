@@ -19,9 +19,9 @@ the feature file, or run mutation.
 
 ## Tools
 
-- `python3 swarm-forge-lite/tools/design/arch.py classes deps <id> --transitive` — the full set a move can break.
-- `python3 swarm-forge-lite/tools/design/arch.py classes validate` — dangling edges, cycles, core→shell.
-- `python3 swarm-forge-lite/tools/design/arch.py classes diff` — drafted design that the code has not caught up with.
+- `python3 $PACK/tools/design/arch.py classes deps <id> --transitive` — the full set a move can break.
+- `python3 $PACK/tools/design/arch.py classes validate` — dangling edges, cycles, core→shell.
+- `python3 $PACK/tools/design/arch.py classes diff` — drafted design that the code has not caught up with.
 
 ## Procedure
 

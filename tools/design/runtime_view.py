@@ -26,8 +26,11 @@ def _write(path: Path, text: str) -> None:
     print(f"wrote {path}")
 
 
-def render(model_path: Path, out_path: Path) -> None:
+def render(model_path: Path, out_path: Path, project: str = "") -> None:
     data = json.loads(model_path.read_text(encoding="utf-8"))
+    title = data.get("title")
+    if not isinstance(title, str) or not title.strip():
+        title = f"{project} — runtime architecture" if project else "runtime architecture"
     width, height = data["canvas"]
     boxes = {
         n["id"]: (n["x"], n["y"], n["w"], n["h"], n["label"], n["sub"], n["note"], n["tone"])
@@ -82,13 +85,13 @@ def render(model_path: Path, out_path: Path) -> None:
         )
         if label:
             labels.append(((x1 + x2s) / 2 + dx, (y1 + y2s) / 2 + dy, label))
-    for box_id, (x, y, w, h, title, sub, note, tone) in boxes.items():
+    for box_id, (x, y, w, h, box_title, sub, note, tone) in boxes.items():
         fill, stroke = TONES[tone]
         parts.append(
             f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="9" fill="{fill}" stroke="{stroke}" '
             f'stroke-width="1.5"/>'
             f'<text x="{x + 13}" y="{y + 27}" font-size="12.5" font-weight="600" fill="#1e293b">'
-            f"{escape(title)}</text>"
+            f"{escape(box_title)}</text>"
             f'<text x="{x + 13}" y="{y + 46}" font-size="10.5" fill="#64748b">{escape(sub)}</text>'
         )
         if note:
@@ -105,7 +108,7 @@ def render(model_path: Path, out_path: Path) -> None:
     parts.append("</svg>")
     svg = "".join(parts)
     html = f"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>DS91 — runtime architecture</title>
+<html lang="en"><head><meta charset="utf-8"><title>{escape(title)}</title>
 <style>
   :root {{ color-scheme: light; }}
   body {{ margin: 0; padding: 28px 32px 40px; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; color: #1e293b; background: #fff; }}
@@ -115,7 +118,7 @@ def render(model_path: Path, out_path: Path) -> None:
   footer {{ margin-top: 14px; color: #64748b; font-size: 12.5px; max-width: 1000px; }}
   code {{ font-size: 12.5px; background: #f1f5f9; padding: 1px 5px; border-radius: 4px; }}
 </style></head><body>
-<h1>DS91 — runtime architecture</h1>
+<h1>{escape(title)}</h1>
 <p>One box per subsystem, solid arrows for data or calls, dashed for seams. The runtime model is authored; the page is generated. Edit it through <code>arch runtime</code>, never here.</p>
 {svg}
 <footer>
@@ -132,4 +135,4 @@ if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import paths
 
-    render(paths.RUNTIME, paths.DOCS / "ARCHITECTURE.html")
+    render(paths.RUNTIME, paths.DOCS / "ARCHITECTURE.html", project=paths.NAME)

@@ -246,11 +246,13 @@ records edges **inside one subsystem only**, so it cannot see a dependency from 
 subsystem into another — a module in `message_publish` importing a module in `audio`
 leaves `classes validate` green. Cross-subsystem direction is `umlview validate`'s
 job, and both belong in the terminal gate for that reason.
-`runtime` reads `<PACK>/architecture/<project>/runtime.json`; `validate` fails
-when a subsystem under the project's `class_root` has no box. `classes
-add|remove|annotate` write `<PACK>/architecture/<project>/design.json` (the draft
-overlay); `diff` reports what the code has not caught up with. The pack's
-`umlview` remains the module-grade view and is not involved.
+`runtime` reads `<PACK>/architecture/<project>/runtime.json`; its optional
+`title` is the rendered page heading, and `validate` fails when a subsystem
+under the project's `class_root` has no box. `classes add|remove|annotate` write
+`<PACK>/architecture/<project>/design.json` (the draft overlay); `diff` reports
+what the code has not caught up with — design-only nodes and edges, plus any
+annotation whose class is gone. The pack's `umlview` remains the module-grade
+view and is not involved.
 
 ## Diagram
 

@@ -19,12 +19,12 @@ classes, and you do not edit the note.
 
 ## Tools
 
-- `python3 swarm-forge-lite/tools/design/arch.py classes show <id>` — read the contract a scenario talks about, when the note names one.
+- `python3 $PACK/tools/design/arch.py classes show <id>` — read the contract a scenario talks about, when the note names one.
 - No rendering: the specifier changes the feature, not a view.
 
 ## Input
 
-- The note at `<project>/docs/specs/NN-<subsystem>.md`: intent, out of scope,
+- The note at `<project>/<docs_root>/specs/NN-<subsystem>.md`: intent, out of scope,
   design, decisions.
 - The code the change touches.
 

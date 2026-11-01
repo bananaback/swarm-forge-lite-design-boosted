@@ -10,6 +10,12 @@
     },
     "privacy_record.shell.clip_recorder.ClipRecorder": {
       "note": "hands the claimed session to ClipFinalizer; it never renames itself"
+    },
+    "detector.detector.DetectorElement": {
+      "layer": "shell"
+    },
+    "latency_monitoring.latency_monitoring.Composition": {
+      "layer": "shell"
     }
   }
 }
