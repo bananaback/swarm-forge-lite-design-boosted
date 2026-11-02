@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-HERE = Path(__file__).resolve().parent
-WRAPPER = HERE / "gherkin-parser"
+PACK = Path(__file__).resolve().parents[2]
+WRAPPER = PACK / "tools" / "shared" / "gherkin-parser"
 FEATURE = """\
 Feature: wrapper cwd
   Scenario: parse from a cwd that holds the wrapper
@@ -25,7 +25,7 @@ def test_wrapper_parses_from_any_working_directory(tmp_path, cwd):
     feature = tmp_path / "sample.feature"
     feature.write_text(FEATURE, encoding="utf-8")
     output = tmp_path / "sample.json"
-    working_dir = HERE if cwd == "shared" else tmp_path
+    working_dir = (PACK / "tools" / "shared") if cwd == "shared" else tmp_path
     result = subprocess.run(
         [str(WRAPPER), str(feature), str(output)],
         cwd=working_dir,

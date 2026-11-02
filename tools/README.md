@@ -39,7 +39,7 @@ not a clean project — those commands exit non-zero and name what is missing. A
 empty `arch classes ls` or `umlview ls` is the one shape that used to look green;
 it no longer does.
 
-Each project owns its own `<PACK>/architecture/<project>/` and its own
+Each project owns its own design folder (`<PROJECT>/<design_root>/`) and its own
 `<artifacts_root>`, so scratch and design models never mix across projects.
 
 `artifacts_root` resolves against the project root, so a `..` value keeps every
@@ -69,6 +69,24 @@ python3 -c "import tree_sitter_language_pack; print('analyzers available')"
 `coverage` is the one exception: the coverage commands run the project's tests, so
 they need the project's interpreter. Generate `lcov.info` there, then run `crapper`
 on the pack interpreter.
+
+## Pack plumbing
+
+The lifecycle commands. All are stdlib-only and safe to re-run.
+
+```sh
+python3 tools/doctor.py [--project <p>]        # health check; exit 1 on a failure
+python3 tools/install.py inspect --root <path> # brief: facts, guesses, questions
+python3 tools/install.py apply --answers <f>   # config, design folder, PROJECT.md
+python3 tools/update.py check|trial|apply --yes
+python3 tools/gate.py <name>                   # run one project gate
+python3 tools/migrate.py [--dry-run]           # copy legacy design data (additive)
+```
+
+Config resolution is one rule for every tool: `SWARM_CONFIG`, then
+`config/pack.local.json`, then the legacy `config/pack.json`. A value may carry
+`<PACK>` instead of spelling the pack's directory name. `config/pack.schema.json`
+is the shape; `tools/shared/packschema.py` validates it without a dependency.
 
 ## Search and navigation
 
@@ -246,10 +264,10 @@ records edges **inside one subsystem only**, so it cannot see a dependency from 
 subsystem into another — a module in `message_publish` importing a module in `audio`
 leaves `classes validate` green. Cross-subsystem direction is `umlview validate`'s
 job, and both belong in the terminal gate for that reason.
-`runtime` reads `<PACK>/architecture/<project>/runtime.json`; its optional
+`runtime` reads `<PROJECT>/<design_root>/runtime.json`; its optional
 `title` is the rendered page heading, and `validate` fails when a subsystem
 under the project's `class_root` has no box. `classes add|remove|annotate` write
-`<PACK>/architecture/<project>/design.json` (the draft overlay); `diff` reports
+`<PROJECT>/<design_root>/overlay.json` (the draft overlay); `diff` reports
 what the code has not caught up with — design-only nodes and edges, plus any
 annotation whose class is gone. The pack's `umlview` remains the module-grade
 view and is not involved.
@@ -368,5 +386,6 @@ is no mailbox here — the conversation is the mailbox.
 Mutation testing, Gherkin mutation, coverage gating, and any catalog or wrapper
 CLI. They were removed deliberately; do not reintroduce them in a role prompt.
 
-The vendored APS bundle still declares a `gherkin-mutator` task and ships its
-spec. It is not part of this pack: do not run it.
+The vendored APS bundle still ships the mutator's source and spec for
+provenance, but no task declares it and no test runs it. It is not part of this
+pack: do not wire it in.

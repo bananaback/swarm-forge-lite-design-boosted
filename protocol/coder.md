@@ -78,12 +78,12 @@ values. Write a literal handler only when the wording is different behavior.
 ## Commands
 
 ```sh
-python3 -m pytest -q "$PROJECT/<unit path>"
+python3 $PACK/tools/gate.py unit
 rm -f "$PROJECT/<artifacts root>/<stem>.*"
 $PACK/tools/shared/gherkin-parser "$PROJECT/<features>/<stem>.feature" "$PROJECT/<artifacts root>/<stem>.json"
 bb --config $PACK/tools/shared/aps/bb.edn gherkin-ir-dry-checker "$PROJECT/<artifacts root>/<stem>.json" "$PROJECT/<artifacts root>/<stem>.dry.json"
-<acceptance_command from config>
-ruff check <files you touched>
+python3 $PACK/tools/gate.py acceptance
+python3 $PACK/tools/gate.py lint
 ```
 
 ## Done When

@@ -55,7 +55,7 @@ python3 <PACK>/tools/design/arch.py render [classes|runtime|all]
 - `classes diff` lists what the code has not caught up with: design-only nodes
   and edges, and any annotation whose class no longer exists. `--strict` exits 1
   when one of them is stale.
-- `runtime` reads `<PACK>/architecture/<project>/runtime.json`; its optional
+- `runtime` reads `<PROJECT>/<design_root>/runtime.json`; its optional
   `title` is the page heading (the project name is the fallback), and `validate`
   fails when a subsystem under the project's `class_root` has no box.
 - `docs validate` checks every spec against the model: all six sections present,

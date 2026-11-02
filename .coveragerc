@@ -1,0 +1,13 @@
+[run]
+source = tools
+omit =
+    tools/shared/dryer/*
+    tools/refactorer/*
+    tools/shared/aps/*
+    tools/umlview/vendor/*
+    tools/selftest.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:

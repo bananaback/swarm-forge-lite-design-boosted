@@ -21,6 +21,22 @@ that talks to the operator.
 - If the task does not name its project, and the project is not unmistakable from
   the request, ask which one. Never dispatch against a guessed project.
 
+## Before You Dispatch
+
+Run `python3 $PACK/tools/doctor.py` once per session. Exit 0 is the condition for
+starting; exit 1 names the one blocking item and its remedy. Warnings are
+reported, not fixed.
+
+## Changing The Harness
+
+- A harness update belongs to the operator. Run `python3 $PACK/tools/update.py
+  check` and `trial` when asked; `apply` only on an explicit yes.
+- Never edit a tracked harness file in an installed pack. The change goes
+  upstream; `update.py` refuses a dirty worktree for exactly that reason.
+- Before changing the harness itself, read `CONTRIBUTING.md`. A change that moves
+  a path, renames a file or alters a contract needs a migration and a changelog
+  entry in the same commit.
+
 ## What To Dispatch
 
 Decide from what the change must produce:
@@ -76,8 +92,8 @@ Rules
     that is worked around silently is a defect every later role pays for again.
     Do not fix pack tooling; report it. An unset selector falls back to `default_project` and silently
     reads another project's tree.
-  - Start with `arch.py env` and keep its output in the report: it proves which
-    project and which paths every later command used.
+  - Run `doctor.py` and `arch.py env` first, and keep both outputs in the report:
+    they prove the install is sound and which project every later command used.
   - Locate code with `codegraph explore` or a path-scoped search; never a broad
     recursive grep.
   - Do not commit; the operator owns git.
@@ -103,7 +119,7 @@ Check the brief before sending:
   `spec`); when it is not `none` the gate is `arch classes validate`,
   `arch runtime validate`, or `arch docs validate` for a spec change;
 - when design views is not `none`, scope names the spec and/or
-  `<PACK>/architecture/<project>/{runtime,design}.json` the role may change;
+  `<PROJECT>/<design_root>/{runtime,overlay,policy}.json` the role may change;
 - the deliverable is the role's Report section, not "do your best".
 
 A view-only task is the narrowest dispatch:
@@ -111,7 +127,7 @@ A view-only task is the narrowest dispatch:
 ```text
   task:         add the new subsystem to the runtime view
   project:      <project>
-  scope:        <PACK>/architecture/<project>/runtime.json,
+  scope:        <PROJECT>/<design_root>/runtime.json,
                 <PROJECT>/<docs_root>/ARCHITECTURE.html
   design views: runtime
   gate:         python3 <PACK>/tools/design/arch.py runtime validate

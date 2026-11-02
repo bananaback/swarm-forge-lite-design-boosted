@@ -1,15 +1,25 @@
-"""Behavior tests for the design surface. Run: python3 -m pytest -q tools/design."""
+"""Behavior tests for the design surface (rules 6–20).
+
+They import the tools in-process, so they need a parseable pack config; without
+one the module skips rather than failing a bare clone.
+"""
 
 from __future__ import annotations
 
 import json
 import sys
+
+import pytest
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
+PACK = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(PACK / "tools" / "design"))
 
-import arch  # noqa: E402
+try:
+    import arch  # noqa: E402
+except SystemExit as error:  # no pack config yet
+    pytest.skip(f"design surface needs a pack config: {error}", allow_module_level=True)
+
 import class_model  # noqa: E402
 import overlay  # noqa: E402
 import runtime_view  # noqa: E402
@@ -169,12 +179,6 @@ def test_runtime_validation_rejects_dangling_edge(tmp_path):
     data = {"zones": [], "nodes": [{"id": "detector", "package": "detector"}],
             "edges": [{"from": "detector", "to": "ghost", "kind": "solid"}]}
     assert any("ghost" in p for p in arch.runtime_problems(data, pipeline))
-
-
-def test_cli_validates_the_real_project():
-    assert arch.main(["classes", "validate"]) == 0
-    assert arch.main(["runtime", "validate"]) == 0
-    assert arch.main(["docs", "validate"]) == 0
 
 
 def test_classes_deps_names_the_classes_that_depend_on_it(tmp_path, monkeypatch, capsys):
@@ -482,3 +486,246 @@ def test_runtime_render_falls_back_to_the_project_name(tmp_path):
         "<title>control-server — runtime architecture</title>"
         in out.read_text(encoding="utf-8")
     )
+
+
+def test_env_prints_the_resolved_project(capsys):
+    assert arch.main(["env"]) == 0
+    output = capsys.readouterr().out
+    assert "project:" in output
+    assert "design:" in output
+
+
+def test_classes_ls_filters_by_kind(tmp_path, monkeypatch, capsys):
+    _fake_project(tmp_path, monkeypatch)
+
+    assert arch.main(["classes", "ls", "--kind", "interface"]) == 0
+    assert "ClassLegend" not in capsys.readouterr().out
+
+
+def test_show_and_deps_name_a_missing_class_once(tmp_path, monkeypatch, capsys):
+    _fake_project(tmp_path, monkeypatch)
+
+    assert arch.main(["classes", "show", "Nope"]) == 1
+    assert "no class" in capsys.readouterr().err
+    assert arch.main(["classes", "deps", "Nope"]) == 1
+
+
+def test_render_classes_writes_the_page(tmp_path, monkeypatch):
+    _fake_project(tmp_path, monkeypatch)
+    monkeypatch.setattr(arch, "DOCS", tmp_path)
+
+    assert arch.main(["render", "classes"]) == 0
+    assert (tmp_path / "diagrams.html").is_file()
+
+
+def test_render_runtime_writes_the_page(tmp_path, monkeypatch):
+    model = {
+        "title": "demo",
+        "canvas": [400, 200],
+        "zones": [{"id": "z", "x": 0, "y": 0, "w": 200, "h": 100, "label": "zone"}],
+        "nodes": [
+            {
+                "id": "demo", "x": 10, "y": 10, "w": 80, "h": 40,
+                "label": "demo", "sub": "x", "note": "1", "tone": "entry",
+            }
+        ],
+        "edges": [
+            {
+                "from": "demo", "side": "bottom", "to": "demo", "to_side": "top",
+                "kind": "dash", "label": "l", "dx": 0, "dy": 0,
+            }
+        ],
+    }
+    runtime = tmp_path / "runtime.json"
+    runtime.write_text(json.dumps(model), encoding="utf-8")
+    monkeypatch.setattr(arch, "RUNTIME", runtime)
+    monkeypatch.setattr(arch, "DOCS", tmp_path)
+
+    assert arch.main(["runtime", "render"]) == 0
+    page = (tmp_path / "ARCHITECTURE.html").read_text(encoding="utf-8")
+    assert "<svg" in page
+    assert "zone" in page
+
+
+def test_runtime_ls_and_show(tmp_path, monkeypatch, capsys):
+    model = {
+        "title": "demo", "canvas": [400, 200], "zones": [],
+        "nodes": [{"id": "demo", "x": 0, "y": 0, "w": 1, "h": 1, "label": "demo",
+                   "sub": "s", "note": None, "tone": "entry", "package": "demo"}],
+        "edges": [],
+    }
+    runtime = tmp_path / "runtime.json"
+    runtime.write_text(json.dumps(model), encoding="utf-8")
+    monkeypatch.setattr(arch, "RUNTIME", runtime)
+
+    assert arch.main(["runtime", "ls"]) == 0
+    assert "demo" in capsys.readouterr().out
+    assert arch.main(["runtime", "show", "demo"]) == 0
+    assert arch.main(["runtime", "show", "ghost"]) == 1
+
+
+def test_docs_validate_names_a_missing_spec(tmp_path, monkeypatch, capsys):
+    _fake_project(tmp_path, monkeypatch)
+    monkeypatch.setattr(arch, "SPECS", {"missing.md": "rule_check_osd"})
+    monkeypatch.setattr(arch, "SPEC_DIR", tmp_path / "specs")
+    (tmp_path / "specs").mkdir()
+
+    assert arch.main(["docs", "validate"]) == 1
+    assert "missing" in capsys.readouterr().out
+
+
+def test_overlay_validate_reports_every_bad_field(tmp_path):
+    data = {
+        "nodes": [{"id": "a.B", "subsystem": "a", "stereotype": "weird", "layer": "outer"}],
+        "edges": [{"from": "a.B", "to": "ghost", "kind": "bogus", "since": "2000-01-01"}],
+        "annotations": {},
+    }
+
+    problems = overlay.validate(data, set(), set(), strict=True)
+
+    assert any("bad stereotype" in problem for problem in problems)
+    assert any("bad layer" in problem for problem in problems)
+    assert any("bad kind" in problem for problem in problems)
+    assert any("unknown node" in problem for problem in problems)
+
+
+def test_class_relations_cover_extends_and_implements(tmp_path):
+    root = tmp_path / "pkg"
+    (root / "demo").mkdir(parents=True)
+    (root / "demo" / "base.py").write_text(
+        "from abc import ABC, abstractmethod\n\n"
+        "class Base(ABC):\n    @abstractmethod\n    def run(self): ...\n",
+        encoding="utf-8",
+    )
+    (root / "demo" / "child.py").write_text(
+        "from .base import Base\n\nclass Child(Base):\n    def run(self):\n        return 1\n",
+        encoding="utf-8",
+    )
+    classes = class_model.scan(root, ("demo",))
+    edges = class_model.relations(classes)
+
+    assert ("Child", "Base", "implements") in edges
+
+
+def test_classes_validate_on_a_clean_fake_project(tmp_path, monkeypatch):
+    _fake_project(tmp_path, monkeypatch)
+
+    assert arch.main(["classes", "validate"]) == 0
+
+
+def test_classes_validate_names_a_core_to_shell_edge(tmp_path, monkeypatch, capsys):
+    root = tmp_path / "pkg"
+    for name, body in {
+        "demo/core/rules.py": (
+            "class Rules:\n"
+            "    def __init__(self, speaker: Speaker):\n"
+            "        self.speaker = speaker\n"
+        ),
+        "demo/shell/speaker.py": "class Speaker:\n    pass\n",
+    }.items():
+        path = root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(body, encoding="utf-8")
+    monkeypatch.setattr(arch, "PIPELINE", root)
+    monkeypatch.setattr(arch.paths, "DESIGN", tmp_path / "design.json")
+    monkeypatch.setattr(
+        class_model, "DIAGRAMS", (("01", "demo", ("demo",)),)
+    )
+
+    assert arch.main(["classes", "validate"]) == 1
+    assert "core depends on shell" in capsys.readouterr().out
+
+
+def test_classes_validate_refuses_a_missing_tree(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(arch, "PIPELINE", tmp_path / "gone")
+
+    assert arch.main(["classes", "validate"]) == 1
+    assert "no class tree" in capsys.readouterr().out
+
+
+def test_render_all_writes_both_views(tmp_path, monkeypatch):
+    _fake_project(tmp_path, monkeypatch)
+    model = {"title": "demo", "canvas": [200, 100], "zones": [], "nodes": [], "edges": []}
+    runtime = tmp_path / "runtime.json"
+    runtime.write_text(json.dumps(model), encoding="utf-8")
+    monkeypatch.setattr(arch, "RUNTIME", runtime)
+    monkeypatch.setattr(arch, "DOCS", tmp_path)
+
+    assert arch.main(["render", "all"]) == 0
+    assert (tmp_path / "diagrams.html").is_file()
+    assert (tmp_path / "ARCHITECTURE.html").is_file()
+
+
+def test_runtime_validate_names_an_unboxed_subsystem(tmp_path, monkeypatch, capsys):
+    (tmp_path / "pipeline" / "orphan").mkdir(parents=True)
+    model = {"title": "t", "canvas": [1, 1], "zones": [], "nodes": [], "edges": []}
+    runtime = tmp_path / "runtime.json"
+    runtime.write_text(json.dumps(model), encoding="utf-8")
+    monkeypatch.setattr(arch, "RUNTIME", runtime)
+    monkeypatch.setattr(arch, "PIPELINE", tmp_path / "pipeline")
+
+    assert arch.main(["runtime", "validate"]) == 1
+    assert "orphan" in capsys.readouterr().out
+
+
+def test_add_node_and_edge_reject_bad_input(tmp_path, monkeypatch, capsys):
+    _fake_project(tmp_path, monkeypatch)
+    assert arch.main(["classes", "add", "node"]) == 1
+    assert arch.main(["classes", "add", "node", "x.Y", "--subsystem", "nope"]) == 1
+    assert arch.main(["classes", "add", "edge", "--from", "a"]) == 1
+    assert arch.main(["classes", "add", "edge", "one", "two", "three"]) == 0
+
+
+def test_remove_reports_nothing_to_remove(tmp_path, monkeypatch, capsys):
+    _fake_project(tmp_path, monkeypatch)
+    assert arch.main(["classes", "remove", "node", "ghost.Node"]) == 1
+    assert "nothing removed" in capsys.readouterr().err
+
+
+def test_annotate_and_diff_report_design_only_entries(tmp_path, monkeypatch, capsys):
+    _fake_project(tmp_path, monkeypatch)
+    assert arch.main(["classes", "annotate", "rule_check_osd.legend.ClassLegend", "--note", "why"]) == 0
+    assert arch.main(["classes", "diff"]) == 0
+    assert "no design-only nodes or edges" in capsys.readouterr().out
+
+
+def test_overlay_helpers_cover_removal_and_merge(tmp_path):
+    data = {"nodes": [], "edges": [], "annotations": {}}
+    overlay.annotate(data, "pkg.Thing", "note", "shell")
+    assert data["annotations"]["pkg.Thing"] == {"note": "note", "layer": "shell"}
+    overlay.add_edge(data, {"from": "A", "to": "B", "kind": "dependency", "since": "2026-01-01"})
+    assert overlay.remove_edge(data, "A", "B") is True
+    assert overlay.remove_edge(data, "A", "B") is False
+    assert overlay.remove_node(data, "missing") is False
+    assert overlay.age_days("not-a-date") == -1
+
+    info = class_model.ClassInfo(name="Thing", module="pkg/thing", group="pkg")
+    classes = {"Thing": info}
+    edges: list = []
+    overlay.merge(classes, edges, data, "pkg", lambda node, name: info)
+    assert classes["Thing"].layer_override == "shell"
+
+
+def test_overlay_diff_marks_stale_edges_and_nodes():
+    data = {
+        "nodes": [{"id": "pkg.A", "subsystem": "pkg", "since": "2026-01-01"}],
+        "edges": [{"from": "pkg.A", "to": "pkg.B", "kind": "dependency"}],
+        "annotations": {},
+    }
+
+    rows = overlay.diff({"pkg.A"}, {("pkg.A", "pkg.B")}, data)
+
+    assert any(row.startswith("stale overlay: pkg.A") for row in rows)
+    assert any(row.startswith("stale overlay edge: pkg.A -> pkg.B") for row in rows)
+
+
+def test_rendering_is_deterministic(tmp_path, monkeypatch):
+    _fake_project(tmp_path, monkeypatch)
+    monkeypatch.setattr(arch, "DOCS", tmp_path)
+    first = tmp_path / "one.html"
+    second = tmp_path / "two.html"
+
+    arch.class_map.render(arch.PIPELINE, first, arch._overlay(), project="demo")
+    arch.class_map.render(arch.PIPELINE, second, arch._overlay(), project="demo")
+
+    assert first.read_text(encoding="utf-8") == second.read_text(encoding="utf-8")

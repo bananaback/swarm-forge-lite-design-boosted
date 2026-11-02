@@ -41,19 +41,15 @@ the feature file, or run mutation.
 ## Commands
 
 ```sh
-python3 -m pytest -q "$PROJECT/<unit path>"
-python3 -m coverage run --data-file "$PROJECT/<artifacts root>/.coverage" \
-  -m pytest -q "$PROJECT/<unit path>"
-python3 -m coverage lcov --data-file "$PROJECT/<artifacts root>/.coverage" \
-  -o "$PROJECT/<artifacts root>/target/coverage/python/lcov.info"
-PYTHONPATH=$PACK/tools/refactorer python3 -m crapper \
-  --root "$PROJECT/<artifacts root>" --use-existing-coverage \
-  --source-root "$PROJECT/<source root>" --threshold 10
-PYTHONPATH=$PACK/tools/shared python3 -m dryer \
-  --root "$PROJECT/<artifacts root>" \
-  --source-root "$PROJECT/<source root>" --threshold 0.82 --min-lines 4 --min-nodes 20
-ruff check <files you touched>
+python3 $PACK/tools/gate.py unit
+python3 $PACK/tools/gate.py coverage
+python3 $PACK/tools/gate.py lcov
+python3 $PACK/tools/gate.py crap
+python3 $PACK/tools/gate.py dry
+python3 $PACK/tools/gate.py lint
 ```
+
+The names are the contract; the project config maps each one to its command.
 
 `$PROJECT` and every `--source-root` are absolute: a relative path analyzes
 nothing and still exits 0. Confirm the report names real functions before you
@@ -61,8 +57,8 @@ trust a clean result.
 
 ## Done When
 
-Worst CRAP is 10 or below, duplicates are below the threshold (`dryer` exits 0),
-tests and acceptance still exit 0, and no behavior changed.
+`gate.py crap` is 10 or below, `gate.py dry` exits 0, tests and acceptance still
+exit 0, and no behavior changed.
 
 ## Report
 

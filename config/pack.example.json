@@ -1,0 +1,76 @@
+{
+  "selector_env": "PACK_PROJECT",
+  "default_project": "<project>",
+  "projects": {
+    "<project>": {
+      "project_root": "../<project-dir>",
+      "source_roots": [
+        "app"
+      ],
+      "class_root": "app",
+      "test_paths": [
+        "tests"
+      ],
+      "unit_paths": "tests/unit",
+      "lint_paths": ".",
+      "features": "tests/features",
+      "docs_root": "docs",
+      "design_root": "design",
+      "specs": {
+        "01-<subsystem>.md": "<subsystem>"
+      },
+      "subsystems": [
+        {
+          "number": "01",
+          "label": "<subsystem>",
+          "packages": [
+            "<package>"
+          ]
+        }
+      ],
+      "acceptance_command": "python3 tests/acceptance/run_acceptance.py",
+      "artifacts_root": "<PACK>/tmp/<project>",
+      "umlview": {
+        "policy": "design/policy.json",
+        "out": "<PACK>/tmp/<project>/uml"
+      },
+      "gates": {
+        "lint": [
+          "ruff",
+          "check",
+          "."
+        ],
+        "format_check": [
+          "ruff",
+          "format",
+          "--check",
+          "."
+        ],
+        "unit": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/unit"
+        ],
+        "acceptance": [
+          "python3",
+          "tests/acceptance/run_acceptance.py"
+        ]
+      },
+      "capabilities": {
+        "gherkin": true,
+        "duplication": true,
+        "crap": true
+      },
+      "gates_cwd": ".",
+      "gate_env": {}
+    }
+  },
+  "thresholds": {
+    "crap": 10,
+    "dry": 0.82,
+    "min_lines": 4,
+    "min_nodes": 20
+  }
+}

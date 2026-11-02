@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "pack config",
+  "type": "object",
+  "required": [
+    "projects"
+  ],
+  "properties": {
+    "selector_env": {
+      "type": "string"
+    },
+    "default_project": {
+      "type": "string"
+    },
+    "thresholds": {
+      "type": "object",
+      "properties": {
+        "crap": {
+          "type": "number"
+        },
+        "dry": {
+          "type": "number"
+        },
+        "min_lines": {
+          "type": "number"
+        },
+        "min_nodes": {
+          "type": "number"
+        }
+      }
+    },
+    "projects": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "project_root",
+          "source_roots"
+        ],
+        "properties": {
+          "project_root": {
+            "type": "string"
+          },
+          "source_roots": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "class_root": {
+            "type": "string"
+          },
+          "test_paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "unit_paths": {
+            "type": "string"
+          },
+          "property_paths": {
+            "type": "string"
+          },
+          "lint_paths": {
+            "type": "string"
+          },
+          "features": {
+            "type": "string"
+          },
+          "docs_root": {
+            "type": "string"
+          },
+          "design_root": {
+            "type": "string"
+          },
+          "specs": {
+            "type": "object"
+          },
+          "subsystems": {
+            "type": "array"
+          },
+          "acceptance_command": {
+            "type": "string"
+          },
+          "artifacts_root": {
+            "type": "string"
+          },
+          "umlview": {
+            "type": "object",
+            "properties": {
+              "policy": {
+                "type": "string"
+              },
+              "out": {
+                "type": "string"
+              }
+            }
+          },
+          "gates": {
+            "type": "object"
+          },
+          "gates_cwd": {
+            "type": "string"
+          },
+          "gate_env": {
+            "type": "object"
+          },
+          "capabilities": {
+            "type": "object"
+          },
+          "layer": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -53,19 +53,14 @@ Run in this order, one at a time, and stop at the first failure:
 python3 $PACK/tools/umlview scan        # writes the policy itself when there is none
 python3 $PACK/tools/umlview validate    # dependency rule; exit 1 on a violation
 python3 $PACK/tools/umlview render
-ruff check "$PROJECT/<lint path>"
-ruff format --check "$PROJECT/<lint path>"
-PYTHONPATH=$PACK/tools/shared python3 -m dryer --root "$PROJECT/<artifacts root>" \
-  --source-root "$PROJECT/<source root>" --threshold 0.82 --min-lines 4 --min-nodes 20
-python3 -m pytest -q "$PROJECT/<unit path>"
-<acceptance_command from config>
-python3 -m coverage run --data-file "$PROJECT/<artifacts root>/.coverage" \
-  -m pytest -q "$PROJECT/<unit path>"
-python3 -m coverage lcov --data-file "$PROJECT/<artifacts root>/.coverage" \
-  -o "$PROJECT/<artifacts root>/target/coverage/python/lcov.info"
-PYTHONPATH=$PACK/tools/refactorer python3 -m crapper \
-  --root "$PROJECT/<artifacts root>" --use-existing-coverage \
-  --source-root "$PROJECT/<source root>" --threshold 10
+python3 $PACK/tools/gate.py lint
+python3 $PACK/tools/gate.py format_check
+python3 $PACK/tools/gate.py dry
+python3 $PACK/tools/gate.py unit
+python3 $PACK/tools/gate.py acceptance
+python3 $PACK/tools/gate.py coverage
+python3 $PACK/tools/gate.py lcov
+python3 $PACK/tools/gate.py crap
 ```
 
 `$PROJECT` and every `--source-root` are absolute. A relative source root
@@ -75,9 +70,9 @@ CRAP passes at exactly the threshold: `--threshold 10` exits 2 only when the
 worst score is above 10, so 10.0 is green with no headroom. Report the worst
 score, not only the exit code.
 
-DRY is stricter at its boundary: `dryer --threshold 0.82` exits 2 when at least
-one pair is at or above 0.82, and 0 when none is. A pair exactly at the threshold
-fails the gate.
+The duplication gate is stricter at its boundary: `gate.py dry` exits 2 when a
+pair is at or above the configured threshold, and 0 when none is. A pair exactly
+at the threshold fails the gate.
 
 A read-only task ends before the fix: verify, report, change nothing.
 

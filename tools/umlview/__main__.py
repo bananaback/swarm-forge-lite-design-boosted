@@ -12,6 +12,11 @@ import os
 import sys
 from pathlib import Path
 
+PACK = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(PACK / "tools" / "shared"))
+
+import packconfig  # noqa: E402
+
 import metrics as metrics_module
 import init as init_module
 import ir as ir_module
@@ -23,25 +28,38 @@ from model import Document, Model, grade, validate_model
 from policy import Policy
 
 
+def _config(args) -> dict:
+    """Load the config the same way every other tool does."""
+    try:
+        return packconfig.load(PACK, override=getattr(args, "config", "") or None)
+    except packconfig.ConfigError as error:
+        raise SystemExit(f"umlview: {error}") from None
+
+
 def _project(config: dict) -> dict:
     """Select the project exactly as tools/design/paths.py does."""
-    env = config.get("selector_env", "PACK_PROJECT")
-    projects = config.get("projects", {})
-    known = ", ".join(sorted(projects)) or "<none configured>"
-    name = os.environ.get(env, "").strip() or config.get("default_project")
-    if name not in projects:
-        raise SystemExit(f"unknown project {name!r} for this pack; known: {known}")
-    return projects[name]
+    try:
+        name, _ = packconfig.select(config)
+    except packconfig.ConfigError as error:
+        raise SystemExit(f"umlview: {error}") from None
+    return config["projects"][name]
+
+
+def _design_policy(project_conf: dict) -> str:
+    """The policy path for a project, in the new layout or the legacy one."""
+    uml = project_conf.get("umlview", {})
+    if uml.get("policy"):
+        return uml["policy"]
+    design_root = project_conf.get("design_root")
+    return f"{design_root}/policy.json" if design_root else "umlview.json"
 
 
 def _resolve(args) -> tuple[Path, Path, Path, Policy | None]:
-    config_path = Path(args.config).expanduser().resolve()
-    config = json.loads(config_path.read_text(encoding="utf-8"))
-    pack = config_path.parent.parent
+    config = _config(args)
     project_conf = _project(config)
-    project = (pack / project_conf["project_root"]).resolve()
+    project = (PACK / project_conf["project_root"]).resolve()
     uml = project_conf.get("umlview", {})
-    policy_path = (project / uml.get("policy", "umlview.json")).resolve()
+    policy_path = (project / _design_policy(project_conf)).resolve()
     out_dir = (
         project / uml.get("out", project_conf.get("artifacts_root", "tmp") + "/uml")
     ).resolve()
@@ -83,7 +101,7 @@ def _load_model(out_dir: Path) -> Model:
 def _write_policy(args) -> Policy:
     """Derive and write a policy from the code. Never called over an existing one."""
     project, _, policy_path, _ = _resolve(args)
-    config = json.loads(Path(args.config).read_text(encoding="utf-8"))
+    config = _config(args)
     root_rel = getattr(args, "root", "") or _project(config).get("source_roots", ["."])[0]
     root = (project / root_rel).resolve()
     title = getattr(args, "title", "") or root.name
@@ -302,7 +320,8 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="umlview", description=__doc__)
     parser.add_argument(
         "--config",
-        default=str(Path(__file__).resolve().parents[2] / "config" / "pack.json"),
+        default="",
+        help="config file; default: SWARM_CONFIG, pack.local.json, then pack.json",
     )
     parser.add_argument("--metrics", default="", help="crap.edn relative to the project root")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -335,8 +354,7 @@ def main(argv: list[str]) -> int:
 
     args = parser.parse_args(argv)
     if not args.metrics:
-        config = json.loads(Path(args.config).read_text(encoding="utf-8"))
-        artifacts = _project(config).get("artifacts_root", "tmp")
+        artifacts = _project(_config(args)).get("artifacts_root", "tmp")
         args.metrics = str(artifacts).rstrip("/") + "/.metrics/crap.edn"
     return {
         "init": cmd_init,

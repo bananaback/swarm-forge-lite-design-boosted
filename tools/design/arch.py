@@ -554,16 +554,22 @@ def cmd_env(_args) -> int:
     origin = paths.SOURCE
     if origin == "default_project":
         origin = f"default_project ({paths.SELECTOR_ENV} unset)"
+    print(f"config:       {paths.CONFIG_PATH}")
     print(f"project:      {paths.NAME}")
     print(f"selected by:  {origin}")
     print(f"project_root: {paths.PROJECT}")
     print(f"app:          {paths.APP}")
     print(f"class_root:   {paths.PIPELINE}")
     print(f"docs:         {paths.DOCS}")
-    print(f"architecture: {paths.ARCHITECTURE}")
+    print(f"design:       {paths.DESIGN_DIR}")
     print(f"runtime:      {paths.RUNTIME} ({runtime})")
     print(f"tmp:          {paths.ARTIFACTS}")
     print(f"specs:        {len(SPECS)} declared")
+    if paths.LEGACY_DESIGN:
+        print(
+            "warning:      legacy design path; set design_root to move the "
+            "design into the project"
+        )
     return 0
 
 

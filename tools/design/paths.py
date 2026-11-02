@@ -3,43 +3,31 @@
 A pack serves many projects. ``PACK_PROJECT`` selects one; when it is unset the
 config's ``default_project`` applies. Every path below is derived from that
 selection, so no prompt, role or tool hardcodes a project layout.
+
+The config itself is found by ``packconfig``: ``SWARM_CONFIG``, then
+``config/pack.local.json``, then the tracked legacy ``config/pack.json``. Paths
+may use the ``<PACK>`` token instead of spelling the pack's folder name.
 """
 
 from __future__ import annotations
 
-import json
-import os
+import sys
 from pathlib import Path
 
 PACK = Path(__file__).resolve().parents[2]
-CONFIG = json.loads((PACK / "config" / "pack.json").read_text(encoding="utf-8"))
+sys.path.insert(0, str(PACK / "tools" / "shared"))
+
+import packconfig  # noqa: E402
+
+try:
+    CONFIG = packconfig.load(PACK)
+    CONFIG_PATH = packconfig.config_path(PACK)
+    NAME, SOURCE = packconfig.select(CONFIG)
+except packconfig.ConfigError as error:
+    raise SystemExit(str(error)) from None
+
 PROJECTS: dict = CONFIG.get("projects", {})
 SELECTOR_ENV: str = CONFIG.get("selector_env", "PACK_PROJECT")
-
-
-def _select() -> tuple[str, str]:
-    """Return (project name, where the selection came from)."""
-    known = ", ".join(sorted(PROJECTS)) or "<none configured>"
-    requested = os.environ.get(SELECTOR_ENV, "").strip()
-    if requested:
-        if requested not in PROJECTS:
-            raise SystemExit(
-                f"unknown project {requested!r} in {SELECTOR_ENV}; known: {known}"
-            )
-        return requested, SELECTOR_ENV
-    default = CONFIG.get("default_project")
-    if not default:
-        raise SystemExit(
-            f"no project selected: set {SELECTOR_ENV} to one of {known}"
-        )
-    if default not in PROJECTS:
-        raise SystemExit(
-            f"default_project {default!r} is not configured; known: {known}"
-        )
-    return default, "default_project"
-
-
-NAME, SOURCE = _select()
 CFG: dict = PROJECTS[NAME]
 THRESHOLDS: dict = CONFIG.get("thresholds", {})
 
@@ -67,6 +55,26 @@ SUBSYSTEMS: tuple = tuple(
     for entry in CFG.get("subsystems", [])
 )
 
-ARCHITECTURE = PACK / "architecture" / NAME
-RUNTIME = ARCHITECTURE / "runtime.json"
-DESIGN = ARCHITECTURE / "design.json"
+# Authored design data: the project owns it when `design_root` is set; otherwise
+# the tracked legacy `architecture/<project>/` is read and flagged.
+_DESIGN_ROOT = CFG.get("design_root")
+if _DESIGN_ROOT:
+    DESIGN_DIR = (PROJECT / _DESIGN_ROOT).resolve()
+    RUNTIME = DESIGN_DIR / "runtime.json"
+    DESIGN = DESIGN_DIR / "overlay.json"
+    LEGACY_DESIGN = False
+else:
+    DESIGN_DIR = PACK / "architecture" / NAME
+    RUNTIME = DESIGN_DIR / "runtime.json"
+    DESIGN = DESIGN_DIR / "design.json"
+    LEGACY_DESIGN = True
+
+ARCHITECTURE = DESIGN_DIR
+
+_POLICY = UMLVIEW.get("policy")
+if _POLICY:
+    POLICY = (PROJECT / _POLICY).resolve()
+elif LEGACY_DESIGN:
+    POLICY = (PROJECT / "umlview.json").resolve()
+else:
+    POLICY = DESIGN_DIR / "policy.json"

@@ -27,10 +27,9 @@ Every judgement follows from a line, a grep, or a run. Before you judge:
 
 1. List the changed tests: `git status --short` and `git diff --name-only` in
    the project. They are your review scope; nothing else.
-2. Run the unit and property tests for the touched subsystem, twice. Record the
-   exit status and the runtime of each run.
-3. Run the changed features through the acceptance runner, twice. Record the
-   exit status.
+2. Run `gate.py unit` (and `gate.py property` where the project has one) twice.
+   Record the exit status and the runtime of each run.
+3. Run `gate.py acceptance` twice. Record the exit status.
 4. For each test, find the scenario it pins. A test with no scenario, or a
    scenario with no test, is a finding.
 

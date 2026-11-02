@@ -31,11 +31,11 @@ is not asked to approve a specification that did not change.
 |---|---|---|
 | design note | designer | six sections present and current, self-check yes, `arch docs validate` exits 0 |
 | specification | specifier | `gherkin-parser` clean, `gherkin-ir-dry-checker` clean; operator approves note + feature |
-| implementation | coder | red test first, then green; unit and acceptance pass; ruff clean |
+| implementation | coder | red test first, then green; `gate.py unit` and `gate.py acceptance` pass; `gate.py lint` clean |
 | tests | test-reviewer | verdict accept; both runs exit 0; every changed test has an oracle and a named wrong implementation |
-| structure | refactorer | tests still pass; worst CRAP ≤ 10; `dryer` exits 0 at `--threshold` |
+| structure | refactorer | tests still pass; `gate.py crap` ≤ 10; `gate.py dry` exits 0 |
 | design views | designer | the changed view renders; the spec's `## Classes`/`## Flow` are current; `arch classes validate`, `arch runtime validate` or `arch docs validate` exits 0 |
-| terminal | architect | ruff, format, `umlview validate`, DRY, unit, acceptance, CRAP, `arch classes validate`, `arch runtime validate`, `arch docs validate` — all pass |
+| terminal | architect | `gate.py lint`, `format_check`, `dry`, `unit`, `acceptance`, `coverage`, `lcov`, `crap`, `umlview validate`, `arch classes validate`, `arch runtime validate`, `arch docs validate` — all pass |
 
 The orchestrator accepts a gate from the role's report. The architect re-runs
 the terminal gate in full, so the pack always ends with one verified command
@@ -46,7 +46,7 @@ set rather than five claims.
 | Role | Owns | Writes |
 |---|---|---|
 | orchestrator | deciding the chain, dispatch, operator contact | nothing in the project |
-| designer | intent, class design, spec, policy, proposals, design views | `<PROJECT>/<docs_root>/specs/NN-*.md`, `<PACK>/architecture/<project>/{runtime,design}.json`, rendered views |
+| designer | intent, class design, spec, policy, proposals, design views | `<PROJECT>/<docs_root>/specs/NN-*.md`, `<PROJECT>/<design_root>/{runtime,overlay,policy}.json`, rendered views |
 | specifier | behavior and acceptance criteria | `*.feature` |
 | coder | acceptance pipeline, implementation, unit tests | source, tests, generated acceptance |
 | test-reviewer | the verdict on the tests; what a green suite actually proves | nothing — findings only, under the artifacts root |

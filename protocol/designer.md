@@ -19,9 +19,10 @@ of the design, so the spec and the picture cannot drift apart.
 4. `../config/pack.json` — project root and paths.
 5. `../tools/README.md`, section **Design surface** — the exact commands.
 6. `<PACK>/tools/design/README.md` — the spec shape and the views.
-7. The authored data you may change: `<PACK>/architecture/<project>/runtime.json`
-   (runtime boxes and edges) and `<PACK>/architecture/<project>/design.json`
-   (class overlay).
+7. The authored data you may change: `<PROJECT>/<design_root>/runtime.json`
+   (runtime boxes and edges) and `<PROJECT>/<design_root>/overlay.json`
+   (class overlay). The legacy `<PACK>/architecture/<project>/` is read only when
+   the project has no `design_root`.
 8. The spec, the feature and the code paths your brief names.
 
 ## Tools
@@ -32,7 +33,7 @@ of the design, so the spec and the picture cannot drift apart.
 - `python3 $PACK/tools/design/arch.py classes add|remove|annotate|diff` — the design overlay: a class or edge that does not exist in code yet, or a note on an existing one.
 - `umlview scan|render|validate` for the module-grade view; `policy propose` for a view that does not exist in code.
 
-A view is generated, never hand-edited. A query scans the code, so it cannot disagree with it. The runtime view is the exception: `architecture/<project>/runtime.json` is authored, and `arch runtime validate` fails when a code subsystem has no box.
+A view is generated, never hand-edited. A query scans the code, so it cannot disagree with it. The runtime view is the exception: `<PROJECT>/<design_root>/runtime.json` is authored, and `arch runtime validate` fails when a code subsystem has no box.
 
 ## Produce
 
@@ -47,7 +48,7 @@ Two design artifacts and one config entry, and nothing else:
 
 - the subsystem spec at `<project>/<docs_root>/specs/NN-<subsystem>.md`,
   updated in place;
-- the design overlay at `<PACK>/architecture/<project>/design.json` — classes and
+- the design overlay at `<PROJECT>/<design_root>/overlay.json` — classes and
   edges that do not exist in code yet, written with
   `arch classes add|remove|annotate`, reconciled with `arch classes diff`;
 - **your project's own entry** in `<PACK>/config/pack.json`: `specs` names each

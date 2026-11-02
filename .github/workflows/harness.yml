@@ -1,0 +1,28 @@
+name: harness
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest coverage tree-sitter tree-sitter-language-pack
+      - name: Contract suite
+        run: python -m pytest -q
+      - name: Coverage gate
+        run: |
+          python -m coverage run --data-file=tmp/.coverage -m pytest -q
+          python -m coverage report --data-file=tmp/.coverage --fail-under=90
